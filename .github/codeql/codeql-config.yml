@@ -28,3 +28,11 @@ paths-ignore:
   # parse); scanning it buries the dashboard findings we act on. Excluding a
   # path auto-closes its existing alerts on the next default-branch scan.
   - orchestration
+  # Superseded first-pass GPU stress scripts, preserved verbatim as the evidence
+  # behind the v1 numbers (see benchmarks/v1_characterization/README.md). They
+  # lived under `orchestration/` and so were already covered by the exclusion
+  # above; moving them out from under it would newly surface quality alerts on
+  # code that is deliberately frozen and will never be fixed. Only this
+  # subdirectory is excluded — the Phase 2+ harness under benchmarks/runners/
+  # etc. is live code and stays in scope.
+  - benchmarks/v1_characterization
