@@ -1,0 +1,33 @@
+# ML / GPU dependencies for the serving benchmark ONLY.
+#
+# These are deliberately NOT in the root requirements.txt. That file is
+# installed by .github/workflows/ci.yml on every push and PR, and is what
+# Render builds the production service from. Adding torch/vllm there would put
+# multi-gigabyte CUDA wheels on the deploy path and in every CI run, for code
+# that never executes in either place.
+#
+# Install only in the benchmark environment (Colab / a GPU host):
+#     pip install -r benchmarks/requirements.txt
+#
+# VERSIONS ARE INTENTIONALLY UNPINNED AT THIS STAGE.
+# Phase 0 freezes them from the actual Colab image — Colab ships its own
+# torch/CUDA build, and pinning a torch version here before observing that
+# image is how you get a silent CPU-wheel downgrade or a driver mismatch. The
+# Phase 0 procedure is: install, verify against the live GPU, then replace this
+# file with the exact `pip freeze` output and record its SHA-256 in
+# ENVIRONMENT.md and in every run manifest (see RUN_MANIFEST_SCHEMA.md).
+
+# --- inference runtimes ---
+torch
+transformers
+vllm
+accelerate
+
+# --- measurement / instrumentation ---
+pynvml
+psutil
+py-spy
+
+# --- harness ---
+pyyaml
+numpy

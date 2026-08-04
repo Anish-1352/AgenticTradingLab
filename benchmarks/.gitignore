@@ -1,0 +1,13 @@
+# Raw traces are large (~1.5 GB per full run) and are stored externally,
+# referenced from the run manifest by URL + SHA-256. Only derived metrics under
+# results/ are committed. See README.md and RUN_MANIFEST_SCHEMA.md.
+traces/*.json
+traces/*.json.gz
+traces/*.nsys-rep
+traces/*.ncu-rep
+
+# Model weights must never be committed.
+*.pt
+*.safetensors
+
+__pycache__/
