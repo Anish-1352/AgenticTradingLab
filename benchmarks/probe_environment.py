@@ -1,51 +1,70 @@
 #!/usr/bin/env python3
 """Probe the GPU host and (over)write benchmarks/ENVIRONMENT.md.
 
-**Run this first, before any measurement.** Two of its checks can invalidate a
-planned profiling layer, and it is much cheaper to learn that now than after a
+**Run this first, before any measurement.** Its results gate which profiling
+layers the study can use, and it is much cheaper to learn that now than after a
 sweep has been designed around a metric the host will not produce.
 
-The three permission tiers are tested **separately and in order**, because they
-gate on different things and one result does not imply the others:
+TOOLS ARE RESOLVED BY SEARCHING, NOT BY NAME
+--------------------------------------------
+``nsys`` and ``ncu`` are frequently **not on PATH**, and on some images nsys is
+not separately installable at all — it ships bundled *inside* the Nsight
+Compute tree, e.g.::
 
+    /opt/nvidia/nsight-compute/<version>/host/target-linux-x64/nsys
+
+So each tool is resolved by trying ``shutil.which`` first and then globbing a
+list of known install layouts, picking the **highest version** when several are
+present. Versions are never hardcoded: the image changes between Colab sessions
+and lab hardware will differ again. The resolved **absolute path** and the
+version string reported by the binary itself are both recorded in the
+machine-readable block, and the profiling wrappers invoke those paths rather
+than relying on PATH.
+
+FOUND-BUT-BLOCKED IS NOT NOT-FOUND
+----------------------------------
+These are different states with different remedies, and collapsing them costs
+real time: "install the tool" and "the driver will not let this tool read
+counters" are not the same problem. Every tier result therefore records the
+resolved path alongside its status, and a tier whose tool was never found is
+reported distinctly from one whose tool ran and failed.
+
+THE THREE PERMISSION TIERS ARE TESTED SEPARATELY
+------------------------------------------------
   (a) nsys CUDA trace        - CUPTI tracing of the CUDA API and kernel
-                               timeline. Usually available to unprivileged
-                               users.
-  (b) nsys GPU metrics       - hardware counter *sampling*
-      (--gpu-metrics-device)   (SM activity, warp occupancy over time).
-                               Needs the same counter permission ncu does.
+                               timeline. Usually available unprivileged.
+  (b) nsys GPU metrics       - hardware counter *sampling* (SM activity, warp
+      sampling                 occupancy over time). Needs the same counter
+                               permission ncu does.
   (c) ncu counters           - full per-kernel counter collection with replay.
 
-A host can pass (a) and fail (b) and (c). Recording "profiling worked" from (a)
-alone and then planning on occupancy numbers is how a study discovers in its
-final week that its central metric was never collectable.
-
-ERR_NVGPUCTRPERM means the driver restricts performance counters to
-administrators. On Colab the NVIDIA kernel module is loaded by the host, not by
-the notebook, so `modprobe nvidia NVreg_RestrictProfilingToAdminUsers=0` cannot
-be applied from inside the session — this is very likely permanent for the
-environment, not a fixable misconfiguration.
+A host can pass (a) and fail (b) and (c). ``ERR_NVGPUCTRPERM`` means the driver
+restricts performance counters to administrators; where the NVIDIA kernel
+module is loaded by the host rather than the session,
+``NVreg_RestrictProfilingToAdminUsers=0`` cannot be applied from inside and the
+restriction is permanent for that environment.
 """
 
 from __future__ import annotations
 
 import argparse
+import glob as glob_mod
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ENV_MD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ENVIRONMENT.md")
 
-# A100-SXM4-80GB reports exactly this many bytes. Recorded as a reference point
-# only: earlier write-ups asserted 40GB, and the probe's job is to settle the
-# question from the device rather than to confirm either claim.
+# Reference values used ONLY to tell the reader which part the measured figure
+# matches. Never substituted for a measurement.
 A100_80GB_BYTES = 85_094_825_984
 A100_40GB_BYTES = 42_949_672_960
 
@@ -60,6 +79,125 @@ TINY_CUDA_SNIPPET = (
 
 OBTAINABLE = "OBTAINABLE"
 BLOCKED = "BLOCKED"
+
+# Install layouts to glob when a tool is not on PATH. Ordered by preference
+# only for tie-breaking; selection is by version, highest wins.
+#
+# The first nsys pattern is the important one: on images where Nsight Systems
+# has no standalone package, nsys still exists inside the Nsight Compute tree.
+NSYS_SEARCH_PATTERNS: Tuple[str, ...] = (
+    "/opt/nvidia/nsight-compute/*/host/target-linux-x64/nsys",
+    "/opt/nvidia/nsight-systems/*/target-linux-x64/nsys",
+    "/opt/nvidia/nsight-systems/*/bin/nsys",
+    "/usr/local/cuda/bin/nsys",
+    "/usr/local/cuda-*/bin/nsys",
+)
+NCU_SEARCH_PATTERNS: Tuple[str, ...] = (
+    "/usr/local/cuda/bin/ncu",
+    "/usr/local/cuda-*/bin/ncu",
+    "/opt/nvidia/nsight-compute/*/ncu",
+    "/opt/nvidia/nsight-compute/*/target/*/ncu",
+)
+
+_VERSION_COMPONENT = re.compile(r"^\d+(?:\.\d+)*$")
+_VERSION_IN_TEXT = re.compile(r"(\d+\.\d+(?:\.\d+)*)")
+
+
+# --------------------------------------------------------------------------
+# tool resolution
+# --------------------------------------------------------------------------
+
+
+def parse_path_version(path: str) -> Tuple[int, ...]:
+    """Extract a version tuple from a path's directory components.
+
+    ``/opt/nvidia/nsight-compute/2025.1.1/host/target-linux-x64/nsys`` ->
+    ``(2025, 1, 1)``. Components like ``target-linux-x64`` contain digits but
+    are not pure dotted numbers, so they do not match. A path carrying no
+    version yields ``()``, which sorts below every real version — so a
+    versioned install wins a tie, while an unversioned one is still usable when
+    it is the only candidate.
+    """
+    best: Tuple[int, ...] = ()
+    for part in path.split(os.sep):
+        if _VERSION_COMPONENT.match(part):
+            try:
+                candidate = tuple(int(x) for x in part.split("."))
+            except ValueError:  # pragma: no cover - regex already guards
+                continue
+            if candidate > best:
+                best = candidate
+    return best
+
+
+def resolve_tool(
+    name: str,
+    patterns: Sequence[str],
+    which_fn: Callable[[str], Optional[str]] = shutil.which,
+    glob_fn: Callable[[str], List[str]] = glob_mod.glob,
+    version_fn: Optional[Callable[[str], Optional[str]]] = None,
+) -> Dict[str, Any]:
+    """Locate ``name``: PATH first, then the glob patterns, highest version wins.
+
+    ``which_fn``/``glob_fn``/``version_fn`` are injectable so the selection
+    logic can be unit-tested against a mocked filesystem with no GPU present.
+    """
+    on_path = which_fn(name)
+    candidates: List[str] = []
+    for pattern in patterns:
+        try:
+            candidates.extend(glob_fn(pattern))
+        except Exception:  # pragma: no cover - defensive
+            continue
+    # Deduplicate while keeping a stable order for the recorded candidate list.
+    seen = set()
+    unique: List[str] = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            unique.append(c)
+
+    if on_path:
+        path, source = on_path, "PATH"
+    elif unique:
+        # Highest version wins; path as a deterministic tie-break so two
+        # installs of the same version resolve reproducibly.
+        path = max(unique, key=lambda p: (parse_path_version(p), p))
+        source = "search"
+    else:
+        path, source = None, None
+
+    version = None
+    if path is not None:
+        vf = version_fn if version_fn is not None else _tool_version
+        try:
+            version = vf(path)
+        except Exception:  # pragma: no cover - defensive
+            version = None
+
+    return {
+        "name": name,
+        "found": path is not None,
+        "path": path,
+        "source": source,
+        "version": version,
+        "candidates": unique,
+        "on_path": on_path,
+        "search_patterns": list(patterns),
+    }
+
+
+def _tool_version(path: str) -> Optional[str]:
+    """Version string reported by the binary itself, not inferred from its path."""
+    rc, out, err = _run([path, "--version"], timeout=60)
+    blob = (out or "") + "\n" + (err or "")
+    blob = blob.strip()
+    if not blob:
+        return None
+    m = _VERSION_IN_TEXT.search(blob)
+    if m:
+        return m.group(1)
+    return blob.splitlines()[0][:120]
 
 
 # --------------------------------------------------------------------------
@@ -86,33 +224,6 @@ def _tail(text: str, limit: int = 1200) -> str:
     return "... (truncated) ...\n" + text[-limit:]
 
 
-def _classify(rc: int, out: str, err: str, artifact: Optional[str]) -> Dict[str, Any]:
-    blob = f"{out}\n{err}"
-    perm = "ERR_NVGPUCTRPERM" in blob or "insufficient permissions" in blob.lower()
-    missing = rc == 127 or "command not found" in blob
-
-    if missing:
-        status, reason = BLOCKED, "not installed"
-    elif perm:
-        status, reason = BLOCKED, "ERR_NVGPUCTRPERM (driver restricts counters to admin)"
-    elif rc != 0:
-        status, reason = BLOCKED, f"exit code {rc}"
-    elif artifact and not _artifact_exists(artifact):
-        status, reason = BLOCKED, "command succeeded but produced no output file"
-    else:
-        status, reason = OBTAINABLE, "ok"
-
-    return {
-        "status": status,
-        "reason": reason,
-        "returncode": rc,
-        "permission_error": perm,
-        "not_installed": missing,
-        "stdout_tail": _tail(out),
-        "stderr_tail": _tail(err),
-    }
-
-
 def _artifact_exists(prefix: str) -> bool:
     # nsys/ncu append their own suffix (.nsys-rep, .ncu-rep, .sqlite).
     d = os.path.dirname(prefix) or "."
@@ -123,8 +234,63 @@ def _artifact_exists(prefix: str) -> bool:
         return False
 
 
+def _not_found_result(tool: Dict[str, Any], label: str) -> Dict[str, Any]:
+    """A tier whose tool was never located. Distinct from found-but-failing."""
+    return {
+        "status": BLOCKED,
+        "reason": "tool not found",
+        "returncode": -1,
+        "permission_error": False,
+        "tool_found": False,
+        "tool_path": None,
+        "tool_version": None,
+        "stdout_tail": "",
+        "stderr_tail": (
+            f"{tool['name']} not on PATH and not matched by any search pattern:\n"
+            + "\n".join(f"  {p}" for p in tool["search_patterns"])
+        ),
+        "command": f"({label}: {tool['name']} not found)",
+    }
+
+
+def _classify(
+    rc: int,
+    out: str,
+    err: str,
+    artifact: Optional[str],
+    tool: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Classify a tier test whose tool WAS found. ``found`` is already true."""
+    blob = f"{out}\n{err}"
+    perm = "ERR_NVGPUCTRPERM" in blob or "insufficient permissions" in blob.lower()
+
+    if perm:
+        status, reason = BLOCKED, "ERR_NVGPUCTRPERM (driver restricts counters to admin)"
+    elif rc == 127:
+        # The resolved path stopped working between resolution and invocation.
+        status, reason = BLOCKED, "resolved path failed to execute"
+    elif rc != 0:
+        status, reason = BLOCKED, f"tool ran but exited {rc}"
+    elif artifact and not _artifact_exists(artifact):
+        status, reason = BLOCKED, "command succeeded but produced no output file"
+    else:
+        status, reason = OBTAINABLE, "ok"
+
+    return {
+        "status": status,
+        "reason": reason,
+        "returncode": rc,
+        "permission_error": perm,
+        "tool_found": True,
+        "tool_path": tool["path"],
+        "tool_version": tool["version"],
+        "stdout_tail": _tail(out),
+        "stderr_tail": _tail(err),
+    }
+
+
 # --------------------------------------------------------------------------
-# probes
+# device probes
 # --------------------------------------------------------------------------
 
 
@@ -165,6 +331,8 @@ def probe_torch_device() -> Dict[str, Any]:
 def probe_nvml() -> Dict[str, Any]:
     info: Dict[str, Any] = {"available": False}
     try:
+        # Provided by nvidia-ml-py (NOT the deprecated pynvml package); the
+        # import name is the same. See benchmarks/requirements.txt.
         import pynvml  # noqa: PLC0415
 
         pynvml.nvmlInit()
@@ -195,46 +363,129 @@ def probe_nvml() -> Dict[str, Any]:
     return info
 
 
-def probe_nsys_cuda_trace(tmpdir: str) -> Dict[str, Any]:
+# --------------------------------------------------------------------------
+# tier probes
+# --------------------------------------------------------------------------
+
+
+def probe_nsys_cuda_trace(tool: Dict[str, Any], tmpdir: str) -> Dict[str, Any]:
     """Tier (a): plain CUDA trace. No hardware counters involved."""
+    if not tool["found"]:
+        return _not_found_result(tool, "tier a")
     out = os.path.join(tmpdir, "probe_nsys_a")
     cmd = [
-        "nsys", "profile", "--trace=cuda", "--force-overwrite=true",
+        tool["path"], "profile", "--trace=cuda", "--force-overwrite=true",
         "-o", out, sys.executable, "-c", TINY_CUDA_SNIPPET,
     ]
     rc, so, se = _run(cmd)
-    res = _classify(rc, so, se, out)
+    res = _classify(rc, so, se, out, tool)
     res["command"] = " ".join(cmd)
     return res
 
 
-def probe_nsys_gpu_metrics(tmpdir: str) -> Dict[str, Any]:
-    """Tier (b): counter *sampling*. Gates separately from tier (a)."""
-    out = os.path.join(tmpdir, "probe_nsys_b")
-    cmd = [
-        "nsys", "profile", "--trace=cuda", "--gpu-metrics-device=0",
-        "--force-overwrite=true", "-o", out, sys.executable, "-c", TINY_CUDA_SNIPPET,
-    ]
-    rc, so, se = _run(cmd)
-    res = _classify(rc, so, se, out)
-    res["command"] = " ".join(cmd)
+def probe_nsys_gpu_metrics(tool: Dict[str, Any], tmpdir: str) -> Dict[str, Any]:
+    """Tier (b): counter *sampling*. Gates separately from tier (a).
+
+    Tries the plural ``--gpu-metrics-devices`` first. The singular
+    ``--gpu-metrics-device`` is deprecated in nsys 2025.x and removed later; the
+    plural form is unrecognised by older builds. Rather than branching on a
+    parsed version — which would need updating every time nsys changes — the
+    probe *tries* the plural form and falls back to the singular only when the
+    tool rejects the option itself. The flag that worked is recorded so
+    ``run_nsys.sh`` never has to guess.
+    """
+    if not tool["found"]:
+        res = _not_found_result(tool, "tier b")
+        res["flag_used"] = None
+        return res
+
+    attempts: List[Dict[str, Any]] = []
+    for idx, flag in enumerate(("--gpu-metrics-devices", "--gpu-metrics-device")):
+        out = os.path.join(tmpdir, f"probe_nsys_b{idx}")
+        cmd = [
+            tool["path"], "profile", "--trace=cuda", f"{flag}=0",
+            "--force-overwrite=true", "-o", out, sys.executable, "-c", TINY_CUDA_SNIPPET,
+        ]
+        rc, so, se = _run(cmd)
+        res = _classify(rc, so, se, out, tool)
+        res["command"] = " ".join(cmd)
+        res["flag_used"] = flag
+        attempts.append({"flag": flag, "status": res["status"], "reason": res["reason"]})
+
+        if res["status"] == OBTAINABLE:
+            res["attempts"] = attempts
+            return res
+
+        # Only fall through to the deprecated spelling when the tool rejected
+        # the option. A permission failure or any other error means the flag was
+        # understood and the capability is genuinely unavailable — retrying with
+        # a different spelling would just mislabel the reason.
+        blob = f"{so}\n{se}".lower()
+        option_rejected = (
+            "unrecognized" in blob or "unrecognised" in blob
+            or "invalid option" in blob or "unknown option" in blob
+            or "not a valid" in blob
+        )
+        if not option_rejected:
+            res["attempts"] = attempts
+            return res
+
+    res["attempts"] = attempts
     return res
 
 
-def probe_ncu(tmpdir: str) -> Dict[str, Any]:
+def probe_nsys_metric_sets(tool: Dict[str, Any]) -> Dict[str, Any]:
+    """List the available ``--gpu-metrics-set`` values.
+
+    The default set is "General Metrics". Whether a set with better Tensor-pipe
+    coverage exists is a decision that has to be made *before* the real runs —
+    the set is baked into the capture and cannot be changed afterwards.
+    """
+    if not tool["found"]:
+        return {"available": False, "reason": "nsys not found", "raw": "", "sets": []}
+
+    cmd = [tool["path"], "profile", "--gpu-metrics-set=help"]
+    rc, so, se = _run(cmd, timeout=120)
+    blob = (so or "") + ("\n" + se if se else "")
+
+    # Output shape varies by nsys version, so the raw text is recorded verbatim
+    # and the parse is best-effort on top of it.
+    sets: List[Dict[str, str]] = []
+    for line in blob.splitlines():
+        m = re.match(r"\s*\[?(\d+)\]?\s+([A-Za-z0-9_.\-]+)\s*(?:\((.*)\))?\s*$", line)
+        if m:
+            sets.append({"index": m.group(1), "name": m.group(2),
+                         "description": (m.group(3) or "").strip()})
+
+    return {
+        "available": rc == 0 or bool(sets),
+        "returncode": rc,
+        "command": " ".join(cmd),
+        "raw": _tail(blob, 4000),
+        "sets": sets,
+    }
+
+
+def probe_ncu(tool: Dict[str, Any]) -> Dict[str, Any]:
     """Tier (c): full per-kernel counter collection with replay."""
+    if not tool["found"]:
+        return _not_found_result(tool, "tier c")
     cmd = [
-        "ncu", "--metrics", "sm__warps_active.avg.pct_of_peak_sustained_active",
+        tool["path"], "--metrics", "sm__warps_active.avg.pct_of_peak_sustained_active",
         "--launch-count", "1", sys.executable, "-c", TINY_CUDA_SNIPPET,
     ]
     rc, so, se = _run(cmd)
-    res = _classify(rc, so, se, None)
+    res = _classify(rc, so, se, None, tool)
     res["command"] = " ".join(cmd)
     return res
 
 
+# --------------------------------------------------------------------------
+# other probes
+# --------------------------------------------------------------------------
+
+
 def probe_vllm() -> Dict[str, Any]:
-    """Does vLLM import, and did installing it move torch underneath us?"""
     info: Dict[str, Any] = {"importable": False}
     try:
         import torch  # noqa: PLC0415
@@ -284,34 +535,13 @@ def probe_pip_freeze() -> Dict[str, Any]:
     }
 
 
-def probe_tool_versions() -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
-    for tool in ("nsys", "ncu", "nvidia-smi"):
-        path = shutil.which(tool)
-        if not path:
-            out[tool] = {"present": False}
-            continue
-        rc, so, se = _run([tool, "--version"], timeout=60)
-        out[tool] = {
-            "present": True,
-            "path": path,
-            "version": _tail(so or se, 300),
-        }
-    return out
-
-
 # --------------------------------------------------------------------------
 # capability roll-up
 # --------------------------------------------------------------------------
 
 
 def derive_capabilities(results: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Which requested metrics are actually measurable given the probe results.
-
-    This is the section the study plan has to be reconciled against. Every entry
-    names the layer that would produce it and, when blocked, says so plainly
-    rather than leaving it to be discovered later.
-    """
+    """Which requested metrics are measurable given the probe results."""
     nsys_a = results["nsys_cuda_trace"]["status"] == OBTAINABLE
     nsys_b = results["nsys_gpu_metrics"]["status"] == OBTAINABLE
     ncu_ok = results["ncu_counters"]["status"] == OBTAINABLE
@@ -319,12 +549,8 @@ def derive_capabilities(results: Dict[str, Any]) -> List[Dict[str, str]]:
     nvml_ok = results["nvml"].get("available", False)
 
     def entry(metric: str, ok: bool, layer: str, note: str) -> Dict[str, str]:
-        return {
-            "metric": metric,
-            "measurable": "YES" if ok else "NO",
-            "layer": layer,
-            "note": note,
-        }
+        return {"metric": metric, "measurable": "YES" if ok else "NO",
+                "layer": layer, "note": note}
 
     return [
         entry("Latency: TTFT, ITL, e2e (p50/p95/p99)", torch_ok, "1",
@@ -345,15 +571,17 @@ def derive_capabilities(results: Dict[str, Any]) -> List[Dict[str, str]]:
         entry("Prefill vs decode kernel time split", nsys_a, "3",
               "Requires the explicit t_first_token boundary from Layer 1."),
         entry("SM activity over time (duration-weighted)", nsys_b, "2",
-              "nsys --gpu-metrics-device. Needs counter permission."
-              if not nsys_b else "nsys --gpu-metrics-device."),
+              "nsys GPU metrics sampling."
+              if nsys_b else "nsys GPU metrics sampling. Needs counter permission."),
         entry("Achieved occupancy (warps active vs peak)", ncu_ok, "4",
-              "ncu only. No substitute exists — NVML and nsys tracing cannot "
-              "produce this." if not ncu_ok else "ncu per-kernel counters."),
+              "ncu per-kernel counters."
+              if ncu_ok else "ncu only. No substitute exists — NVML and nsys "
+                             "tracing cannot produce this."),
         entry("Tensor Core / HMMA pipe utilization", ncu_ok, "4",
-              "ncu only. Kernel *names* containing s16816gemm show tensor-core "
-              "GEMMs ran, which is not the same as how well they were used."
-              if not ncu_ok else "ncu sm__pipe_tensor_op_hmma_cycles_active."),
+              "ncu sm__pipe_tensor_op_hmma_cycles_active."
+              if ncu_ok else "ncu only. Kernel *names* containing s16816gemm show "
+                             "tensor-core GEMMs ran, which is not the same as how "
+                             "well they were used."),
         entry("Memory bandwidth achieved vs peak", ncu_ok, "4",
               "ncu throughput counters." if ncu_ok else "ncu only; blocked."),
     ]
@@ -363,11 +591,31 @@ def derive_capabilities(results: Dict[str, Any]) -> List[Dict[str, str]]:
 # report
 # --------------------------------------------------------------------------
 
+EFA_NOTE = (
+    "**The `efa_metrics` warning from nsys is benign — do not re-investigate.** "
+    "A message like `Executable path does not exist: "
+    ".../plugins/efa_metrics/nic_sampler` refers to a sampler for AWS Elastic "
+    "Fabric Adapter network interfaces. It is absent from bundled/partial Nsight "
+    "builds, has nothing to do with GPU profiling, and does not affect CUDA "
+    "tracing, GPU metrics sampling, or the resulting report."
+)
+
+
+def _tool_row(tool: Dict[str, Any]) -> str:
+    if not tool["found"]:
+        return f"| `{tool['name']}` | **NOT FOUND** | — | — |"
+    return (
+        f"| `{tool['name']}` | found ({tool['source']}) | "
+        f"`{tool['path']}` | `{tool['version'] or 'unknown'}` |"
+    )
+
 
 def render_markdown(results: Dict[str, Any]) -> str:
     td = results["torch_device"]
     nv = results["nvml"]
     caps = results["capabilities"]
+    nsys = results["tools"]["nsys"]
+    ncu = results["tools"]["ncu"]
 
     lines: List[str] = []
     A = lines.append
@@ -378,8 +626,8 @@ def render_markdown(results: Dict[str, Any]) -> str:
       f"{results['utc_timestamp']}.** Do not hand-edit — re-run the probe.")
     A("")
     A("Re-run this on every new Colab session that produces committed results. "
-      "Colab reallocates hardware between sessions; a GPU UUID from a previous "
-      "session is not evidence about this one.")
+      "Colab reallocates hardware between sessions; a GPU UUID, driver version, "
+      "or tool path from a previous session is not evidence about this one.")
     A("")
 
     # ---- device ----
@@ -387,8 +635,8 @@ def render_markdown(results: Dict[str, Any]) -> str:
     A("")
     if td.get("available"):
         total_b = td["total_memory_bytes"]
-        A(f"| Field | Value |")
-        A(f"|---|---|")
+        A("| Field | Value |")
+        A("|---|---|")
         A(f"| Device name | `{td['device_name']}` |")
         A(f"| **Total memory (bytes)** | **{total_b:,}** |")
         A(f"| Total memory | {td['total_memory_gib']} GiB ({td['total_memory_mb']:,} MB) |")
@@ -422,22 +670,55 @@ def render_markdown(results: Dict[str, Any]) -> str:
           "Re-run on a GPU runtime before drawing any conclusion from this file.")
     A("")
 
+    # ---- resolved tools ----
+    A("## Resolved profiling tools")
+    A("")
+    A("Located by `shutil.which` first, then by globbing known install layouts "
+      "and taking the highest version. **Neither binary is assumed to be on "
+      "PATH** — on some images `nsys` has no standalone package and ships "
+      "inside the Nsight Compute tree. `run_nsys.sh` and `run_ncu.sh` invoke "
+      "the absolute paths recorded here.")
+    A("")
+    A("| Tool | State | Resolved path | Version |")
+    A("|---|---|---|---|")
+    A(_tool_row(nsys))
+    A(_tool_row(ncu))
+    A("")
+    for tool in (nsys, ncu):
+        if tool["candidates"]:
+            A(f"`{tool['name']}` candidates considered:")
+            A("")
+            for c in tool["candidates"]:
+                mark = " **<- selected**" if c == tool["path"] else ""
+                A(f"- `{c}`{mark}")
+            A("")
+        elif not tool["found"]:
+            A(f"`{tool['name']}` matched none of:")
+            A("")
+            for p in tool["search_patterns"]:
+                A(f"- `{p}`")
+            A("")
+    A(EFA_NOTE)
+    A("")
+
     # ---- permission tiers ----
     A("## Profiling permission tiers")
     A("")
     A("Tested separately. Passing (a) does **not** imply (b) or (c) — (a) is "
-      "CUPTI tracing, while (b) and (c) need hardware counter access.")
+      "CUPTI tracing, while (b) and (c) need hardware counter access. "
+      "*Tool not found* and *tool found but blocked* are reported as distinct "
+      "states: they have different remedies.")
     A("")
-    A("| Tier | Capability | Status | Reason |")
-    A("|---|---|---|---|")
-    for key, label in (
-        ("nsys_cuda_trace", "(a) nsys CUDA trace"),
-        ("nsys_gpu_metrics", "(b) nsys GPU metrics sampling"),
-        ("ncu_counters", "(c) ncu counter collection"),
+    A("| Tier | Capability | Status | Tool found | Reason |")
+    A("|---|---|---|---|---|")
+    for key, label, cap in (
+        ("nsys_cuda_trace", "(a) nsys CUDA trace", "trace"),
+        ("nsys_gpu_metrics", "(b) nsys GPU metrics sampling", "counters"),
+        ("ncu_counters", "(c) ncu counter collection", "counters"),
     ):
         r = results[key]
-        A(f"| {label} | {'trace' if key != 'ncu_counters' else 'counters'} | "
-          f"**{r['status']}** | {r['reason']} |")
+        A(f"| {label} | {cap} | **{r['status']}** | "
+          f"{'yes' if r.get('tool_found') else 'NO'} | {r['reason']} |")
     A("")
 
     for key, label in (
@@ -448,8 +729,20 @@ def render_markdown(results: Dict[str, Any]) -> str:
         r = results[key]
         A(f"### {label} — {r['status']}")
         A("")
+        if r.get("tool_path"):
+            A(f"Tool: `{r['tool_path']}` (version `{r.get('tool_version') or 'unknown'}`)")
+            A("")
         A(f"```\n{r['command']}\n```")
         A("")
+        if r.get("flag_used"):
+            A(f"Flag that worked: `{r['flag_used']}`")
+            A("")
+        if r.get("attempts") and len(r["attempts"]) > 1:
+            A("Flag attempts:")
+            A("")
+            for att in r["attempts"]:
+                A(f"- `{att['flag']}` -> {att['status']} ({att['reason']})")
+            A("")
         if r["stdout_tail"]:
             A("stdout:")
             A(f"```\n{r['stdout_tail']}\n```")
@@ -459,16 +752,43 @@ def render_markdown(results: Dict[str, Any]) -> str:
         if r["permission_error"]:
             A("")
             A("`ERR_NVGPUCTRPERM`: the driver restricts performance counters to "
-              "administrators. On Colab the NVIDIA kernel module is loaded by "
-              "the **host**, so the usual fix "
-              "(`NVreg_RestrictProfilingToAdminUsers=0`) cannot be applied from "
-              "inside the session. Treat this as a permanent property of the "
-              "environment and plan the study without this metric.")
-        if r["not_installed"]:
+              "administrators. Where the NVIDIA kernel module is loaded by the "
+              "host rather than the session, "
+              "`NVreg_RestrictProfilingToAdminUsers=0` cannot be applied from "
+              "inside — treat this as a permanent property of the environment.")
+        if not r.get("tool_found"):
             A("")
-            A("Tool not on PATH. Nsight Systems and Nsight Compute come from "
-              "the **NVIDIA apt repository, not pip** — see COLAB.md.")
+            A("The tool itself was not located. This is **not** a permission "
+              "problem: install it, or add its install layout to the search "
+              "patterns in `probe_environment.py`.")
         A("")
+
+    # ---- gpu metric sets ----
+    A("## nsys GPU metric sets")
+    A("")
+    ms = results.get("nsys_metric_sets", {})
+    if ms.get("available"):
+        A("Output of `--gpu-metrics-set=help`. The **default is General "
+          "Metrics**; the set is baked into a capture and cannot be changed "
+          "afterwards, so pick it before the real runs. Look for a set with "
+          "explicit Tensor-pipe coverage if occupancy of the HMMA pipes matters "
+          "at Layer 2.")
+        A("")
+        if ms.get("sets"):
+            A("| Index | Set | Description |")
+            A("|---|---|---|")
+            for s in ms["sets"]:
+                A(f"| {s['index']} | `{s['name']}` | {s['description']} |")
+            A("")
+        A("Raw:")
+        A("")
+        A(f"```\n{ms.get('raw', '')}\n```")
+    else:
+        A(f"Not available: {ms.get('reason', 'command failed')}")
+        if ms.get("raw"):
+            A("")
+            A(f"```\n{ms['raw']}\n```")
+    A("")
 
     # ---- vllm ----
     A("## vLLM vs torch")
@@ -519,12 +839,6 @@ def render_markdown(results: Dict[str, Any]) -> str:
     A(f"| upstream SHA | `{results['git']['upstream_sha']}` "
       f"(ref: `{results['git']['upstream_ref']}`) |")
     A("")
-    for tool, d in results["tools"].items():
-        if d.get("present"):
-            A(f"- `{tool}`: `{d['path']}`")
-        else:
-            A(f"- `{tool}`: **not on PATH**")
-    A("")
 
     # ---- the section that matters ----
     A("## Measurable vs not measurable")
@@ -551,7 +865,8 @@ def render_markdown(results: Dict[str, Any]) -> str:
           "NVML `utilization.gpu` is not occupancy, and a kernel-name match is "
           "not tensor pipe utilization.")
     else:
-        A("All requested metrics are obtainable in this environment.")
+        A("**All requested metrics are obtainable in this environment.** All "
+          "four profiling layers are available.")
     A("")
 
     # ---- machine-readable ----
@@ -565,10 +880,19 @@ def render_markdown(results: Dict[str, Any]) -> str:
     A(f"nsys_cuda_trace={results['nsys_cuda_trace']['status']}")
     A(f"nsys_gpu_metrics={results['nsys_gpu_metrics']['status']}")
     A(f"ncu_counters={results['ncu_counters']['status']}")
+    A(f"nsys_found={'true' if nsys['found'] else 'false'}")
+    A(f"nsys_path={nsys['path'] or ''}")
+    A(f"nsys_version={nsys['version'] or ''}")
+    A(f"ncu_found={'true' if ncu['found'] else 'false'}")
+    A(f"ncu_path={ncu['path'] or ''}")
+    A(f"ncu_version={ncu['version'] or ''}")
+    A(f"nsys_gpu_metrics_flag={results['nsys_gpu_metrics'].get('flag_used') or ''}")
     A(f"gpu_uuid={nv.get('gpu_uuid', 'UNKNOWN')}")
     A(f"gpu_name={nv.get('gpu_name', td.get('device_name', 'UNKNOWN'))}")
     A(f"total_vram_bytes={td.get('total_memory_bytes', 0)}")
+    A(f"total_vram_mb={nv.get('total_vram_mb', td.get('total_memory_mb', 0))}")
     A(f"sm_count={td.get('sm_count', 0)}")
+    A(f"compute_capability={td.get('compute_capability', 'UNKNOWN')}")
     A(f"driver_version={nv.get('driver_version', 'UNKNOWN')}")
     A(f"cuda_version={td.get('cuda_runtime_version', 'UNKNOWN')}")
     A(f"torch_version={td.get('torch_version', 'UNKNOWN')}")
@@ -598,15 +922,12 @@ def _git_info() -> Dict[str, Any]:
         if s:
             upstream_sha, upstream_ref = s, ref
             break
-    return {
-        "branch_sha": branch,
-        "upstream_sha": upstream_sha,
-        "upstream_ref": upstream_ref,
-    }
+    return {"branch_sha": branch, "upstream_sha": upstream_sha,
+            "upstream_ref": upstream_ref}
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap = argparse.ArgumentParser(description="Probe the GPU host for benchmarking.")
     ap.add_argument("--out", default=ENV_MD, help="path to ENVIRONMENT.md")
     ap.add_argument("--json-out", default=None, help="also write raw results JSON")
     ap.add_argument("--skip-nsys", action="store_true")
@@ -614,33 +935,41 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--skip-pip-freeze", action="store_true")
     args = ap.parse_args(argv)
 
-    skipped = {
-        "status": BLOCKED,
-        "reason": "skipped by flag",
-        "returncode": -1,
-        "permission_error": False,
-        "not_installed": False,
-        "stdout_tail": "",
-        "stderr_tail": "",
-        "command": "(skipped)",
-    }
+    def skipped(tool: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "status": BLOCKED, "reason": "skipped by flag", "returncode": -1,
+            "permission_error": False, "tool_found": tool["found"],
+            "tool_path": tool["path"], "tool_version": tool["version"],
+            "stdout_tail": "", "stderr_tail": "", "command": "(skipped)",
+        }
 
     print("=" * 72)
     print("BENCHMARK ENVIRONMENT PROBE")
     print("=" * 72)
+
+    nsys = resolve_tool("nsys", NSYS_SEARCH_PATTERNS)
+    ncu = resolve_tool("ncu", NCU_SEARCH_PATTERNS)
+    for t in (nsys, ncu):
+        if t["found"]:
+            print(f"[tool]   {t['name']}: {t['path']}  "
+                  f"(via {t['source']}, version {t['version'] or 'unknown'})")
+        else:
+            print(f"[tool]   {t['name']}: NOT FOUND "
+                  f"(searched {len(t['search_patterns'])} patterns)")
 
     with tempfile.TemporaryDirectory() as tmp:
         results: Dict[str, Any] = {
             "utc_timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "torch_device": probe_torch_device(),
             "nvml": probe_nvml(),
-            "tools": probe_tool_versions(),
+            "tools": {"nsys": nsys, "ncu": ncu},
         }
         td = results["torch_device"]
         print(f"\n[device] {td.get('device_name', 'NO CUDA DEVICE')}")
         if td.get("available"):
             print(f"[device] total memory: {td['total_memory_bytes']:,} bytes "
-                  f"({td['total_memory_gib']} GiB), SMs: {td['sm_count']}")
+                  f"({td['total_memory_gib']} GiB), SMs: {td['sm_count']}, "
+                  f"CC {td['compute_capability']}")
             if td["matches_a100_80gb"]:
                 print("[device] -> matches A100-SXM4-80GB exactly")
             elif td["matches_a100_40gb"]:
@@ -650,19 +979,36 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"[nvml]   uuid: {results['nvml'].get('gpu_uuid', 'UNKNOWN')}")
 
         print("\n[tier a] nsys CUDA trace ...")
-        results["nsys_cuda_trace"] = skipped if args.skip_nsys else probe_nsys_cuda_trace(tmp)
+        results["nsys_cuda_trace"] = (
+            skipped(nsys) if args.skip_nsys else probe_nsys_cuda_trace(nsys, tmp)
+        )
         print(f"[tier a] {results['nsys_cuda_trace']['status']} — "
               f"{results['nsys_cuda_trace']['reason']}")
 
         print("[tier b] nsys GPU metrics sampling ...")
-        results["nsys_gpu_metrics"] = skipped if args.skip_nsys else probe_nsys_gpu_metrics(tmp)
+        results["nsys_gpu_metrics"] = (
+            skipped(nsys) if args.skip_nsys else probe_nsys_gpu_metrics(nsys, tmp)
+        )
+        flag = results["nsys_gpu_metrics"].get("flag_used")
         print(f"[tier b] {results['nsys_gpu_metrics']['status']} — "
-              f"{results['nsys_gpu_metrics']['reason']}")
+              f"{results['nsys_gpu_metrics']['reason']}"
+              + (f"  (flag: {flag})" if flag else ""))
 
         print("[tier c] ncu counters ...")
-        results["ncu_counters"] = skipped if args.skip_ncu else probe_ncu(tmp)
+        results["ncu_counters"] = (
+            skipped(ncu) if args.skip_ncu else probe_ncu(ncu)
+        )
         print(f"[tier c] {results['ncu_counters']['status']} — "
               f"{results['ncu_counters']['reason']}")
+
+    print("[sets  ] nsys --gpu-metrics-set=help ...")
+    results["nsys_metric_sets"] = (
+        {"available": False, "reason": "skipped", "raw": "", "sets": []}
+        if args.skip_nsys else probe_nsys_metric_sets(nsys)
+    )
+    n_sets = len(results["nsys_metric_sets"].get("sets") or [])
+    print(f"[sets  ] {n_sets} metric set(s) parsed"
+          f"{' (raw output recorded)' if results['nsys_metric_sets'].get('raw') else ''}")
 
     results["vllm"] = probe_vllm()
     results["disk"] = probe_disk()
@@ -695,6 +1041,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if blocked:
         print(f"\n  {len(blocked)} metric(s) NOT obtainable here. "
               f"Reconcile the study plan before sweeping.")
+    else:
+        print("\n  All metrics obtainable. All four profiling layers available.")
     return 0
 
 

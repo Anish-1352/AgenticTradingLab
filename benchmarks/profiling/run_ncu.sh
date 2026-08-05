@@ -23,6 +23,11 @@
 # BECAUSE OF REPLAY, THIS RUNS AGAINST concurrency=1 AND n-requests=3 ONLY.
 # Pointing ncu at the 105-request sweep would replay every kernel of every
 # request and take hours to days.
+#
+# ncu IS NOT ASSUMED TO BE ON PATH — it commonly lives at
+# /usr/local/cuda/bin/ncu or under /opt/nvidia/nsight-compute/<version>/. The
+# absolute path is read from ENVIRONMENT.md, where probe_environment.py recorded
+# it after resolving it by search. Versions are never hardcoded here.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,12 +52,13 @@ probe_value() {
   ' "${ENV_MD}"
 }
 
-# ---- gate on the probe ---------------------------------------------------
+# ---- gate on the probe -------------------------------------------------------
 if [ ! -f "${ENV_MD}" ]; then
   cat >&2 <<EOF
 ERROR: ${ENV_MD} not found.
 
-Run the probe first — it determines whether ncu can collect counters at all:
+Run the probe first — it resolves the ncu path (ncu is often NOT on PATH) and
+determines whether counters can be collected at all:
 
   python ${BENCH_ROOT}/probe_environment.py
 EOF
@@ -60,18 +66,36 @@ EOF
 fi
 
 NCU_STATUS="$(probe_value ncu_counters || true)"
+NCU_FOUND="$(probe_value ncu_found || true)"
 
 if [ "${NCU_STATUS}" != "OBTAINABLE" ]; then
+  if [ "${NCU_FOUND}" = "false" ]; then
+    cat >&2 <<EOF
+Layer 4 (ncu) is unavailable: THE TOOL WAS NOT FOUND.
+
+This is an install/path problem, not a permission problem — a different fix.
+ncu commonly lives at one of:
+
+  /usr/local/cuda/bin/ncu
+  /opt/nvidia/nsight-compute/<version>/ncu
+
+Install Nsight Compute, or add the layout to NCU_SEARCH_PATTERNS in
+probe_environment.py, then re-run the probe.
+EOF
+    exit 4
+  fi
+
   cat >&2 <<EOF
 Layer 4 (ncu) is NOT available on this host.
 
   probe result: ncu_counters=${NCU_STATUS:-UNKNOWN}
+  ncu found:    ${NCU_FOUND:-unknown}
   see:          ${ENV_MD}
 
 If the reason is ERR_NVGPUCTRPERM, the driver restricts performance counters to
-administrators. On Colab the NVIDIA kernel module is loaded by the host, so
-NVreg_RestrictProfilingToAdminUsers=0 cannot be set from inside the session.
-This is a property of the environment, not a misconfiguration you can fix.
+administrators. Where the NVIDIA kernel module is loaded by the host rather than
+the session, NVreg_RestrictProfilingToAdminUsers=0 cannot be set from inside.
+That is a property of the environment, not a misconfiguration you can fix.
 
 Consequences to carry into the write-up — do NOT substitute a proxy:
   * achieved occupancy        : NOT MEASURABLE here
@@ -85,14 +109,25 @@ EOF
   exit 3
 fi
 
-if ! command -v ncu >/dev/null 2>&1; then
-  cat >&2 <<'EOF'
-ERROR: ncu not found on PATH, though the probe recorded it as OBTAINABLE.
-Re-run probe_environment.py — the environment has changed.
+# ---- resolve the binary ------------------------------------------------------
+NCU_BIN="$(probe_value ncu_path || true)"
+NCU_VERSION="$(probe_value ncu_version || true)"
 
-Nsight Compute installs from the NVIDIA apt repository, NOT pip:
-  apt-get install -y nsight-compute
-EOF
+if [ -z "${NCU_BIN}" ]; then
+  if command -v ncu >/dev/null 2>&1; then
+    NCU_BIN="$(command -v ncu)"
+    echo "WARNING: ${ENV_MD} records no ncu_path; falling back to PATH (${NCU_BIN})." >&2
+    echo "         Re-run probe_environment.py to refresh it." >&2
+  else
+    echo "ERROR: ${ENV_MD} records no ncu_path and ncu is not on PATH." >&2
+    echo "       Re-run: python ${BENCH_ROOT}/probe_environment.py" >&2
+    exit 127
+  fi
+fi
+
+if [ ! -x "${NCU_BIN}" ]; then
+  echo "ERROR: recorded ncu path is not executable: ${NCU_BIN}" >&2
+  echo "       The image may have changed. Re-run probe_environment.py." >&2
   exit 127
 fi
 
@@ -106,13 +141,14 @@ mkdir -p "${TRACES_DIR}"
 # sm__throughput...                          -> overall SM throughput vs peak
 METRICS="sm__warps_active.avg.pct_of_peak_sustained_active,sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_active,sm__throughput.avg.pct_of_peak_sustained_elapsed"
 
+echo "[ncu] binary       : ${NCU_BIN} (version ${NCU_VERSION:-unknown})"
 echo "[ncu] run_id       : ${RUN_ID}"
 echo "[ncu] export       : ${OUT_BASE}.ncu-rep"
 echo "[ncu] launch-count : ${LAUNCH_COUNT}"
 echo "[ncu] NOTE: forcing --concurrency 1 --n-requests 3 (kernel replay)."
 echo
 
-ncu \
+"${NCU_BIN}" \
   --metrics "${METRICS}" \
   --launch-count "${LAUNCH_COUNT}" \
   --export "${OUT_BASE}" \
@@ -121,7 +157,7 @@ ncu \
 
 echo
 echo "[ncu] done: ${OUT_BASE}.ncu-rep"
-echo "[ncu] to CSV: ncu --import ${OUT_BASE}.ncu-rep --csv --page raw > ${OUT_BASE}.csv"
+echo "[ncu] to CSV: ${NCU_BIN} --import ${OUT_BASE}.ncu-rep --csv --page raw > ${OUT_BASE}.csv"
 echo
 echo "Report alongside the nsys (Layer 2) numbers, not instead of them:"
 echo "  nsys = duration-weighted SM activity across the whole run"

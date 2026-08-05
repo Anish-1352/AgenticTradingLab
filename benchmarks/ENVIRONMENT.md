@@ -15,11 +15,23 @@ hand-filled template gets wrong.
 
 ## What the probe determines
 
+**Tool paths, by searching.** `nsys` and `ncu` are **not assumed to be on
+PATH**. On the observed Colab image `ncu` sits at `/usr/local/cuda/bin/ncu`
+while `nsys` is not on PATH at all and is not installable from apt — it ships
+bundled inside the Nsight Compute tree
+(`/opt/nvidia/nsight-compute/<version>/host/target-linux-x64/nsys`). The probe
+tries `shutil.which` first, then globs known layouts and takes the **highest
+version**, and records the resolved absolute path plus the version the binary
+reports. Versions are never hardcoded: the image changes between sessions and
+lab hardware will differ again. `run_nsys.sh` and `run_ncu.sh` invoke the
+recorded paths.
+
 **Device.** Name, SM count, compute capability, GPU UUID, driver and CUDA
 runtime versions, and the **measured** total memory in bytes. Earlier write-ups
-asserted 40GB; the expected part is the 80GB A100 (85,094,825,984 bytes). The
-probe reports the actual value and states explicitly which reference — if
-either — it matches. Assume neither until it has run.
+asserted 40GB; the observed Colab A100 is the **80GB** part
+(85,094,825,984 bytes / 81920 MiB, CC 8.0). The probe still reports the actual
+value and states which reference — if either — it matches, because the next
+session may not be the same card.
 
 **Three profiling permission tiers, tested separately.** They gate on different
 things, and passing one does not imply the others:
@@ -27,12 +39,37 @@ things, and passing one does not imply the others:
 | Tier | What it needs |
 |---|---|
 | (a) `nsys` CUDA trace | CUPTI tracing. Usually available unprivileged. |
-| (b) `nsys --gpu-metrics-device` | Hardware counter *sampling*. |
+| (b) `nsys` GPU metrics sampling | Hardware counter *sampling*. |
 | (c) `ncu` counters | Full per-kernel counter collection with replay. |
 
-A host commonly passes (a) and fails (b) and (c). `ERR_NVGPUCTRPERM` means the
-driver restricts counters to administrators; on Colab the NVIDIA kernel module
-is loaded by the host, so this cannot be changed from inside the session.
+A host commonly passes (a) and fails (b) and (c) — though on the observed image
+**all three were OBTAINABLE**, with `ncu` returning real occupancy and no
+`ERR_NVGPUCTRPERM`. Where that error does appear, the driver restricts counters
+to administrators, and if the NVIDIA kernel module is loaded by the host rather
+than the session it cannot be changed from inside.
+
+*Tool not found* and *tool found but blocked* are recorded as distinct states.
+They have different fixes — install versus permission — and collapsing them
+wastes a session.
+
+**The GPU-metrics flag spelling.** `--gpu-metrics-device` (singular) is
+deprecated in nsys 2025.x; `--gpu-metrics-devices` (plural) is unrecognised by
+older builds. The probe tries the plural form and falls back to the singular
+only when the tool rejects the option itself, then records which one worked so
+`run_nsys.sh` never guesses.
+
+**Available `--gpu-metrics-set` values.** The default is *General Metrics*. The
+set is baked into a capture and cannot be changed afterwards, so if one with
+better Tensor-pipe coverage exists it must be chosen before the real runs.
+
+## Benign warnings
+
+**`efa_metrics` — do not re-investigate.** A message like
+`Executable path does not exist: .../plugins/efa_metrics/nic_sampler` refers to
+a sampler for AWS Elastic Fabric Adapter network interfaces. It is absent from
+bundled or partial Nsight builds, has nothing to do with GPU profiling, and does
+not affect CUDA tracing, GPU metrics sampling, or the resulting report. The
+generated file repeats this note so it stays attached to the evidence.
 
 If (c) is blocked, **achieved occupancy and Tensor Core utilization are not
 obtainable in this environment.** There is no substitute — NVML

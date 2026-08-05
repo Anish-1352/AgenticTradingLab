@@ -27,7 +27,7 @@ omit a key — a missing key and a null value are different failures.
 | `concurrency` | integer | Offered concurrent request count for this run. One value per run — a sweep is N runs, not one run with N sections. |
 | `upstream_sha` | string | Full 40-char SHA of the pinned `upstream/main` the harness drove. |
 | `branch_sha` | string | Full 40-char SHA of the benchmark branch commit that ran. Must be a clean tree; append `-dirty` if not, and treat any `-dirty` result as non-citable. |
-| `gpu_name` | string | e.g. `NVIDIA A100-SXM4-40GB`. |
+| `gpu_name` | string | e.g. `NVIDIA A100-SXM4-80GB`. |
 | `gpu_uuid` | string | e.g. `GPU-6d8f...`. See below. |
 | `total_vram_mb` | integer | From NVML, not from a config file. |
 | `driver_version` | string | e.g. `535.104.05`. |
@@ -69,7 +69,7 @@ never be mistaken for a complete one, which is what `manifest_complete` is for.
 ## Why `gpu_uuid` matters
 
 Colab **reallocates physical hardware between sessions.** Two runs that both
-report `NVIDIA A100-SXM4-40GB` may have executed on two different physical
+report `NVIDIA A100-SXM4-80GB` may have executed on two different physical
 cards, in different hosts, with different thermal state, different neighbours
 on the same board, and — in a virtualized allocation — a different share of it.
 
@@ -95,10 +95,16 @@ a finding to disclose, not a detail to smooth over.
 
 ## Example
 
-Illustrative only. `gpu_name` and `total_vram_mb` below are placeholders — the
-actual part is whatever `probe_environment.py` measures, which is the open
-question this study inherited (earlier write-ups asserted 40GB; the expected
-part is the 80GB A100). Never copy a hardware value from this example.
+Illustrative. The hardware values below reflect what the Colab A100 session
+actually probed — **A100-SXM4-80GB, 81920 MiB**, settling the open question the
+study inherited (earlier write-ups asserted 40GB; the device reports the 80GB
+part).
+
+That does not make them constants. `gpu_name`, `total_vram_mb`,
+`driver_version` and `cuda_version` are read from NVML **at run time, on every
+run**. Colab reallocates hardware between sessions and lab machines will differ
+again, so a manifest that carries a value copied from this example is
+worthless — the field exists precisely to detect that the hardware moved.
 
 ```json
 {
@@ -109,11 +115,11 @@ part is the 80GB A100). Never copy a hardware value from this example.
   "upstream_sha": "c8aa7012efcc3bacb8c16d96642f84daf3856fd5",
   "upstream_ref": "upstream/main",
   "branch_sha": "a3f9c1e0000000000000000000000000000000ex",
-  "gpu_name": "<from NVML>",
+  "gpu_name": "NVIDIA A100-SXM4-80GB",
   "gpu_uuid": "GPU-6d8f2b1a-0000-0000-0000-000000000000",
-  "total_vram_mb": 0,
-  "driver_version": "535.104.05",
-  "cuda_version": "12.1",
+  "total_vram_mb": 81920,
+  "driver_version": "580.82.07",
+  "cuda_version": "13.0",
   "pip_freeze_sha256": "9f2c...",
   "config_sha256": "1b77...",
   "fixture_sha256": "c40a...",

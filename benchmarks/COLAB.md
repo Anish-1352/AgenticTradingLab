@@ -68,19 +68,50 @@ results non-citable.
 !pip install -q -r benchmarks/requirements.txt
 ```
 
-Then **Nsight, which does not come from pip** — `nsys` and `ncu` ship in the
-NVIDIA apt repository:
+**Do not install pynvml.** `benchmarks/requirements.txt` pins `nvidia-ml-py`
+instead. The import name is the same (`import pynvml`), but the two
+distributions conflict and torch warns that the `pynvml` package is deprecated.
+NVML sampling underpins every VRAM number in the study. If the image already
+ships the old one:
 
 ```python
-!wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-!dpkg -i cuda-keyring_1.1-1_all.deb
-!apt-get update -qq
-!apt-get install -y -qq nsight-systems-cli nsight-compute
-!which nsys ncu
+!pip uninstall -y pynvml
+!pip install -q nvidia-ml-py
 ```
 
-> Colab sometimes already ships `nsys` under `/opt/nvidia/nsight-systems/*/bin`.
-> Check `!which nsys` before installing; if it is present, skip the apt step.
+### Nsight: do not assume apt, and do not assume PATH
+
+**`ncu` is usually already present** — typically `/usr/local/cuda/bin/ncu`.
+
+**`nsys` is the awkward one.** On the observed Colab image it is *not* on PATH
+and *not* installable from apt (`nsight-systems-cli` does not resolve). It
+ships **bundled inside the Nsight Compute tree**:
+
+```
+/opt/nvidia/nsight-compute/<version>/host/target-linux-x64/nsys
+```
+
+Do not hardcode that version — it changes between images, and lab hardware will
+differ again. **Cell 5 finds both tools by searching and records their absolute
+paths**, and `run_nsys.sh` / `run_ncu.sh` invoke the recorded paths. So there is
+usually nothing to install here. Have a look first:
+
+```python
+!which nsys ncu || true
+!ls -d /opt/nvidia/nsight-compute/*/ 2>/dev/null || true
+```
+
+Only if the probe in cell 5 reports `nsys` NOT FOUND is an install needed. Try
+apt, and if the package does not resolve, install Nsight Compute (which carries
+nsys inside it) and re-run the probe:
+
+```python
+!apt-get update -qq && apt-get install -y -qq nsight-systems-cli || \
+  echo "nsight-systems-cli unavailable — install nsight-compute instead; it bundles nsys"
+```
+
+If the probe still cannot find it, add the layout to `NSYS_SEARCH_PATTERNS` in
+`probe_environment.py` rather than hardcoding a path in the shell scripts.
 
 If `pip install vllm` moved torch, note the new version — cell 5 records it, and
 a torch change mid-study means arm C is not directly comparable to arms A and B.
@@ -91,18 +122,39 @@ a torch change mid-study means arm C is not directly comparable to arms A and B.
 !python benchmarks/probe_environment.py --json-out {OUT}/probe.json
 ```
 
-This writes `benchmarks/ENVIRONMENT.md` and prints a **measurable vs not
-measurable** table. Read it before running anything else.
+This resolves the tool paths, tests the three permission tiers, writes
+`benchmarks/ENVIRONMENT.md`, and prints a **measurable vs not measurable**
+table. Read it before running anything else.
 
 Specifically check:
 
-- **Total memory in bytes.** The probe says whether it matches the 80GB
-  (85,094,825,984) or 40GB reference, or neither. Use the measured value.
+- **Resolved tool paths.** The table names the absolute path and version found
+  for `nsys` and `ncu`, and lists every candidate considered. If a tool shows
+  **NOT FOUND**, that is an install/path problem — distinct from found-but-
+  blocked, which is a permission problem with a different fix.
+- **Total memory in bytes.** The probe states whether it matches the 80GB
+  (85,094,825,984) or 40GB (42,949,672,960) reference, or neither. The observed
+  Colab A100 is the **80GB** part at 81920 MiB. Use the measured value anyway —
+  the next session may not be the same card.
 - **Tier (c) `ncu_counters`.** If `BLOCKED` with `ERR_NVGPUCTRPERM`, achieved
   occupancy and Tensor Core utilization are **not obtainable on this host** and
-  Layer 4 is off the table. Adjust the study now, not in the write-up.
+  Layer 4 is off the table. Adjust the study now, not in the write-up. On the
+  observed image this tier was **OBTAINABLE** — real occupancy came back with no
+  permission error.
 - **Tier (b) `nsys_gpu_metrics`.** If `BLOCKED`, Layer 2 still runs but without
-  SM activity sampling. `run_nsys.sh` handles this automatically.
+  SM activity sampling. `run_nsys.sh` handles this automatically, and also reads
+  back *which* flag spelling this nsys accepts — `--gpu-metrics-devices`
+  (plural) is current, `--gpu-metrics-device` is deprecated in 2025.x.
+- **GPU metric sets.** The probe records the output of
+  `--gpu-metrics-set=help`. The default is *General Metrics*; if a set with
+  better Tensor-pipe coverage is listed, choose it **before** the real runs — the
+  set is baked into a capture and cannot be changed afterwards. Pass it through
+  as `GPU_METRICS_SET=<name>` when invoking `run_nsys.sh`.
+
+An `efa_metrics` warning (`Executable path does not exist:
+.../plugins/efa_metrics/nic_sampler`) is **benign** — an AWS network-adapter
+sampler absent from bundled Nsight builds, irrelevant to GPU profiling. It is
+recorded in `ENVIRONMENT.md` so it does not get re-investigated.
 
 Commit the regenerated `ENVIRONMENT.md` with the session's results.
 
@@ -161,9 +213,20 @@ Preempted mid-sweep? Re-run the identical command. Completed levels are skipped.
     --fixture shared_prefix --concurrency 15 --out-dir {OUT}
 ```
 
-Note: **no `--profile`**. The script appends `--gpu-metrics-device=0` only if
-the probe marked tier (b) OBTAINABLE, and emits `gpukernsum` / `cudaapisum`
-CSVs into `RESULTS_DIR` so the numbers are readable without the Nsight GUI.
+Note: **no `--profile`**. The script reads the resolved `nsys` absolute path
+from `ENVIRONMENT.md` (it is not on PATH), appends the GPU-metrics flag only if
+the probe marked tier (b) OBTAINABLE — using whichever spelling the probe found
+this binary accepts — and emits `gpukernsum` / `cudaapisum` CSVs into
+`RESULTS_DIR` so the numbers are readable without the Nsight GUI.
+
+To pin a non-default metric set (see cell 5's list):
+
+```python
+!GPU_METRICS_SET=ga100 RUN_ID=L2-B-shared RESULTS_DIR={OUT} TRACES_DIR={OUT}/traces \
+  bash benchmarks/profiling/run_nsys.sh \
+    benchmarks/runners/bench_hf_baseline.py \
+    --fixture shared_prefix --concurrency 15 --out-dir {OUT}
+```
 
 # Layer 3 — torch.profiler, bounded window
 

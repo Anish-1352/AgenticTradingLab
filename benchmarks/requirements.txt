@@ -24,7 +24,13 @@ vllm
 accelerate
 
 # --- measurement / instrumentation ---
-pynvml
+# nvidia-ml-py, NOT pynvml. The import name is the same (`import pynvml`), so no
+# code change follows from this, but the packages conflict when both are
+# installed and torch emits a deprecation warning for the pynvml distribution.
+# NVML sampling underpins every VRAM measurement in the study, so it must not be
+# flaky — install exactly one of the two, and let it be this one.
+#   pip uninstall -y pynvml   # if an image ships it
+nvidia-ml-py
 psutil
 py-spy
 
