@@ -181,6 +181,12 @@ class Manifest:
     trace_url: Optional[str] = None
     trace_sha256: Optional[str] = None
 
+    # True when the minimal torchvision stub was supplied so vLLM 0.26 could
+    # start (no torchvision is installable on torch 2.11.0+cu130). None for arms
+    # that never touch vLLM. Recorded because it describes the import
+    # environment the run actually executed in.
+    torchvision_shim: Optional[bool] = None
+
     fixture_name: Optional[str] = None
     context_tokens: Optional[int] = None
     model: Optional[str] = None
@@ -210,6 +216,7 @@ def build_manifest(
     max_new_tokens: Optional[int] = None,
     profiling_layer: int = 1,
     profiled_window_fraction: Optional[float] = None,
+    torchvision_shim: Optional[bool] = None,
     run_id: Optional[str] = None,
     out_dir: Optional[str] = None,
     context_tokens: Optional[int] = None,
@@ -271,6 +278,7 @@ def build_manifest(
         max_new_tokens=max_new_tokens,
         profiling_layer=profiling_layer,
         profiled_window_fraction=profiled_window_fraction,
+        torchvision_shim=torchvision_shim,
         fixture_name=fixture_name,
         context_tokens=context_tokens,
         model=model,

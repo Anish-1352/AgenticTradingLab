@@ -87,6 +87,7 @@ from common.metrics import (  # noqa: E402
 )
 from common.fixtures import resolve_fixture  # noqa: E402
 from common.monitor import ResourceMonitor  # noqa: E402
+from common import torchvision_shim as tv_shim  # noqa: E402
 
 ARM = "C"
 
@@ -290,8 +291,15 @@ def build_engine(
     max_num_seqs: Optional[int],
     max_model_len: Optional[int],
     seed: int,
+    shim_report: Optional[Dict[str, Any]] = None,
 ):
-    """Construct an AsyncLLMEngine, tolerating the V0/V1 import split."""
+    """Construct an AsyncLLMEngine, tolerating the V0/V1 import split.
+
+    The torchvision shim must already be active before this point — vLLM 0.26's
+    kernel warmup imports MiniMax-M3 vision code unconditionally, even for a
+    text-only Qwen2 model, and that import happens inside the EngineCore
+    *child process*. See main(); the shim is applied before any vllm import.
+    """
     from vllm import AsyncEngineArgs  # noqa: PLC0415
 
     kwargs: Dict[str, Any] = dict(
@@ -639,6 +647,20 @@ async def _amain(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"[resume] could not read {summary_path}: {exc}")
 
+    # BEFORE any vllm import. vLLM 0.26's kernel_warmup pulls in MiniMax-M3
+    # vision code that needs torchvision.transforms.InterpolationMode even for
+    # a text-only Qwen2 model, and torchvision cannot be installed on
+    # torch 2.11.0+cu130. The shim puts a minimal stub on PYTHONPATH so it also
+    # reaches the EngineCore child process, and no-ops if a real torchvision
+    # ever becomes importable.
+    shim = tv_shim.ensure()
+    if shim["active"]:
+        print(f"[shim] torchvision stub active at {shim['shim_root']}")
+        print(f"[shim] {shim['reason']}")
+        print(f"[shim] multiprocessing start method: {shim.get('start_method')}")
+    else:
+        print(f"[shim] not applied — {shim['reason']}")
+
     print(f"\n[engine] constructing vLLM engine ...")
     t_load = time.perf_counter()
     engine, engine_kind = build_engine(
@@ -649,6 +671,7 @@ async def _amain(args: argparse.Namespace) -> int:
         max_num_seqs=args.max_num_seqs,
         max_model_len=args.max_model_len,
         seed=seed,
+        shim_report=shim,
     )
     print(f"[engine] {engine_kind} ready in {time.perf_counter() - t_load:.1f}s")
 
@@ -767,6 +790,7 @@ async def _amain(args: argparse.Namespace) -> int:
         fixture_name=fixture_name,
         max_new_tokens=max_new_tokens,
         profiling_layer=1,
+        torchvision_shim=bool(shim["active"]),
         run_id=run_id,
         out_dir=out_dir,
         context_tokens=context_tokens,
@@ -783,6 +807,7 @@ async def _amain(args: argparse.Namespace) -> int:
             "enable_prefix_caching": args.prefix_caching,
             "max_num_seqs": args.max_num_seqs,
             "vllm_cache_config": cache_cfg,
+            "torchvision_shim_detail": shim,
             **introspector.report(),
         },
     )

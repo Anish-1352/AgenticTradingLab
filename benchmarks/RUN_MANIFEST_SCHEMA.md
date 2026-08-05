@@ -35,6 +35,7 @@ omit a key — a missing key and a null value are different failures.
 | `pip_freeze_sha256` | string | SHA-256 of the full `pip freeze` output. The raw freeze is committed under `results/<run_id>/pip_freeze.txt`. |
 | `config_sha256` | string | SHA-256 of the resolved config file from `configs/` used by this run — after any overrides are applied, not the on-disk template. |
 | `fixture_sha256` | string | SHA-256 of the request fixture from `fixtures/` (prompts, context, arrival pattern). |
+| `torchvision_shim` | bool \| null | `true` when the minimal torchvision stub was supplied so vLLM could import (see below). `null` for arms that never touch vLLM. |
 | `trace_url` | string \| null | External location of the raw trace. `null` when the run was executed with tracing disabled — which is the normal case for throughput runs. |
 | `trace_sha256` | string \| null | SHA-256 of the raw trace artifact. Null iff `trace_url` is null. |
 
@@ -135,6 +136,24 @@ worthless — the field exists precisely to detect that the hardware moved.
   "collection_errors": []
 }
 ```
+
+## Why `torchvision_shim` is recorded
+
+vLLM 0.26's kernel warmup imports MiniMax-M3 vision code unconditionally —
+including for a text-only Qwen2 model — and that import needs
+`torchvision.transforms.InterpolationMode`. No torchvision is installable on
+torch 2.11.0+cu130 (the cu130 wheel's compiled extension is broken; the cu128
+wheel is rejected by torch's CUDA version check), so arm C runs against a
+minimal stub supplying that one symbol.
+
+The flag is in the manifest because it describes the **import environment the
+run actually executed in**, which is not otherwise recoverable from
+`pip_freeze_sha256` — the stub is materialised at runtime and never appears in
+`pip freeze`. A reader comparing two arm-C runs where one used the shim and the
+other had a real torchvision is comparing two different environments.
+
+`false`/`null` on a vLLM run means a real torchvision imported successfully, so
+the shim no-oped. See `common/torchvision_shim.py`.
 
 ## Emission rules
 

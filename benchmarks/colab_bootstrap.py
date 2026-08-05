@@ -43,9 +43,14 @@ THE DEPENDENCY SITUATION (established empirically — do not re-derive)
 5. transformers 5.13.1 works fine without torchvision. Arm B is unaffected.
 6. vLLM does **not**: ``kernel_warmup`` unconditionally imports MiniMax-M3
    vision code needing ``torchvision.transforms.InterpolationMode``, even for a
-   text-only Qwen2 model. That is what the torchvision shim exists for; this
-   script deliberately leaves torchvision **absent** and expects the shim to
-   cover vLLM's import.
+   text-only Qwen2 model. **This is resolved by
+   ``common/torchvision_shim.py``**, which supplies that one symbol via a stub
+   package on ``PYTHONPATH`` (so it also reaches vLLM's EngineCore child
+   process). Arm C applies it automatically before importing vllm, and records
+   ``torchvision_shim`` in the manifest. This script therefore leaves
+   torchvision **deliberately absent** — that is the working configuration, not
+   a gap. If a working torchvision ever becomes installable, the shim detects it
+   and no-ops.
 7. Removing torchvision/torchaudio/torchcodec has been observed to take torch
    and vllm with it. This script therefore removes them **last** and then
    **verifies** the whole target state, failing loudly rather than leaving a
