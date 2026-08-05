@@ -1,0 +1,238 @@
+# Running the benchmark on Colab
+
+Exact cell sequence for an A100 runtime. Run the cells in order — the ordering
+is not cosmetic, and two of the constraints below will silently corrupt results
+if ignored.
+
+## The two rules
+
+**1. Layers 2 and 3 are SEPARATE RUNS.** `nsys` and `torch.profiler` both
+subscribe to CUPTI. Running them at once either errors or, worse, yields a
+silently truncated capture. Never pass `--profile` to a runner invoked through
+`run_nsys.sh`.
+
+**2. Layer 1 is also its own run.** CUPTI instrumentation perturbs the very
+timings Layer 1 exists to measure, so latency and throughput numbers come from
+an *unprofiled* run. `--profile` is off by default for exactly this reason.
+
+So one arm at one concurrency produces up to four runs, one per layer, and each
+emits its own manifest recording which layer it was.
+
+## Preemption
+
+Colab preempts. Two consequences:
+
+- **`--out-dir` must point at mounted Drive.** The local disk does not survive.
+- The runner writes results after **every** concurrency level and resumes by
+  `--run-id`. Re-invoke with the same `--run-id` and completed levels are
+  skipped rather than re-run.
+
+---
+
+## Cell 1 — GPU check
+
+```python
+!nvidia-smi
+```
+
+Stop here if this is not an A100. Note the reported memory, but do not trust it
+as the study's figure — cell 5 measures it from the device.
+
+## Cell 2 — Mount Drive
+
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+
+import os
+OUT = '/content/drive/MyDrive/atl-gpu-bench'
+os.makedirs(OUT, exist_ok=True)
+print(OUT)
+```
+
+## Cell 3 — Clone and check out the branch
+
+```python
+!git clone https://github.com/Anish-1352/AgenticTradingLab.git /content/atl
+%cd /content/atl
+!git checkout feature/gpu-serving-benchmark
+!git rev-parse HEAD
+```
+
+Record that SHA. It is `branch_sha` in every manifest, and a dirty tree marks
+results non-citable.
+
+## Cell 4 — Install
+
+```python
+!pip install -q -r benchmarks/requirements.txt
+```
+
+Then **Nsight, which does not come from pip** — `nsys` and `ncu` ship in the
+NVIDIA apt repository:
+
+```python
+!wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+!dpkg -i cuda-keyring_1.1-1_all.deb
+!apt-get update -qq
+!apt-get install -y -qq nsight-systems-cli nsight-compute
+!which nsys ncu
+```
+
+> Colab sometimes already ships `nsys` under `/opt/nvidia/nsight-systems/*/bin`.
+> Check `!which nsys` before installing; if it is present, skip the apt step.
+
+If `pip install vllm` moved torch, note the new version — cell 5 records it, and
+a torch change mid-study means arm C is not directly comparable to arms A and B.
+
+## Cell 5 — Probe the environment (RUN THIS FIRST)
+
+```python
+!python benchmarks/probe_environment.py --json-out {OUT}/probe.json
+```
+
+This writes `benchmarks/ENVIRONMENT.md` and prints a **measurable vs not
+measurable** table. Read it before running anything else.
+
+Specifically check:
+
+- **Total memory in bytes.** The probe says whether it matches the 80GB
+  (85,094,825,984) or 40GB reference, or neither. Use the measured value.
+- **Tier (c) `ncu_counters`.** If `BLOCKED` with `ERR_NVGPUCTRPERM`, achieved
+  occupancy and Tensor Core utilization are **not obtainable on this host** and
+  Layer 4 is off the table. Adjust the study now, not in the write-up.
+- **Tier (b) `nsys_gpu_metrics`.** If `BLOCKED`, Layer 2 still runs but without
+  SM activity sampling. `run_nsys.sh` handles this automatically.
+
+Commit the regenerated `ENVIRONMENT.md` with the session's results.
+
+## Cell 6 — Build fixtures with the real tokenizer
+
+```python
+!python -m benchmarks.common.fixtures --model Qwen/Qwen2.5-7B-Instruct \
+    --n-requests 105 --context-tokens 2620
+```
+
+Prints, per fixture, the sha256 and the **measured common prefix**. Sanity
+check: `shared_prefix` should show a common prefix near the full context;
+`low_overlap` should be near zero. If they are similar, the prefix-caching
+comparison is measuring nothing.
+
+## Cell 7 — Smoke test
+
+```python
+!python benchmarks/runners/bench_hf_baseline.py --dry-run
+!python benchmarks/runners/bench_hf_baseline.py \
+    --concurrency 1 --n-requests 2 --out-dir {OUT} --run-id smoke-1
+```
+
+`--dry-run` builds the workload and prints token counts without loading a
+model. The second command loads the model and runs two requests end to end.
+Confirm the summary shows `input_tok_per_s` and `output_tok_per_s` separately
+and a plausible TTFT before committing to a full sweep.
+
+---
+
+# Layer 1 — timing + NVML (every run)
+
+The unprofiled sweep. This is where latency and throughput numbers come from.
+
+```python
+!python benchmarks/runners/bench_hf_baseline.py \
+    --fixture shared_prefix --out-dir {OUT} --run-id L1-B-shared
+```
+
+Then the other fixture — **both are required**; the gap between them is the
+prefix-caching result:
+
+```python
+!python benchmarks/runners/bench_hf_baseline.py \
+    --fixture low_overlap --out-dir {OUT} --run-id L1-B-lowoverlap
+```
+
+Preempted mid-sweep? Re-run the identical command. Completed levels are skipped.
+
+# Layer 2 — nsys, full workload
+
+```python
+!RUN_ID=L2-B-shared RESULTS_DIR={OUT} TRACES_DIR={OUT}/traces \
+  bash benchmarks/profiling/run_nsys.sh \
+    benchmarks/runners/bench_hf_baseline.py \
+    --fixture shared_prefix --concurrency 15 --out-dir {OUT}
+```
+
+Note: **no `--profile`**. The script appends `--gpu-metrics-device=0` only if
+the probe marked tier (b) OBTAINABLE, and emits `gpukernsum` / `cudaapisum`
+CSVs into `RESULTS_DIR` so the numbers are readable without the Nsight GUI.
+
+# Layer 3 — torch.profiler, bounded window
+
+A separate invocation. `--profile` on, no nsys:
+
+```python
+!python benchmarks/runners/bench_hf_baseline.py \
+    --fixture shared_prefix --concurrency 15 --profile \
+    --out-dir {OUT} --traces-dir {OUT}/traces --run-id L3-B-shared
+```
+
+The profiler wraps the **concurrent section**, stepped by request completions
+inside it. The manifest records `profiled_window_fraction` — the share of the
+section's wall time the active window covered. Quote that fraction whenever a
+trace-derived number appears; a bounded window is fine, an unlabelled one is
+how v1 went wrong.
+
+Then reduce the trace:
+
+```python
+!python -m benchmarks.common.trace_analysis \
+    {OUT}/traces/L3-B-shared_c15_torch.json.gz \
+    --out {OUT}/L3-B-shared_trace_summary.json
+```
+
+Pass `--decode-start-us` for an exact prefill/decode split; without it the split
+falls back to a name heuristic and labels itself as such.
+
+# Layer 4 — ncu, short slice (only if tier (c) OBTAINABLE)
+
+```python
+!RUN_ID=L4-B TRACES_DIR={OUT}/traces \
+  bash benchmarks/profiling/run_ncu.sh \
+    benchmarks/runners/bench_hf_baseline.py --out-dir {OUT}
+```
+
+The script re-checks `ENVIRONMENT.md` and exits with an explanation if counters
+are unavailable. It forces `--concurrency 1 --n-requests 3`: ncu replays every
+kernel many times, so pointing it at the 105-request sweep would take hours.
+
+nsys and ncu answer different questions and both get reported: nsys gives
+duration-weighted SM activity across the whole run, ncu gives exact per-kernel
+achieved occupancy on a slice. "The GPU was busy 95% of the time" and "those
+kernels ran at 8% occupancy" are both true at once, and together they are the
+finding.
+
+---
+
+## Collecting results
+
+```python
+!ls -la {OUT}
+!du -sh {OUT}/traces
+```
+
+Per run you should have `<run_id>_raw.json`, `<run_id>_summary.json`,
+`<run_id>_manifest.json`, `<run_id>_pip_freeze.txt`, and one
+`<run_id>_c<N>_monitor.csv` per level.
+
+**Commit the summaries, manifests and `ENVIRONMENT.md`. Do not commit traces** —
+they are ~1.5 GB per full run and `benchmarks/.gitignore` excludes them. Upload
+them somewhere durable and record `trace_url` + `trace_sha256` in the manifest.
+
+## Before quoting any number
+
+- `gpu_uuid` identical across the runs being compared? Colab reallocates
+  hardware between sessions; different UUIDs means the delta contains a
+  hardware term.
+- `config_sha256` identical across arms? If not, they are not comparable.
+- `branch_sha` free of the `-dirty` suffix?
+- `max_new_tokens` the same across arms? It is a control variable.
+- Trace-derived claims accompanied by their `profiled_window_fraction`?

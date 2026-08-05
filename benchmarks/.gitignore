@@ -6,8 +6,26 @@ traces/*.json.gz
 traces/*.nsys-rep
 traces/*.ncu-rep
 
+traces/*.sqlite
+traces/*.csv
+
+# Built prompt fixtures: 105 requests x 2620 token ids each. Regenerable
+# EXACTLY from (tokenizer, seed, context_tokens), so only the small
+# <name>.meta.json — which carries the sha256 — is committed. A regeneration
+# whose hash differs from the committed meta is a real signal (tokenizer
+# version drift); one that matches proves the heavy artifact never needed
+# storing. See common/fixtures.py.
+fixtures/*.json
+!fixtures/*.meta.json
+
+# 20 Hz resource samples: ~1-2 MB per concurrency level, and every figure
+# derived from them (peak VRAM, steady-state VRAM, utilization) is already in
+# <run_id>_summary.json. Keep the derived numbers, drop the sample stream.
+results/*_monitor.csv
+
 # Model weights must never be committed.
 *.pt
 *.safetensors
 
 __pycache__/
+.pytest_cache/

@@ -4,8 +4,10 @@ A before/after study of LLM inference serving for Agentic Trading Lab: what the
 platform's agent workload costs on a hosted API, on a naive self-hosted stack,
 and on an optimized self-hosted stack.
 
-**Phase 1 — scaffolding only.** This directory currently contains structure,
-documentation, and the preserved v1 evidence. No benchmark implementation yet.
+**Phase 2 — harness, environment probe, and profiling layers.** Shared
+instrumentation plus one runner (arm B). Arms A and C land in Phase 3.
+
+Start here: [COLAB.md](COLAB.md) has the exact cell sequence.
 
 ## Why this is top-level
 
@@ -37,14 +39,49 @@ careless import away from breaking prod deploys.
 
 ```
 benchmarks/
-├── configs/              # Per-arm run configs (hashed into every manifest)
-├── fixtures/             # Frozen request workloads: prompts, context, arrival pattern
+├── probe_environment.py  # RUN FIRST — writes ENVIRONMENT.md, gates the layers
+├── COLAB.md              # Exact cell sequence for the A100 runtime
+├── common/               # Shared instrumentation, used identically by every arm
+│   ├── config.py         #   loads configs/workload.yaml; hashes the RESOLVED config
+│   ├── fixtures.py       #   exact-length deterministic prompt sets
+│   ├── metrics.py        #   per-request records -> TTFT / ITL / e2e / throughput
+│   ├── monitor.py        #   20 Hz NVML + psutil sampler
+│   ├── trace_analysis.py #   torch.profiler chrome trace -> JSON summary
+│   └── manifest.py       #   run manifest emission
+├── configs/              # workload.yaml — all controlled variables
+├── fixtures/             # Built prompt sets (*.meta.json committed, *.json not)
 ├── runners/              # Arm drivers — one per serving stack
+│   └── bench_hf_baseline.py   # Arm B
+├── profiling/            # run_nsys.sh (Layer 2), run_ncu.sh (Layer 4)
+├── tests/                # Unit tests — no GPU, no torch. `pytest benchmarks/tests/`
 ├── ablations/            # Single-variable isolations off the main arms
 ├── results/              # Committed: derived metrics + one manifest per run
 ├── traces/               # Local scratch for raw traces — gitignored, not committed
 └── v1_characterization/  # Superseded first-pass scripts, preserved as evidence
 ```
+
+## Profiling layers
+
+Four layers, **each its own run**. `nsys` and `torch.profiler` both subscribe to
+CUPTI and conflict if run together, and any CUPTI instrumentation perturbs the
+timings Layer 1 exists to measure.
+
+| Layer | Tool | Produces | Gate |
+|---|---|---|---|
+| 1 | app timing + NVML + psutil | latency (TTFT/ITL/e2e), throughput, VRAM, CPU | none |
+| 2 | `nsys`, full workload | GPU utilization, SM activity, thread states | probe tier (a); SM sampling needs (b) |
+| 3 | `torch.profiler`, bounded window | `cudaLaunchKernel`/sync/memcpy breakdown, kernel timeline | probe tier (a) |
+| 4 | `ncu`, short slice | achieved occupancy, Tensor Core utilization | probe tier (c) |
+
+Layers 2 and 4 answer different questions and both get reported: nsys gives
+duration-weighted SM activity across the whole run; ncu gives exact per-kernel
+achieved occupancy on a slice. "The GPU was busy 95% of the time" and "those
+kernels ran at 8% occupancy" are simultaneously true, and together they are the
+finding.
+
+Run [`probe_environment.py`](probe_environment.py) before anything else — it
+determines which of these the host will actually permit, and prints a
+measurable-vs-not table to reconcile the study plan against.
 
 ## Arms
 

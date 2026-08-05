@@ -1,0 +1,104 @@
+# Controlled variables for the GPU serving study.
+#
+# Every runner (arms A, B, C) loads this same file, so a cross-arm comparison
+# differs only in the serving stack. Anything settable here is a *control
+# variable* and is hashed into every run manifest (`config_sha256`) — a run
+# whose config hash differs from another's is not comparable to it, full stop.
+#
+# Override on the CLI for one-off runs; the manifest hashes the RESOLVED config
+# (post-override), not this file, so an override cannot silently masquerade as
+# the default.
+
+schema_version: 1
+
+model:
+  id: Qwen/Qwen2.5-7B-Instruct
+  dtype: float16
+  # device_map="auto" on a single card is a no-op shard, but it is what v1 used
+  # and what a naive user writes. Arm B keeps it deliberately; arm C does not.
+  device_map: auto
+  trust_remote_code: false
+
+generation:
+  # 256, NOT 5.
+  #
+  # v1 used max_new_tokens=5 against a ~2600-token context. That makes the run
+  # 99.8% prefill by token count, yet its throughput figure was read as decode
+  # performance. Decode is memory-bandwidth-bound GEMV; prefill is compute-bound
+  # GEMM. A 5-token run cannot say anything about the former.
+  #
+  # 256 is a realistic length for a trading decision with a short justification
+  # (decision + confidence + two sentences of reasoning). It is a CONTROL
+  # VARIABLE, is logged in every manifest as `max_new_tokens`, and must be
+  # identical across arms for their numbers to be comparable.
+  max_new_tokens: 256
+  # Greedy: sampling adds run-to-run output-length variance, which shows up as
+  # throughput variance that has nothing to do with the serving stack.
+  temperature: 0.0
+  do_sample: false
+  # Do NOT enable early stopping on EOS for the benchmark. A model that halts at
+  # 40 tokens on some prompts and 256 on others makes output_tok_per_s a
+  # function of the prompt rather than the stack. Fixed output length is what
+  # makes the arms comparable.
+  ignore_eos: true
+
+workload:
+  # Which fixture set to drive. Both must be run to get the prefix-caching
+  # result: the gap between them IS the measurement (see common/fixtures.py).
+  fixture: shared_prefix        # shared_prefix | low_overlap
+  context_tokens: 2620
+  # 105 preserved from v1 (3 agents x 5 multiplier x 7 symbols) so the new
+  # numbers can be placed alongside the old ones. Note v1's 105 was 105 calls to
+  # time.sleep in one script and 105 real generations in another.
+  requests_per_level: 105
+  # 15 is v1's thread count, kept for continuity; 16 is its power-of-two
+  # neighbour, kept so the sweep has a clean doubling series. Both are present
+  # deliberately — if they differ materially, that is itself a finding about
+  # thread-count sensitivity.
+  concurrency: [1, 2, 4, 8, 15, 16, 32, 64, 105]
+  # Three full repeats per level. One run cannot distinguish a real effect from
+  # Colab neighbour noise, and the manifest's gpu_uuid only tells you the card
+  # was the same, not that the host was quiet.
+  repeats: 3
+  # Requests issued all at once up to the concurrency limit (closed loop). An
+  # open-loop Poisson arrival model is a Phase 3 ablation, not the default.
+  arrival: burst
+
+warmup:
+  # Discarded, not measured. Without this the first request of every level
+  # absorbs lazy CUDA context init and kernel autotuning — which is what
+  # produced v1's latency Min/Max spread.
+  requests: 3
+  # Monitor samples before this point are excluded from steady-state VRAM.
+  seconds: 5
+
+seed: 20260820
+
+profiling:
+  # torch.profiler schedule for --profile runs (Layer 3). Steps are driven by
+  # request completions inside the CONCURRENT section — see the runner.
+  #
+  # A bounded window is mandatory: a full-run trace at 105 concurrency is ~1.5GB
+  # and Colab will run out of disk. The manifest records what fraction of run
+  # wall time the active window covered, so nobody can read a 4-step trace as if
+  # it described the whole run — which is the v1 error in its exact original
+  # form.
+  torch_profiler:
+    wait: 5
+    warmup: 2
+    active: 4
+    repeat: 1
+  # ncu replays each kernel many times. Pointing it at the 105-request run would
+  # take hours. Layer 4 gets its own tiny run.
+  ncu:
+    concurrency: 1
+    n_requests: 3
+    launch_count: 40
+
+output:
+  # Point at mounted Drive on Colab — the local disk does not survive
+  # preemption. See COLAB.md.
+  results_dir: benchmarks/results
+  traces_dir: benchmarks/traces
+  # Chrome traces are gzipped on export; raw is ~1.5GB per full run.
+  gzip_traces: true

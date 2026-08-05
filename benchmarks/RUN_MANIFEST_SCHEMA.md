@@ -1,7 +1,10 @@
 # Run Manifest Schema
 
 Every benchmark run emits exactly one manifest JSON alongside its metrics, at
-`results/<run_id>/manifest.json`.
+`results/<run_id>_manifest.json`. Emitted by `common/manifest.py`; the sibling
+artifacts from the same run are `<run_id>_raw.json`, `<run_id>_summary.json`,
+`<run_id>_pip_freeze.txt`, and one `<run_id>_c<N>_monitor.csv` per concurrency
+level.
 
 The rule this enforces: **a number that cannot be traced to a manifest does not
 go in the presentation.** The v1 characterization phase produced figures whose
@@ -35,6 +38,34 @@ omit a key — a missing key and a null value are different failures.
 | `trace_url` | string \| null | External location of the raw trace. `null` when the run was executed with tracing disabled — which is the normal case for throughput runs. |
 | `trace_sha256` | string \| null | SHA-256 of the raw trace artifact. Null iff `trace_url` is null. |
 
+### Controlled variables and profiling provenance
+
+Added in Phase 2. Every one of these is a quantity that, if it silently differed
+between two runs, would make their comparison meaningless while leaving both
+looking valid.
+
+| Field | Type | Description |
+|---|---|---|
+| `max_new_tokens` | integer | Generation length. **A control variable, not an implementation detail.** v1 used 5 against a ~2600-token context, making the run 99.8% prefill, and its throughput figure was then read as decode performance. Two runs with different values are not comparable. |
+| `profiling_layer` | 1\|2\|3\|4 | Which instrumentation layer produced this run. 1 = app timing + NVML, 2 = nsys, 3 = torch.profiler, 4 = ncu. Layers are **separate runs** — nsys and torch.profiler both subscribe to CUPTI and conflict, and any CUPTI instrumentation perturbs the Layer 1 timings. |
+| `profiled_window_fraction` | float \| null | Fraction of the run's concurrent-section wall time covered by the profiler's active window. `null` when `profiling_layer == 1`. A bounded window is unavoidable (a full trace is ~1.5 GB); an *unlabelled* bounded window is how v1 came to explain a 105-task concurrent run with a trace of a sequential single-request one. Quote this fraction wherever a trace-derived number appears. |
+| `fixture_name` | string | `shared_prefix` or `low_overlap`. The gap between them is the prefix-caching result; a number from one is not a number from the other. |
+| `context_tokens` | integer | Exact prompt length. Enforced by the fixture builder, not approximated. |
+| `model` | string | Model id actually loaded. |
+
+### Collection integrity
+
+| Field | Type | Description |
+|---|---|---|
+| `upstream_ref` | string \| null | Which ref `upstream_sha` was read from — `upstream/main`, `origin/main`, or `main`, in that preference order. A fork clone often has no `upstream` remote, and silently substituting `origin/main` without recording it would misstate what the run was pinned to. |
+| `manifest_complete` | bool | False if any field could not be collected. |
+| `collection_errors` | string[] | Why. Empty when complete. |
+| `extra` | object | Run-specific context (concurrency sweep, measured `common_prefix_tokens`, requests per level). Not schema-fixed. |
+
+Collection is best-effort and never fatal: a run that produced real measurements
+must not be discarded because NVML hiccuped. But a manifest with holes must
+never be mistaken for a complete one, which is what `manifest_complete` is for.
+
 ## Why `gpu_uuid` matters
 
 Colab **reallocates physical hardware between sessions.** Two runs that both
@@ -64,24 +95,38 @@ a finding to disclose, not a detail to smooth over.
 
 ## Example
 
+Illustrative only. `gpu_name` and `total_vram_mb` below are placeholders — the
+actual part is whatever `probe_environment.py` measures, which is the open
+question this study inherited (earlier write-ups asserted 40GB; the expected
+part is the 80GB A100). Never copy a hardware value from this example.
+
 ```json
 {
   "run_id": "20260812T141203Z-B-c16-a3f9c1",
   "utc_timestamp": "2026-08-12T14:12:03Z",
   "arm": "B",
   "concurrency": 16,
-  "upstream_sha": "c8aa7010000000000000000000000000000000ex",
+  "upstream_sha": "c8aa7012efcc3bacb8c16d96642f84daf3856fd5",
+  "upstream_ref": "upstream/main",
   "branch_sha": "a3f9c1e0000000000000000000000000000000ex",
-  "gpu_name": "NVIDIA A100-SXM4-40GB",
+  "gpu_name": "<from NVML>",
   "gpu_uuid": "GPU-6d8f2b1a-0000-0000-0000-000000000000",
-  "total_vram_mb": 40960,
+  "total_vram_mb": 0,
   "driver_version": "535.104.05",
   "cuda_version": "12.1",
   "pip_freeze_sha256": "9f2c...",
   "config_sha256": "1b77...",
   "fixture_sha256": "c40a...",
+  "max_new_tokens": 256,
+  "profiling_layer": 3,
+  "profiled_window_fraction": 0.061,
+  "fixture_name": "shared_prefix",
+  "context_tokens": 2620,
+  "model": "Qwen/Qwen2.5-7B-Instruct",
   "trace_url": null,
-  "trace_sha256": null
+  "trace_sha256": null,
+  "manifest_complete": true,
+  "collection_errors": []
 }
 ```
 

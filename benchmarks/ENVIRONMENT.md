@@ -1,125 +1,59 @@
 # Benchmark Environment
 
-**Status: TEMPLATE — unfilled. Complete this on the Colab instance in Phase 0,
-before any measurement run.**
-
-Every field below is a precondition for the study, not documentation written
-after the fact. Two of them (`ncu` permissions, vLLM installability) can
-invalidate an entire planned arm, so they are checked first, while there is
-still time to change the plan.
-
-Fill this in from a live session and commit it. Re-verify — and append a new
-dated block rather than overwriting — for any session that produces committed
-results, because Colab does not guarantee you the same hardware twice.
-
----
-
-## Session
-
-| Field | Value | How to obtain |
-|---|---|---|
-| Date / time (UTC) | _TBD_ | `date -u` |
-| Colab tier | _TBD_ | free / Pro / Pro+ — affects timeout and GPU class |
-| Notebook URL | _TBD_ | |
-
-## GPU
-
-| Field | Value | How to obtain |
-|---|---|---|
-| GPU name | _TBD_ | `nvidia-smi --query-gpu=name --format=csv,noheader` |
-| **GPU UUID** | _TBD_ | `nvidia-smi --query-gpu=uuid --format=csv,noheader` |
-| Total VRAM (MB) | _TBD_ | `nvidia-smi --query-gpu=memory.total --format=csv,noheader` |
-| Driver version | _TBD_ | `nvidia-smi --query-gpu=driver_version --format=csv,noheader` |
-| CUDA runtime version | _TBD_ | `nvcc --version`, and `torch.version.cuda` |
-| Compute capability | _TBD_ | `torch.cuda.get_device_capability()` |
-
-The GPU UUID is the field that makes runs comparable. See
-[RUN_MANIFEST_SCHEMA.md](RUN_MANIFEST_SCHEMA.md#why-gpu_uuid-matters).
-
-## Blocking capability checks
-
-These gate the study design. Answer them before writing any runner.
-
-### `ncu` (Nsight Compute) — does it work?
-
-| Field | Value |
-|---|---|
-| `ncu` present | _TBD_ |
-| Runs without error | _TBD_ |
-| Returns `ERR_NVGPUCTRPERM` | _TBD_ |
+**NOT YET PROBED.** This file is a placeholder. It is *machine-generated* —
+run the probe on the GPU host and commit the result:
 
 ```bash
-which ncu && ncu --version
-ncu --target-processes all python -c "import torch; torch.randn(8,8,device='cuda')@torch.randn(8,8,device='cuda')"
+python benchmarks/probe_environment.py
 ```
 
-`ERR_NVGPUCTRPERM` means GPU performance counters are locked to root. It is the
-**expected** result on hosted Colab and is not fixable from inside the notebook
-(the fix is a host-level `nvidia` module option or running as root). If it
-appears, kernel-level counter analysis is off the table and the study must rely
-on `torch.profiler` timeline data plus NVML sampling. **Record the outcome
-either way** — "we chose not to use ncu" and "ncu was unavailable" are
-different claims, and the presentation should make the true one.
+Do not hand-fill it. Phase 1 shipped a manual template here; it was replaced by
+`probe_environment.py` so that the answers come from the device rather than
+from recollection. The two facts most often misremembered — how much VRAM the
+card has, and whether hardware counters are readable — are exactly the ones a
+hand-filled template gets wrong.
 
-### vLLM — does it install against Colab's torch?
+## What the probe determines
 
-| Field | Value |
+**Device.** Name, SM count, compute capability, GPU UUID, driver and CUDA
+runtime versions, and the **measured** total memory in bytes. Earlier write-ups
+asserted 40GB; the expected part is the 80GB A100 (85,094,825,984 bytes). The
+probe reports the actual value and states explicitly which reference — if
+either — it matches. Assume neither until it has run.
+
+**Three profiling permission tiers, tested separately.** They gate on different
+things, and passing one does not imply the others:
+
+| Tier | What it needs |
 |---|---|
-| vLLM version installed | _TBD_ |
-| Forced a torch reinstall | _TBD_ (yes = major risk) |
-| Resulting torch version | _TBD_ |
-| `LLM(...)` loads and serves a request | _TBD_ |
+| (a) `nsys` CUDA trace | CUPTI tracing. Usually available unprivileged. |
+| (b) `nsys --gpu-metrics-device` | Hardware counter *sampling*. |
+| (c) `ncu` counters | Full per-kernel counter collection with replay. |
 
-```bash
-pip install vllm
-python -c "import torch, vllm; print(torch.__version__, torch.version.cuda, vllm.__version__)"
-```
+A host commonly passes (a) and fails (b) and (c). `ERR_NVGPUCTRPERM` means the
+driver restricts counters to administrators; on Colab the NVIDIA kernel module
+is loaded by the host, so this cannot be changed from inside the session.
 
-vLLM pins narrow torch ranges. If `pip install vllm` pulls its own torch build,
-the environment every earlier measurement was taken in has changed underneath
-you — which silently invalidates cross-arm comparison. If this happens, arm C
-needs its own environment and its own `pip_freeze_sha256`, and that must be
-stated in the writeup.
+If (c) is blocked, **achieved occupancy and Tensor Core utilization are not
+obtainable in this environment.** There is no substitute — NVML
+`utilization.gpu` is kernel residency, and a kernel name matching `s16816gemm`
+shows a tensor-core GEMM ran, not how well it used the pipes. The study plan
+must be reconciled against this before a sweep is run, not after.
 
-## Session limits
+**Also:** whether vLLM imports and whether installing it moved torch underneath
+the earlier arms; free disk against the ~1.5 GB per traced run; and the
+`pip_freeze_sha256` that every run manifest references.
 
-| Field | Value | Notes |
-|---|---|---|
-| Idle timeout | _TBD_ | |
-| Max session length | _TBD_ | Must exceed the longest single run |
-| Disk available (GB) | _TBD_ | `df -h /content` — traces are ~1.5 GB/run |
-| Host RAM (GB) | _TBD_ | `free -g` |
+## Machine-readable block
 
-If max session length is shorter than a full sweep, the sweep must be
-checkpointed per arm — a run split across two sessions is a run split across
-two GPUs unless the UUID is re-checked and matches.
+The generated file ends with a `PROBE_RESULTS_BEGIN/END` block that
+`profiling/run_nsys.sh` and `profiling/run_ncu.sh` parse to decide whether to
+pass `--gpu-metrics-device=0` and whether to run at all. Those scripts fail
+closed when this file is absent or unparsed, so **the probe must run first**.
 
-## Provenance
+## Re-run it per session
 
-| Field | Value | How to obtain |
-|---|---|---|
-| Pinned upstream SHA | _TBD_ | `git rev-parse upstream/main` |
-| Benchmark branch SHA | _TBD_ | `git rev-parse HEAD` |
-| `pip freeze` SHA-256 | _TBD_ | `pip freeze \| sha256sum` |
-| `pip freeze` artifact | _TBD_ | commit the full output alongside this file |
-
-The upstream SHA is pinned because the benchmark measures a serving stack
-against a moving application. Upstream `main` auto-deploys on every merge and
-took 581 commits in July 2026 alone; "measured against ATL" is not a
-reproducible statement without a SHA.
-
----
-
-## Filled sessions
-
-Append one block per session that produced committed results. Do not overwrite
-the template above.
-
-<!--
-### Session YYYY-MM-DD
-- GPU name / UUID:
-- Driver / CUDA:
-- pip_freeze_sha256:
-- ncu available:
-- Runs produced:
--->
+Colab reallocates hardware between sessions. A GPU UUID, a driver version, or a
+counter-permission result from a previous session is not evidence about the
+current one. Re-run the probe on every session that produces committed results,
+and commit the regenerated file alongside them.
