@@ -280,11 +280,18 @@ class ResourceMonitor:
 
         util = _vals("util_gpu_pct")
         umem = _vals("util_mem_pct")
+        # Mean across cores, per sample. The peak is the highest such
+        # all-core mean observed — i.e. the busiest instant of the run, not the
+        # busiest single core, which would read ~100% on any host the moment one
+        # thread spins.
         cpu_means = [
             sum(s.cpu_per_core) / len(s.cpu_per_core)
             for s in self.samples
             if s.cpu_per_core
         ]
+        cpu_single_core_max = max(
+            (max(s.cpu_per_core) for s in self.samples if s.cpu_per_core), default=None
+        )
 
         achieved_hz = None
         if len(self.samples) > 1:
@@ -308,6 +315,8 @@ class ResourceMonitor:
             "cpu_mean_pct_across_cores": (
                 sum(cpu_means) / len(cpu_means) if cpu_means else None
             ),
+            "cpu_peak_pct_across_cores": max(cpu_means) if cpu_means else None,
+            "cpu_max_single_core_pct": cpu_single_core_max,
             "cpu_core_count": self._n_cores,
             "caveats": [
                 "util_gpu_pct is NVML's 'at least one kernel resident' measure. "

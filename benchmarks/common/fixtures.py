@@ -61,6 +61,7 @@ __all__ = [
     "build_fixture",
     "save_fixture",
     "load_fixture",
+    "resolve_fixture",
     "FIXTURE_BUILDERS",
 ]
 
@@ -465,6 +466,51 @@ def load_fixture(path: str) -> Fixture:
             f"recomputed {fx.sha256()}"
         )
     return fx
+
+
+def resolve_fixture(
+    name: str,
+    n_requests: int,
+    context_tokens: int,
+    seed: int,
+    model_id: str,
+    fixtures_dir: str,
+    use_stub: bool = False,
+    rebuild: bool = False,
+):
+    """Load the fixture from disk, or build it. Shared by every arm.
+
+    Prefers a prebuilt ``fixtures/<name>.json`` so a sweep does not re-tokenize
+    on every invocation and — more importantly — so every level of the sweep,
+    and every arm of the study, drives a byte-identical prompt set.
+
+    The ``context_tokens`` mismatch check is deliberately fatal: context length
+    is a controlled variable, and silently benchmarking 2048-token prompts
+    against a config that claims 2620 would corrupt every cross-arm comparison
+    downstream while looking perfectly healthy.
+    """
+    path = os.path.join(fixtures_dir, f"{name}.json")
+    if os.path.exists(path) and not rebuild:
+        fixture = load_fixture(path)
+        if fixture.n_requests < n_requests:
+            raise SystemExit(
+                f"fixture {path} has {fixture.n_requests} requests, need {n_requests}. "
+                f"Rebuild with --rebuild-fixture."
+            )
+        if fixture.context_tokens != context_tokens:
+            raise SystemExit(
+                f"fixture {path} has context_tokens={fixture.context_tokens}, config "
+                f"says {context_tokens}. Context length is a controlled variable — "
+                f"rebuild the fixture or fix the config."
+            )
+        return fixture, "loaded"
+
+    tokenizer = StubTokenizer() if use_stub else load_hf_tokenizer(model_id)
+    fixture = build_fixture(
+        name, tokenizer, n_requests, context_tokens=context_tokens, seed=seed
+    )
+    save_fixture(fixture, fixtures_dir)
+    return fixture, "built"
 
 
 def _main(argv: Optional[List[str]] = None) -> int:

@@ -66,7 +66,14 @@ if _BENCH_ROOT not in sys.path:
 from common import fixtures as fx_mod  # noqa: E402
 from common.config import apply_overrides, config_sha256, load_config  # noqa: E402
 from common.manifest import build_manifest, make_run_id  # noqa: E402
-from common.metrics import RequestRecord, Summary, summarize, write_results  # noqa: E402
+from common.metrics import (  # noqa: E402
+    RequestRecord,
+    Summary,
+    attach_resources,
+    console_lines,
+    summarize,
+    write_results,
+)
 from common.monitor import ResourceMonitor  # noqa: E402
 
 ARM = "B"
@@ -77,44 +84,10 @@ ARM = "B"
 # --------------------------------------------------------------------------
 
 
-def resolve_fixture(
-    name: str,
-    n_requests: int,
-    context_tokens: int,
-    seed: int,
-    model_id: str,
-    fixtures_dir: str,
-    use_stub: bool = False,
-    rebuild: bool = False,
-):
-    """Load the fixture from disk, or build it.
-
-    Prefers a prebuilt ``fixtures/<name>.json`` so a sweep does not re-tokenize
-    on every invocation and, more importantly, so every level of the sweep uses
-    a byte-identical prompt set.
-    """
-    path = os.path.join(fixtures_dir, f"{name}.json")
-    if os.path.exists(path) and not rebuild:
-        fixture = fx_mod.load_fixture(path)
-        if fixture.n_requests < n_requests:
-            raise SystemExit(
-                f"fixture {path} has {fixture.n_requests} requests, need {n_requests}. "
-                f"Rebuild with --rebuild-fixture."
-            )
-        if fixture.context_tokens != context_tokens:
-            raise SystemExit(
-                f"fixture {path} has context_tokens={fixture.context_tokens}, config "
-                f"says {context_tokens}. Context length is a controlled variable — "
-                f"rebuild the fixture or fix the config."
-            )
-        return fixture, "loaded"
-
-    tokenizer = fx_mod.StubTokenizer() if use_stub else fx_mod.load_hf_tokenizer(model_id)
-    fixture = fx_mod.build_fixture(
-        name, tokenizer, n_requests, context_tokens=context_tokens, seed=seed
-    )
-    fx_mod.save_fixture(fixture, fixtures_dir)
-    return fixture, "built"
+# Lives in common/fixtures.py so both arms resolve fixtures identically.
+# Re-exported here because that is where it originally lived and where the
+# Colab-validated invocations import it from.
+resolve_fixture = fx_mod.resolve_fixture
 
 
 # --------------------------------------------------------------------------
@@ -629,20 +602,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             last_window_fraction = info["profiling"]["profiled_window_fraction"]
 
         summary = summarize(run_id, concurrency, records, requested=len(prompts))
+        attach_resources(summary, info["monitor"])
+        summary.notes["torch_peak_allocated_mb"] = info["torch_peak_allocated_mb"]
+        summary.notes["torch_peak_reserved_mb"] = info["torch_peak_reserved_mb"]
         all_records.extend(records)
         summaries.append(summary)
         level_infos.append(info)
 
-        print(f"  completed {summary.completed}/{summary.requested}"
-              f"  errored {summary.errored}")
-        if summary.ttft_p50 is not None:
-            print(f"  TTFT p50 {summary.ttft_p50 * 1000:.1f} ms"
-                  f"  p95 {summary.ttft_p95 * 1000:.1f} ms")
-        if summary.output_tok_per_s is not None:
-            print(f"  output {summary.output_tok_per_s:.1f} tok/s"
-                  f"  |  input {summary.input_tok_per_s:.1f} tok/s")
-        print(f"  torch peak alloc {info['torch_peak_allocated_mb']:.0f} MB"
-              f"  |  nvml peak {info['monitor'].get('vram_peak_mb')}")
+        for line in console_lines(summary):
+            print(line)
+        print(f"  torch alloc   peak {info['torch_peak_allocated_mb']:.0f} MB"
+              f"   reserved {info['torch_peak_reserved_mb']:.0f} MB")
         if "profiling" in info:
             p = info["profiling"]
             if p.get("warning"):

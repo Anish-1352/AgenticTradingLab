@@ -175,6 +175,13 @@ class Summary:
     itl_mean: Optional[float]
     itl_p95: Optional[float]
 
+    # Resource rollup from ResourceMonitor.summary(), attached per level.
+    # Lives on the Summary rather than only in a runner's own bookkeeping so
+    # that <run_id>_summary.json carries latency, throughput AND resource usage
+    # in one object for every arm — a reader should not have to join two
+    # structures to answer "what did this level cost".
+    resources: Dict[str, Any] = field(default_factory=dict)
+
     notes: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -248,6 +255,59 @@ def summarize(
             ),
         },
     )
+
+
+def attach_resources(summary: Summary, monitor_summary: Dict[str, Any]) -> Summary:
+    """Fold a ``ResourceMonitor.summary()`` into a level's Summary.
+
+    Called by every arm so the resource fields land in the same place with the
+    same names, which is what makes an arm-vs-arm diff of the summary JSON
+    meaningful.
+    """
+    summary.resources = dict(monitor_summary or {})
+    return summary
+
+
+def console_lines(summary: Summary) -> List[str]:
+    """Human-readable rollup printed by every runner.
+
+    Shared rather than per-arm so the console shows the same quantities for
+    arm B and arm C. It deliberately surfaces the metrics that were requested
+    but were previously only reachable by opening the JSON: e2e percentiles,
+    ITL, total throughput, completed req/s, steady-state VRAM (not just peak),
+    and CPU/GPU utilization.
+    """
+    r = summary.resources or {}
+
+    def ms(v: Optional[float]) -> str:
+        return "—" if v is None else f"{v * 1000:.1f} ms"
+
+    def num(v: Optional[float], unit: str = "", nd: int = 1) -> str:
+        return "—" if v is None else f"{v:.{nd}f}{unit}"
+
+    lines = [
+        f"  requests      {summary.completed}/{summary.requested} completed"
+        f"  ({summary.errored} errored)  wall {summary.wall_time:.2f}s",
+        f"  TTFT          p50 {ms(summary.ttft_p50)}   p95 {ms(summary.ttft_p95)}"
+        f"   p99 {ms(summary.ttft_p99)}",
+        f"  e2e           p50 {ms(summary.e2e_p50)}   p95 {ms(summary.e2e_p95)}"
+        f"   p99 {ms(summary.e2e_p99)}",
+        f"  ITL           mean {ms(summary.itl_mean)}  p95 {ms(summary.itl_p95)}"
+        f"   (n={summary.notes.get('itl_sample_count', 0)})",
+        f"  throughput    in {num(summary.input_tok_per_s, ' tok/s')}"
+        f"   out {num(summary.output_tok_per_s, ' tok/s')}"
+        f"   total {num(summary.total_tok_per_s, ' tok/s')}",
+        f"  requests/s    {num(summary.completed_requests_per_s, '', 3)}",
+        f"  VRAM          peak {num(r.get('vram_peak_mb'), ' MB', 0)}"
+        f"   steady {num(r.get('vram_steady_state_mb'), ' MB', 0)}",
+        f"  GPU util      mean {num(r.get('util_gpu_mean_pct'), '%')}"
+        f"   max {num(r.get('util_gpu_max_pct'), '%')}"
+        f"   (kernel residency, NOT occupancy)",
+        f"  CPU util      mean {num(r.get('cpu_mean_pct_across_cores'), '%')}"
+        f"   peak {num(r.get('cpu_peak_pct_across_cores'), '%')}"
+        f"   ({r.get('cpu_core_count', '?')} cores)",
+    ]
+    return lines
 
 
 def write_results(

@@ -68,6 +68,70 @@ results non-citable.
 !pip install -q -r benchmarks/requirements.txt
 ```
 
+### The CUDA reconciliation, in order
+
+A fresh Colab instance reproduces this exactly. Do not improvise around it —
+each step exists because the previous one breaks something specific.
+
+**1. vLLM 0.26.0 needs a cu13 torch; Colab ships cu128.** Installing vLLM on
+the stock image and importing it gives:
+
+```
+ImportError: libcudart.so.13: cannot open shared object file
+```
+
+**2. Remove the cu128 stack and let vLLM pull its own torch.** A plain
+`pip install -U vllm` on top of the existing torch does not fix it — the old
+CUDA runtime packages stay resolved:
+
+```python
+!pip uninstall -y vllm torch nvidia-cuda-runtime
+!pip install -q vllm
+!python -c "import torch, vllm; print(torch.__version__, torch.version.cuda, vllm.__version__)"
+```
+
+This resolves to **torch 2.11.0+cu130, CUDA 13.0, vLLM 0.26.0**.
+
+**3. Now transformers breaks.** `torchvision`/`torchaudio` are still the cu128
+builds, and transformers imports torchvision on the way to the model class:
+
+```
+RuntimeError: operator torchvision::nms does not exist
+... failed to import Qwen2ForCausalLM
+```
+
+**4. Do NOT install a cu130 torchvision — that wheel is broken.** It carries the
+same missing `torchvision::nms` extension, so "upgrading" torchvision
+reproduces the identical error. **transformers works fine without any of them**
+for a text-only causal LM, so remove them:
+
+```python
+!pip uninstall -y torchvision torchaudio torchcodec
+!python -c "from transformers import AutoModelForCausalLM; print('transformers OK')"
+```
+
+Do not reintroduce `torchvision`, `torchaudio`, or `torchcodec` later — a
+transitive pull from some other package will resurrect the same failure.
+
+**5. Re-run the probe and re-freeze after EVERY environment change.** Steps 2
+and 4 both change `pip freeze`, which changes `pip_freeze_sha256`, which is what
+makes two runs comparable. A run whose environment moved after the probe carries
+a manifest that describes a machine that no longer existed.
+
+```python
+!python benchmarks/probe_environment.py
+```
+
+The frozen target both arms must run on:
+
+| Package | Version |
+|---|---|
+| torch | 2.11.0+cu130 |
+| CUDA runtime | 13.0 |
+| vLLM | 0.26.0 |
+| transformers | 5.13.1 |
+| torchvision / torchaudio / torchcodec | **removed** |
+
 **Do not install pynvml.** `benchmarks/requirements.txt` pins `nvidia-ml-py`
 instead. The import name is the same (`import pynvml`), but the two
 distributions conflict and torch warns that the `pynvml` package is deprecated.
@@ -175,13 +239,29 @@ comparison is measuring nothing.
 ```python
 !python benchmarks/runners/bench_hf_baseline.py --dry-run
 !python benchmarks/runners/bench_hf_baseline.py \
-    --concurrency 1 --n-requests 2 --out-dir {OUT} --run-id smoke-1
+    --concurrency 1 --n-requests 2 --out-dir {OUT} --run-id smoke-B
 ```
 
-`--dry-run` builds the workload and prints token counts without loading a
-model. The second command loads the model and runs two requests end to end.
-Confirm the summary shows `input_tok_per_s` and `output_tok_per_s` separately
-and a plausible TTFT before committing to a full sweep.
+Then the same for arm C. Prefix caching has **no default** — one of the two
+flags is required, because it is the variable the prefix-cache ablation
+isolates and an implicit value would silently decide that result:
+
+```python
+!python benchmarks/runners/bench_vllm_optimized.py --dry-run --no-prefix-caching
+!python benchmarks/runners/bench_vllm_optimized.py \
+    --no-prefix-caching --concurrency 1 --n-requests 2 \
+    --out-dir {OUT} --run-id smoke-C
+```
+
+`--dry-run` builds the workload and prints token counts without loading a model
+or constructing an engine. The second command in each pair runs two requests end
+to end. Confirm the summary shows `input_tok_per_s` and `output_tok_per_s`
+separately and a plausible TTFT before committing to a full sweep.
+
+For arm C also check the console line `KV cache ... (source: ...)`. If
+`stats_source` is `None`, the vLLM stats path did not resolve on this build —
+see `stats_probe_attempts` in the manifest. **Do not read a missing KV number
+as zero usage**; the prefix-cache ablation depends on it.
 
 ---
 
@@ -203,6 +283,72 @@ prefix-caching result:
 ```
 
 Preempted mid-sweep? Re-run the identical command. Completed levels are skipped.
+
+## Arm C — vLLM
+
+Identical flags to arm B for everything shared, so the two sweeps differ only in
+the serving stack:
+
+```python
+!python benchmarks/runners/bench_vllm_optimized.py \
+    --fixture shared_prefix --enable-prefix-caching \
+    --out-dir {OUT} --run-id L1-C-shared-cacheON
+
+!python benchmarks/runners/bench_vllm_optimized.py \
+    --fixture low_overlap --enable-prefix-caching \
+    --out-dir {OUT} --run-id L1-C-lowoverlap-cacheON
+```
+
+**`concurrency` means the same thing in both arms**: the number of requests
+outstanding simultaneously. Arm B gets there with `ThreadPoolExecutor(N)`; arm C
+with `asyncio.Semaphore(N)` around submission, which the vLLM scheduler then
+batches. The mechanism differs, the offered load does not — and that is what
+makes a B-vs-C delta interpretable.
+
+**Arm C's NVML VRAM is not comparable to arm B's at face value.** vLLM
+pre-allocates its KV pool to `--gpu-memory-utilization` (default 0.90) at
+startup, so NVML reports the *config*, not demand. Use
+`notes.kv_cache.usage_perc_peak` for demand, and read NVML only alongside
+`gpu_memory_utilization` from the manifest.
+
+# Ablations
+
+Each condition runs as a **fresh subprocess** — new CUDA context, new KV pool,
+new prefix cache — so no condition can contaminate another.
+
+```python
+# Prefix caching: 4 runs = {shared_prefix, low_overlap} x {ON, OFF}
+!python benchmarks/ablations/prefix_cache.py \
+    --concurrency 15 --n-requests 105 --out-dir {OUT}
+
+# Continuous batching: --max-num-seqs 1 vs engine default, across levels.
+# Prefix caching is forced OFF in both, so caching cannot confound the result.
+!python benchmarks/ablations/continuous_batching.py \
+    --concurrency 1 4 8 15 32 64 --n-requests 105 --out-dir {OUT}
+
+# GIL attribution: threadpool vs processpool vs sequential.
+!python benchmarks/ablations/gil_attribution.py \
+    --concurrency 15 --n-requests 30 --out-dir {OUT} --with-pyspy
+
+# ...and the real-model anchor. Concurrency 2-3 ONLY: ProcessPoolExecutor
+# loads one ~15GB model replica per worker.
+!python benchmarks/ablations/gil_attribution.py \
+    --real --real-concurrency 2 --real-requests 4 --out-dir {OUT}
+```
+
+Reading them:
+
+- **prefix_cache** prints a **bracket**, not a number. `shared_prefix` (99.4%
+  common prefix) is the upper bound and `low_overlap` (0.3%) the floor; real
+  agent traffic sits between. Quote the interval.
+- **continuous_batching** prints a **curve**. The benefit should grow with
+  offered load — that growth, and where it saturates, is the result. If it does
+  not grow, check the per-level `errored` counts before reporting: a partially
+  OOMed level inflates apparent throughput.
+- **gil_attribution** prints GIL cost as a function of assumed Python fraction,
+  because that fraction is not known a priori. Run `--real` too: it anchors
+  which fraction is plausible. A **negative** GIL cost at low concurrency is a
+  real result — process-pool overhead exceeding lock contention — not a bug.
 
 # Layer 2 — nsys, full workload
 

@@ -4,8 +4,10 @@ A before/after study of LLM inference serving for Agentic Trading Lab: what the
 platform's agent workload costs on a hosted API, on a naive self-hosted stack,
 and on an optimized self-hosted stack.
 
-**Phase 2 — harness, environment probe, and profiling layers.** Shared
-instrumentation plus one runner (arm B). Arms A and C land in Phase 3.
+**Phase 3 — arms B and C, plus three ablations.** Shared instrumentation, the
+naive HuggingFace runner (arm B), the vLLM runner (arm C), and single-variable
+isolations for prefix caching, continuous batching, and GIL attribution. Arm A
+(hosted API) is still outstanding.
 
 Start here: [COLAB.md](COLAB.md) has the exact cell sequence.
 
@@ -51,10 +53,14 @@ benchmarks/
 ├── configs/              # workload.yaml — all controlled variables
 ├── fixtures/             # Built prompt sets (*.meta.json committed, *.json not)
 ├── runners/              # Arm drivers — one per serving stack
-│   └── bench_hf_baseline.py   # Arm B
+│   ├── bench_hf_baseline.py    # Arm B — threads + transformers
+│   └── bench_vllm_optimized.py # Arm C — asyncio + vLLM
 ├── profiling/            # run_nsys.sh (Layer 2), run_ncu.sh (Layer 4)
 ├── tests/                # Unit tests — no GPU, no torch. `pytest benchmarks/tests/`
-├── ablations/            # Single-variable isolations off the main arms
+├── ablations/            # Single-variable isolations; each condition a fresh subprocess
+│   ├── prefix_cache.py         #   caching ON/OFF x both fixtures -> a bracket
+│   ├── continuous_batching.py  #   max_num_seqs 1 vs default -> a curve
+│   └── gil_attribution.py      #   threads vs processes vs sequential
 ├── results/              # Committed: derived metrics + one manifest per run
 ├── traces/               # Local scratch for raw traces — gitignored, not committed
 └── v1_characterization/  # Superseded first-pass scripts, preserved as evidence
@@ -99,6 +105,31 @@ Each arm is swept across concurrency levels. **One run = one arm at one
 concurrency**, emitting one manifest. A sweep is N runs, never one run with
 internal phases — that conflation is precisely what made the v1 numbers
 unusable.
+
+**`concurrency` means offered load in every arm** — the number of requests
+outstanding simultaneously. Arm B reaches it with `ThreadPoolExecutor(N)`, arm C
+with `asyncio.Semaphore(N)` around submission. The mechanism differs; the
+offered load does not. An arm-specific definition of concurrency would make
+every B→C delta meaningless.
+
+One asymmetry to respect when reading results: **arm C's NVML VRAM reflects
+config, not demand.** vLLM pre-allocates its KV pool to
+`gpu_memory_utilization` at startup, so the process figure barely moves with
+load. `notes.kv_cache.usage_perc_peak` is arm C's demand signal, and the
+manifest carries `gpu_memory_utilization` so the NVML number can be read in
+context.
+
+## Ablations
+
+| Ablation | Isolates | Output shape |
+|---|---|---|
+| `prefix_cache.py` | vLLM prefix caching, across both fixtures | a **bracket** — `shared_prefix` (99.4% common prefix) is the upper bound, `low_overlap` (0.3%) the floor, real traffic between |
+| `continuous_batching.py` | scheduler batching, via `--max-num-seqs 1` vs default, caching held off | a **curve** — benefit vs offered load |
+| `gil_attribution.py` | one shared GIL vs one per process vs sequential | GIL cost **conditional on** assumed per-token Python fraction, plus a real-model anchor |
+
+Each condition runs as a fresh subprocess: new CUDA context, new KV pool, new
+prefix cache. Running two conditions in one process would measure the second
+against state the first warmed.
 
 ## Traces are not committed
 
