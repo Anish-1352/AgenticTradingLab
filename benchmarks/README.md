@@ -41,13 +41,17 @@ careless import away from breaking prod deploys.
 
 ```
 benchmarks/
-├── probe_environment.py  # RUN FIRST — writes ENVIRONMENT.md, gates the layers
-├── COLAB.md              # Exact cell sequence for the A100 runtime
+├── COLAB.md              # THE ENTRY POINT — exact cell sequence for the A100 runtime
+├── colab_bootstrap.py    # Cell 2 — one-command environment setup; idempotent
+├── session_start.py      # Cell 4 — per-session provenance; shouts if the GPU changed
+├── probe_environment.py  # Cell 5 — writes ENVIRONMENT.md, gates the profiling layers
+├── calibration_run.sh    # Cell 7 — fixed run measuring the noise floor (--analyze)
 ├── common/               # Shared instrumentation, used identically by every arm
 │   ├── config.py         #   loads configs/workload.yaml; hashes the RESOLVED config
 │   ├── fixtures.py       #   exact-length deterministic prompt sets
 │   ├── metrics.py        #   per-request records -> TTFT / ITL / e2e / throughput
 │   ├── monitor.py        #   20 Hz NVML + psutil sampler
+│   ├── calibration.py    #   calibration log: within-card vs between-card spread
 │   ├── trace_analysis.py #   torch.profiler chrome trace -> JSON summary
 │   └── manifest.py       #   run manifest emission
 ├── configs/              # workload.yaml — all controlled variables
@@ -88,6 +92,27 @@ finding.
 Run [`probe_environment.py`](probe_environment.py) before anything else — it
 determines which of these the host will actually permit, and prints a
 measurable-vs-not table to reconcile the study plan against.
+
+## Session setup
+
+[`COLAB.md`](COLAB.md) is the entry point: eight cells, in order. Three of them
+exist because of failures that already cost real time.
+
+- **[`colab_bootstrap.py`](colab_bootstrap.py)** — the whole dependency
+  resolution in one idempotent command. The chain is narrow (vLLM 0.26 needs a
+  cu13 torch; no working torchvision exists for it; removing torchvision can
+  take torch with it) and was re-derived by hand three times before being
+  captured here. It batches every package change into **one pass** because a
+  runtime restart can make Colab hand back a different physical GPU.
+- **[`session_start.py`](session_start.py)** — appends GPU UUID, versions,
+  `pip_freeze_sha256` and branch SHA to a Drive log, and flags loudly when the
+  card changed. Manifests already record `gpu_uuid`, so a change is recoverable
+  after the fact; this surfaces it before the hours are spent.
+- **[`calibration_run.sh`](calibration_run.sh)** — a short fixed arm-B run at
+  the start of every session, so arm-to-arm deltas are reported against a
+  *measured* noise floor. `--analyze` separates within-card spread from
+  between-card spread; if a metric is flagged `HARDWARE-DOMINATED`, comparing it
+  across a GPU change is a hardware comparison wearing a software label.
 
 ## Arms
 
