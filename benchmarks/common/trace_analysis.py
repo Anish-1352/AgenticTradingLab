@@ -38,6 +38,7 @@ tensor pipes.
 from __future__ import annotations
 
 import json
+import sys
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -47,6 +48,8 @@ __all__ = [
     "analyze_trace",
     "load_trace",
     "analyze_trace_file",
+    "prefill_boundary_from_records",
+    "derive_decode_start_us",
 ]
 
 # Kernel-name substrings (lowercased) that indicate an FP16 Tensor Core GEMM.
@@ -112,27 +115,167 @@ def _classify_name(name: str) -> Optional[str]:
     return None
 
 
+def prefill_boundary_from_records(
+    records: Sequence[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Locate the prefill/decode boundary from per-request timings.
+
+    Under a burst arrival pattern every admitted request prefills at roughly the
+    same time and then decodes. The **last** request to emit its first token
+    therefore marks the end of the prefill phase: after that instant, no request
+    is still prefilling, so GPU work is decode.
+
+    All times are ``perf_counter`` seconds relative to the earliest submit in
+    the set, because perf_counter has no defined epoch and only differences
+    are meaningful.
+    """
+    ok = [
+        r for r in records
+        if not r.get("error")
+        and r.get("t_done") is not None
+        and r.get("t_first_token") is not None
+    ]
+    if not ok:
+        return {"available": False,
+                "reason": "no completed request carries a t_first_token"}
+
+    t0 = min(r["t_submit"] for r in ok)
+    last_first_token = max(r["t_first_token"] for r in ok)
+    t_end = max(r["t_done"] for r in ok)
+
+    wall = t_end - t0
+    boundary_rel = last_first_token - t0
+    return {
+        "available": True,
+        "n_requests": len(ok),
+        "level_wall_s": wall,
+        "prefill_end_rel_s": boundary_rel,
+        "prefill_fraction_of_level": (boundary_rel / wall) if wall > 0 else None,
+        "first_token_earliest_rel_s": min(r["t_first_token"] for r in ok) - t0,
+        "definition": (
+            "boundary = last request's first token. Before it at least one "
+            "request is still prefilling; after it every request is decoding."
+        ),
+    }
+
+
+def derive_decode_start_us(
+    trace: Dict[str, Any],
+    records: Sequence[Dict[str, Any]],
+    window_start_rel_s: Optional[float] = None,
+    section_wall_s: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Map the measured boundary onto the trace clock.
+
+    The two clocks do not share an epoch: ``_raw.json`` carries
+    ``perf_counter`` seconds, a chrome trace carries its own microsecond
+    timebase. They are aligned proportionally — the boundary's position within
+    the profiled wall-clock window is mapped onto the same position within the
+    trace's span.
+
+    That proportional step is an assumption, and it is reported rather than
+    hidden. Two cases matter:
+
+    * **Full-run trace** (``section_wall_s`` absent or ~= the level wall): the
+      mapping is direct and sound.
+    * **Bounded window** (Layer 3 default): the window is stepped by request
+      completions and therefore opens *after* prefill has finished. When
+      ``window_start_rel_s`` shows the window began past the boundary, the
+      honest answer is not a proportional map at all — the whole trace is
+      decode, and that is returned instead.
+    """
+    boundary = prefill_boundary_from_records(records)
+    if not boundary.get("available"):
+        return {"available": False, "reason": boundary.get("reason"),
+                "boundary": boundary}
+
+    events = trace.get("traceEvents", [])
+    spans = [
+        (float(e["ts"]), float(e["ts"]) + float(e["dur"]))
+        for e in events
+        if _is_complete(e) and _cat(e) in (_KERNEL_CATS | _MEMCPY_CATS)
+    ]
+    if not spans:
+        return {"available": False, "reason": "trace contains no GPU events",
+                "boundary": boundary}
+
+    span_start = min(s for s, _ in spans)
+    span_end = max(e for _, e in spans)
+    span_us = span_end - span_start
+
+    boundary_rel = boundary["prefill_end_rel_s"]
+
+    # The traced window opened after prefill finished -> nothing in this trace
+    # is prefill. Proportionally mapping would fabricate a prefill slice that
+    # the capture cannot contain.
+    if window_start_rel_s is not None and window_start_rel_s >= boundary_rel:
+        return {
+            "available": True,
+            "decode_start_us": span_start,
+            "method": "measured_boundary_window_after_prefill",
+            "boundary": boundary,
+            "window_start_rel_s": window_start_rel_s,
+            "note": (
+                "The profiled window opened at "
+                f"{window_start_rel_s:.3f}s, after the prefill boundary at "
+                f"{boundary_rel:.3f}s. This capture contains DECODE ONLY; no "
+                "prefill kernels are present to attribute."
+            ),
+        }
+
+    reference_wall = section_wall_s or boundary["level_wall_s"]
+    if not reference_wall:
+        return {"available": False, "reason": "zero reference wall time",
+                "boundary": boundary}
+
+    frac = boundary_rel / reference_wall
+    decode_start_us = span_start + max(0.0, min(1.0, frac)) * span_us
+
+    return {
+        "available": True,
+        "decode_start_us": decode_start_us,
+        "method": "measured_boundary_proportional_map",
+        "boundary": boundary,
+        "boundary_fraction_of_wall": frac,
+        "trace_span_us": span_us,
+        "assumption": (
+            "The trace's span is assumed to cover the same wall-clock interval "
+            "the per-request timings describe, so the boundary's fractional "
+            "position transfers. Sound for a full-run capture; for a bounded "
+            "window, supply window_start_rel_s so a decode-only window is "
+            "detected instead of proportionally mapped."
+        ),
+    }
+
+
 def _split_prefill_decode(
     kernels: List[Dict[str, Any]],
     decode_start_us: Optional[float],
+    boundary_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Attribute kernel time to prefill vs decode.
 
-    Preferred path is an explicit boundary: the runner knows ``t_first_token``
-    for the profiled request and converts it into the trace clock, so the split
-    is a fact rather than an inference. ``analyze_trace`` records which method
-    was used, because a heuristic split and a measured one do not deserve equal
-    confidence in a write-up.
+    Preferred path is a boundary **measured** from ``_raw.json``'s
+    ``t_first_token`` (see :func:`derive_decode_start_us`), which makes the
+    split a fact about the run rather than an inference from kernel names. The
+    name heuristic remains only as a labelled fallback, and the output always
+    states which produced the number — a heuristic split and a measured one do
+    not deserve equal confidence in a write-up.
     """
     if decode_start_us is not None:
         prefill = sum(k["dur"] for k in kernels if k["ts"] < decode_start_us)
         decode = sum(k["dur"] for k in kernels if k["ts"] >= decode_start_us)
+        meta = boundary_meta or {}
         return {
-            "method": "explicit_boundary",
+            "method": meta.get("method", "explicit_boundary"),
+            "method_confidence": "measured",
             "decode_start_us": decode_start_us,
             "prefill_kernel_time_us": prefill,
             "decode_kernel_time_us": decode,
-            "caveat": None,
+            "boundary_source": meta or {
+                "note": "decode_start_us supplied directly by the caller"
+            },
+            "caveat": meta.get("note") or meta.get("assumption"),
         }
 
     # Fallback: classify by kernel shape. Decode is GEMV-dominated; prefill is
@@ -151,6 +294,7 @@ def _split_prefill_decode(
             unattributed += k["dur"]
     return {
         "method": "heuristic_name_shape",
+        "method_confidence": "inferred — DO NOT QUOTE without the measured boundary",
         "decode_start_us": None,
         "prefill_kernel_time_us": prefill,
         "decode_kernel_time_us": decode,
@@ -167,6 +311,7 @@ def analyze_trace(
     trace: Dict[str, Any],
     decode_start_us: Optional[float] = None,
     top_n: int = 15,
+    boundary_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Analyze a parsed Chrome trace dict. Returns a JSON-serializable summary."""
     events = trace.get("traceEvents", [])
@@ -293,7 +438,7 @@ def analyze_trace(
         ),
         "memcpy_count": len(memcpy_events),
         "memcpy_total_us": float(sum(e["dur"] for e in memcpy_events)),
-        "prefill_decode": _split_prefill_decode(kernels, decode_start_us),
+        "prefill_decode": _split_prefill_decode(kernels, decode_start_us, boundary_meta),
         "caveats": [
             "gpu_busy_us is the union of kernel intervals; total_kernel_time_us "
             "is the plain sum and double-counts stream overlap.",
@@ -321,8 +466,10 @@ def analyze_trace_file(
     out_path: Optional[str] = None,
     decode_start_us: Optional[float] = None,
     top_n: int = 15,
+    boundary_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    result = analyze_trace(load_trace(path), decode_start_us=decode_start_us, top_n=top_n)
+    result = analyze_trace(load_trace(path), decode_start_us=decode_start_us,
+                           top_n=top_n, boundary_meta=boundary_meta)
     result["source_trace"] = path
     if out_path:
         with open(out_path, "w") as fh:
@@ -340,15 +487,52 @@ def _main(argv: Optional[List[str]] = None) -> int:
         "--decode-start-us",
         type=float,
         default=None,
-        help="trace-clock timestamp of first generated token; enables an exact "
-        "prefill/decode split instead of the name heuristic",
+        help="trace-clock timestamp of the prefill/decode boundary, supplied "
+        "directly. Prefer --raw, which measures it.",
     )
+    ap.add_argument(
+        "--raw",
+        default=None,
+        help="path to the run's *_raw.json. MEASURES the prefill/decode "
+        "boundary from t_first_token instead of guessing from kernel names.",
+    )
+    ap.add_argument(
+        "--window-start-rel-s", type=float, default=None,
+        help="when the profiled window opened, relative to the level's first "
+        "submit. Lets a decode-only capture be identified as such.",
+    )
+    ap.add_argument("--section-wall-s", type=float, default=None)
     ap.add_argument("--top-n", type=int, default=15)
     args = ap.parse_args(argv)
 
-    result = analyze_trace_file(
-        args.trace, out_path=args.out, decode_start_us=args.decode_start_us, top_n=args.top_n
-    )
+    trace = load_trace(args.trace)
+    decode_start_us = args.decode_start_us
+    boundary_meta = None
+
+    if args.raw:
+        with open(args.raw) as fh:
+            records = (json.load(fh) or {}).get("records") or []
+        derived = derive_decode_start_us(
+            trace, records,
+            window_start_rel_s=args.window_start_rel_s,
+            section_wall_s=args.section_wall_s,
+        )
+        if derived.get("available"):
+            decode_start_us = derived["decode_start_us"]
+            boundary_meta = derived
+            print(f"[boundary] method={derived['method']} "
+                  f"decode_start_us={decode_start_us:.1f}", file=sys.stderr)
+        else:
+            print(f"[boundary] could not measure: {derived.get('reason')} "
+                  f"-- falling back to the NAME HEURISTIC, which its own "
+                  f"caveat says not to quote.", file=sys.stderr)
+
+    result = analyze_trace(trace, decode_start_us=decode_start_us,
+                           top_n=args.top_n, boundary_meta=boundary_meta)
+    result["source_trace"] = args.trace
+    if args.out:
+        with open(args.out, "w") as fh:
+            json.dump(result, fh, indent=2)
     print(json.dumps(result, indent=2))
     return 0
 

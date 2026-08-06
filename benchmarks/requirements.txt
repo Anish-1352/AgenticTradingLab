@@ -37,3 +37,10 @@ py-spy
 # --- harness ---
 pyyaml
 numpy
+
+# --- analysis / figures ---
+# Figures are rendered headless (Agg). No seaborn: one plotting dependency is
+# enough, and the figures are deliberately plain. Only benchmarks/analysis/
+# imports this; the runners do not, so a GPU host that only collects data does
+# not need it.
+matplotlib

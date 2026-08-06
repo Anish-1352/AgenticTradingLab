@@ -4,10 +4,9 @@ A before/after study of LLM inference serving for Agentic Trading Lab: what the
 platform's agent workload costs on a hosted API, on a naive self-hosted stack,
 and on an optimized self-hosted stack.
 
-**Phase 3 — arms B and C, plus three ablations.** Shared instrumentation, the
-naive HuggingFace runner (arm B), the vLLM runner (arm C), and single-variable
-isolations for prefix caching, continuous batching, and GIL attribution. Arm A
-(hosted API) is still outstanding.
+**Phase 4 — analysis and figures.** Everything from phase 3 plus an
+`analysis/` package that turns run artifacts into a matched comparison, six
+figures, and a generated `RESULTS.md`. Arm A (hosted API) is still outstanding.
 
 Start here: [COLAB.md](COLAB.md) has the exact cell sequence.
 
@@ -61,6 +60,13 @@ benchmarks/
 │   └── bench_vllm_optimized.py # Arm C — asyncio + vLLM
 ├── profiling/            # run_nsys.sh (Layer 2), run_ncu.sh (Layer 4)
 ├── tests/                # Unit tests — no GPU, no torch. `pytest benchmarks/tests/`
+├── analysis/            # Phase 4 — reads results, refuses unmatched comparisons
+│   ├── loader.py        #   provenance guard: HARD REFUSAL on mismatched runs
+│   ├── compare_arms.py  #   matched table (md + csv); VRAM kept in its own section
+│   ├── raw_stats.py     #   per-request: ITL trajectory, starvation, ignore_eos
+│   ├── plots.py         #   six figures, PNG + SVG, each carrying its provenance
+│   ├── make_results.py  #   generates RESULTS.md from the JSONs, one command
+│   └── RESULTS.md       #   GENERATED — never hand-edited
 ├── ablations/            # Single-variable isolations; each condition a fresh subprocess
 │   ├── prefix_cache.py         #   caching ON/OFF x both fixtures -> a bracket
 │   ├── continuous_batching.py  #   max_num_seqs 1 vs default -> a curve
@@ -155,6 +161,33 @@ context.
 Each condition runs as a fresh subprocess: new CUDA context, new KV pool, new
 prefix cache. Running two conditions in one process would measure the second
 against state the first warmed.
+
+## Analysis
+
+[`analysis/`](analysis/) turns run artifacts into the write-up. One command
+regenerates everything:
+
+```bash
+python -m analysis.make_results --arm-b <B>_summary.json --arm-c <C>_summary.json \
+  --trace-analysis <L3>_trace.json --out analysis/RESULTS.md \
+  --figures-dir analysis/figures --render-figures
+```
+
+Three properties are deliberate:
+
+- **The provenance guard is a refusal, not a warning.** `compare_arms` and
+  `make_results` exit non-zero and write nothing when runs disagree on
+  `gpu_uuid`, `fixture_sha256`, `config_sha256`, `max_new_tokens` or
+  `pip_freeze_sha256`. `--allow-mismatch <field>` waives it, and the waiver is
+  printed in the document.
+- **VRAM never appears in the comparison table.** Arm B's NVML peak is demand;
+  arm C's is `gpu_memory_utilization` pre-allocating the KV pool. They live in
+  separate sections with the reason attached, because adjacent columns would
+  read as "arm C uses more memory" — which is false.
+- **`RESULTS.md` is generated.** Every number is read from a summary JSON and
+  attributed to a `run_id`; caveats are derived from the artifacts (a null
+  `stats_source`, a level shorter than the monitor's warm-up window) rather
+  than written by hand.
 
 ## Traces are not committed
 
