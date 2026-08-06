@@ -139,12 +139,19 @@ worthless — the field exists precisely to detect that the hardware moved.
 
 ## Why `torchvision_shim` is recorded
 
-vLLM 0.26's kernel warmup imports MiniMax-M3 vision code unconditionally —
-including for a text-only Qwen2 model — and that import needs
-`torchvision.transforms.InterpolationMode`. No torchvision is installable on
-torch 2.11.0+cu130 (the cu130 wheel's compiled extension is broken; the cu128
-wheel is rejected by torch's CUDA version check), so arm C runs against a
-minimal stub supplying that one symbol.
+vLLM 0.26 reaches torchvision from at least two directions, neither guarded by
+a feature check: `kernel_warmup` imports MiniMax-M3 vision code (needing
+`transforms.InterpolationMode`) even for a text-only Qwen2 model, and
+`transformers_utils.config` chains into `transformers/image_utils.py` (needing
+`io.ImageReadMode` and `io.decode_image`).
+
+No torchvision is installable on torch 2.11.0+cu130 (the cu130 wheel's compiled
+extension is broken; the cu128 wheel is rejected by torch's CUDA version check),
+so arm C runs against an **import-only stub**: any `torchvision.*` submodule
+resolves, the two enums are exact, and every other symbol raises `RuntimeError`
+if called. The stub ships no distribution metadata, so
+`is_torchvision_available()` still reports False and transformers' *optional*
+vision paths stay switched off.
 
 The flag is in the manifest because it describes the **import environment the
 run actually executed in**, which is not otherwise recoverable from

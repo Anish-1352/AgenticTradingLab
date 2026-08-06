@@ -116,35 +116,212 @@ def test_stub_is_identifiable_as_a_stub(tmp_path):
     assert "True" in proc.stdout
 
 
-def test_stub_refuses_other_attributes_loudly(tmp_path):
-    """Silently returning something plausible for a real image op would corrupt
-    results; an AttributeError stops."""
-    root = tvs.materialize(str(tmp_path / "shim"))
-    proc = _run_in_child(root, "import torchvision; torchvision.io")
-    assert proc.returncode != 0
-    assert "AttributeError" in proc.stderr
-    assert "ATL benchmark stub" in proc.stderr
+def test_top_level_attributes_resolve_but_raise_on_use(tmp_path):
+    """The contract changed deliberately in the second pass.
 
-
-def test_stub_refuses_other_transforms_loudly(tmp_path):
-    """`from torchvision.transforms import Resize` must fail, not return a stub.
-
-    The import machinery converts the module __getattr__'s AttributeError into
-    an ImportError and does not always carry the original message through, so
-    this asserts the failure rather than the wording; the wording is asserted
-    via attribute access below.
+    v1 of this stub raised AttributeError on every unknown attribute, which is
+    what produced an endless one-symbol-at-a-time chase through transformers'
+    import graph. Now attribute access resolves and *use* raises — the failure
+    still cannot pass fabricated data to a caller, it just happens one step
+    later.
     """
     root = tvs.materialize(str(tmp_path / "shim"))
-    proc = _run_in_child(root, "from torchvision.transforms import Resize")
-    assert proc.returncode != 0
-    assert "ImportError" in proc.stderr or "AttributeError" in proc.stderr
+    proc = _run_in_child(root, (
+        "import torchvision\n"
+        "nms = torchvision.ops.nms          # resolves\n"
+        "try:\n"
+        "    nms(1, 2)                      # raises\n"
+        "    print('DID NOT RAISE')\n"
+        "except RuntimeError as e:\n"
+        "    print('RuntimeError', 'ATL' in str(e))\n"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "RuntimeError True"
 
 
-def test_stub_transforms_attribute_access_explains_itself(tmp_path):
+def test_stub_symbols_import_but_raise_on_use(tmp_path):
+    """Imports must resolve; USE must raise.
+
+    Import-time failure is what produced the one-symbol-at-a-time chase through
+    transformers' import graph. Deferring the failure to use ends that chase
+    without ever letting fabricated data through.
+    """
     root = tvs.materialize(str(tmp_path / "shim"))
-    proc = _run_in_child(root, "import torchvision.transforms as t; t.Resize")
-    assert proc.returncode != 0
-    assert "ATL benchmark stub" in proc.stderr
+    proc = _run_in_child(root, (
+        "from torchvision.transforms import Resize\n"
+        "try:\n"
+        "    Resize(224)\n"
+        "except RuntimeError as e:\n"
+        "    print('RAISED', 'ATL' in str(e))\n"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "RAISED True"
+
+
+# --------------------------------------------------------------------------
+# torchvision.io — the reported failure
+# --------------------------------------------------------------------------
+
+
+def test_io_provides_the_symbols_transformers_imports(tmp_path):
+    """transformers/image_utils.py:54 — the exact failing import."""
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, (
+        "from torchvision.io import ImageReadMode, decode_image;"
+        "print(int(ImageReadMode.RGB), len(list(ImageReadMode)))"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "3 5"
+
+
+def test_image_read_mode_members_and_values():
+    assert dict(tvs.IMAGE_READ_MODE_MEMBERS) == {
+        "UNCHANGED": 0, "GRAY": 1, "GRAY_ALPHA": 2, "RGB": 3, "RGB_ALPHA": 4,
+    }
+
+
+def test_decode_image_raises_when_called(tmp_path):
+    """Present for import, never silently returning wrong data."""
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, (
+        "from torchvision.io import decode_image\n"
+        "try:\n"
+        "    decode_image(b'not an image')\n"
+        "    print('DID NOT RAISE')\n"
+        "except RuntimeError as e:\n"
+        "    print('RuntimeError', 'CALLED' in str(e))\n"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "RuntimeError True"
+
+
+# --------------------------------------------------------------------------
+# no more whack-a-mole: arbitrary submodules resolve
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("snippet", [
+    "from torchvision.transforms import functional as F; F.resize",
+    "from torchvision.transforms.v2 import functional as F; F.to_dtype",
+    "from torchvision.transforms.v2 import Compose, Resize",
+    "import torchvision.ops",
+    "import torchvision.datasets",
+    "import torchvision.models",
+    "from torchvision.utils import make_grid",
+    "from torchvision.io.image import ImageReadMode",
+    "import torchvision.some.deeply.nested.module",
+])
+def test_arbitrary_submodules_resolve(tmp_path, snippet):
+    """Adding symbols one failure at a time is not a strategy — this is why."""
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, snippet)
+    assert proc.returncode == 0, f"{snippet!r} failed:\n{proc.stderr}"
+
+
+@pytest.mark.parametrize("expr", [
+    "__import__('torchvision.ops', fromlist=['nms']).nms(1, 2)",
+    "__import__('torchvision.utils', fromlist=['make_grid']).make_grid(None)",
+    "__import__('torchvision.transforms.v2', fromlist=['Resize']).Resize(224)",
+    "__import__('torchvision.transforms', fromlist=['functional']).functional.resize(1, 2)",
+])
+def test_fabricated_symbols_raise_runtime_error_on_use(tmp_path, expr):
+    """Every fabricated path must fail as RuntimeError, not TypeError/AttributeError.
+
+    A module used as a class must raise the stub's explanation too, which is why
+    fabricated modules are a callable ModuleType subclass.
+    """
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, (
+        f"try:\n"
+        f"    {expr}\n"
+        f"    print('DID NOT RAISE')\n"
+        f"except RuntimeError:\n"
+        f"    print('RuntimeError')\n"
+        f"except Exception as e:\n"
+        f"    print(type(e).__name__)\n"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "RuntimeError"
+
+
+def test_from_import_of_a_submodule_yields_a_module_not_a_poison_type(tmp_path):
+    """CPython checks hasattr() BEFORE importing a submodule for `from X import Y`.
+
+    A __getattr__ that returned a poison symbol immediately would shadow every
+    submodule import, and `functional.resize` would then raise a confusing
+    AttributeError instead of the stub's explanation.
+    """
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, (
+        "from torchvision.transforms import functional as F;"
+        "import types;"
+        "print(isinstance(F, types.ModuleType))"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "True"
+
+
+# --------------------------------------------------------------------------
+# detectable as unavailable — the second-order effect
+# --------------------------------------------------------------------------
+
+
+def test_stub_has_no_distribution_metadata(tmp_path):
+    """The property that keeps transformers' vision paths switched off.
+
+    transformers' _is_package_available pairs find_spec with
+    importlib.metadata.version. The stub satisfies the first and must NEVER
+    satisfy the second.
+    """
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, (
+        "import importlib.util, importlib.metadata as md\n"
+        "found = importlib.util.find_spec('torchvision') is not None\n"
+        "try:\n"
+        "    md.version('torchvision'); meta = True\n"
+        "except md.PackageNotFoundError:\n"
+        "    meta = False\n"
+        "print(found, meta)\n"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    # importable, but not a registered distribution
+    assert proc.stdout.strip() == "True False"
+
+
+def test_transformers_is_package_available_would_return_false(tmp_path):
+    """Replicates transformers._is_package_available against the stub."""
+    root = tvs.materialize(str(tmp_path / "shim"))
+    proc = _run_in_child(root, (
+        "import importlib.util, importlib.metadata as md\n"
+        "def _is_package_available(name):\n"
+        "    exists = importlib.util.find_spec(name) is not None\n"
+        "    if exists:\n"
+        "        try:\n"
+        "            md.version(name)\n"
+        "        except md.PackageNotFoundError:\n"
+        "            exists = False\n"
+        "    return exists\n"
+        "print(_is_package_available('torchvision'))\n"
+    ))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "False"
+
+
+def test_no_dist_info_is_written(tmp_path):
+    """Guards the invariant directly against a future 'helpful' addition."""
+    root = tvs.materialize(str(tmp_path / "shim"))
+    found = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        found += [d for d in dirnames if d.endswith((".dist-info", ".egg-info"))]
+    assert found == [], f"stub must never register as an installed dist: {found}"
+
+
+def test_ensure_reports_detectable_as_unavailable(tmp_path, monkeypatch):
+    root = str(tmp_path / "shim")
+    monkeypatch.setenv(tvs._ENV_MARKER, root)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    report = tvs.ensure(shim_root=root, force=True)
+    assert report["detectable_as_unavailable"] is True
 
 
 def test_probe_rejects_the_stub_itself(tmp_path):

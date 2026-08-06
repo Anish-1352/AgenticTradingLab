@@ -19,10 +19,44 @@ And torchvision **cannot be installed** on torch 2.11.0+cu130:
   major mismatch.
 
 Both confirmed empirically. This shim is therefore the resolution, not a
-stopgap: it supplies the single symbol the Qwen2 path actually touches and
-nothing else. It deliberately does **not** attempt to emulate torchvision — a
-partial implementation of image ops would be far more dangerous than an
-ImportError, because it would fail silently and wrongly on a real vision model.
+stopgap.
+
+vLLM's MiniMax import is not the only one. ``vllm.transformers_utils.config``
+pulls in ``transformers.models.auto.image_processing_auto``, which reaches
+``transformers/image_utils.py``::
+
+    from torchvision.io import ImageReadMode, decode_image
+
+and that import is **not** guarded by ``is_torchvision_available()``.
+
+IMPORTS RESOLVE; USE RAISES
+---------------------------
+Chasing these one ImportError at a time is not a strategy — transformers'
+import graph will keep producing them. So the stub fabricates **any**
+``torchvision.*`` submodule on demand via a meta-path finder, and every symbol
+it hands back is a poison object that raises ``RuntimeError`` the moment it is
+called or instantiated.
+
+``InterpolationMode`` and ``ImageReadMode`` are defined exactly (real values,
+real enum semantics) because they are *read* at import time, not called.
+Everything else exists only to let an import statement complete. Nothing in the
+stub ever returns data a caller could mistake for a real image operation: a
+plausible-looking tensor would be far worse than a raise, because it would flow
+into real code and produce results that look valid.
+
+AND IT IS STILL DETECTED AS UNAVAILABLE
+---------------------------------------
+Making the stub importable does **not** make feature detection think torchvision
+is installed. ``transformers._is_package_available`` pairs ``find_spec`` with
+``importlib.metadata.version``, and the stub deliberately ships **no
+distribution metadata** — so the metadata lookup raises and
+``is_torchvision_available()`` returns False. Verified directly; see
+``tests/test_torchvision_shim.py``.
+
+That is the reason the reported failure was not preventable by a marker: the
+guard was already returning False, and the failing import simply is not behind
+it. **Never add a .dist-info to the stub** — its absence is what keeps optional
+vision paths switched off while unconditional imports still resolve.
 
 THE HARD PART: THE CHILD PROCESS
 --------------------------------
@@ -72,6 +106,8 @@ from typing import Any, Dict, List, Optional
 
 __all__ = [
     "INTERPOLATION_MEMBERS",
+    "IMAGE_READ_MODE_MEMBERS",
+    "REAL_SUBMODULES",
     "SHIM_VERSION",
     "default_shim_root",
     "real_torchvision_importable",
@@ -90,6 +126,25 @@ INTERPOLATION_MEMBERS = (
     ("HAMMING", "hamming"),
     ("LANCZOS", "lanczos"),
     ("NEAREST_EXACT", "nearest-exact"),
+)
+
+# torchvision.io.ImageReadMode is an IntEnum; the integer values are mirrored
+# so any code comparing or serialising them behaves identically.
+IMAGE_READ_MODE_MEMBERS = (
+    ("UNCHANGED", 0),
+    ("GRAY", 1),
+    ("GRAY_ALPHA", 2),
+    ("RGB", 3),
+    ("RGB_ALPHA", 4),
+)
+
+# Submodules backed by real generated files. Everything else under torchvision
+# is fabricated on demand by the finder, so no future missing submodule can
+# break an import.
+REAL_SUBMODULES = (
+    "torchvision._shim_support",
+    "torchvision.transforms",
+    "torchvision.io",
 )
 
 # Marks the stub as ours in `torchvision.__version__`, so a confused reader
@@ -133,42 +188,109 @@ def default_shim_root() -> str:
 
 
 def _package_init_src() -> str:
+    real = ", ".join(f'"{m}"' for m in REAL_SUBMODULES)
     return f'''"""ATL benchmark stub — NOT the real torchvision.
 
-Exists only so vLLM 0.26's unconditional MiniMax-M3 vision import resolves on
-an environment where torchvision cannot be installed (torch 2.11.0+cu130: the
+Exists so vLLM 0.26 and transformers can complete their *imports* on an
+environment where torchvision cannot be installed (torch 2.11.0+cu130: the
 cu130 wheel's compiled extension is broken, the cu128 wheel is rejected by
 torch's CUDA version check).
 
-It provides `torchvision.transforms.InterpolationMode` and NOTHING ELSE. Any
-other torchvision attribute raises AttributeError with this explanation — a
-loud failure is correct here, because silently returning something plausible
-for a real image operation would corrupt results instead of stopping.
+TWO PROPERTIES, DELIBERATELY IN TENSION
+---------------------------------------
+1. **Importable.** Any ``torchvision.*`` submodule resolves, and any attribute
+   of one resolves. Unconditional imports therefore succeed.
+2. **Detectably unavailable.** This package ships **no installed distribution
+   metadata**, so ``importlib.metadata.version("torchvision")`` raises
+   PackageNotFoundError. Feature-detection helpers that pair ``find_spec`` with
+   a metadata lookup — including transformers' ``_is_package_available`` and
+   therefore ``is_torchvision_available()`` — evaluate this as **False** and
+   skip their optional vision paths.
+
+   *Never add a .dist-info directory here.* Its absence is what keeps the stub
+   from being mistaken for a working install.
+
+NOTHING IS USABLE
+-----------------
+Every fabricated attribute is a poison object that raises RuntimeError the
+moment it is **called or instantiated**. The stub resolves imports; it never
+returns a value a caller could mistake for a real image operation. Failing at
+use rather than at import is the point: import-time failure was producing an
+endless one-symbol-at-a-time chase through transformers' import graph, while
+use-time failure ends that chase without ever letting wrong data through.
 
 Generated by benchmarks/common/torchvision_shim.py. Do not edit.
 """
 
+import importlib.abc
+import importlib.machinery
+import sys
+
+# Real file in this package, resolved by normal machinery before the finder
+# below is installed.
+from ._shim_support import ShimModule as _ShimModule
+from ._shim_support import shim_getattr as _shim_getattr
+
 __version__ = "{SHIM_VERSION}"
 __atl_shim__ = True
 
-from . import transforms  # noqa: F401
+# Backed by real files in this package; the finder must not shadow them.
+_REAL_SUBMODULES = frozenset({{{real}}})
 
 
-def __getattr__(name):
-    raise AttributeError(
-        f"torchvision.{{name}} is not available: this is the ATL benchmark stub, "
-        f"which provides only transforms.InterpolationMode. Real torchvision "
-        f"cannot be installed on torch 2.11.0+cu130. If you need real "
-        f"torchvision functionality, this environment cannot support it."
-    )
+class _ShimLoader(importlib.abc.Loader):
+    def create_module(self, spec):
+        # ShimModule, not a plain module: it is callable, so a fabricated name
+        # used as a class or function raises the stub's RuntimeError instead of
+        # "module object is not callable".
+        return _ShimModule(spec.name)
+
+    def exec_module(self, module):
+        # Empty __path__ marks it a package, so deeper submodules fabricate too
+        # (e.g. torchvision.transforms.v2.functional).
+        module.__path__ = []
+
+
+class _ShimFinder(importlib.abc.MetaPathFinder):
+    """Fabricates any torchvision submodule that is not backed by a real file.
+
+    This is the answer to "adding symbols one failure at a time is not a
+    strategy": rather than chasing each ImportError, every submodule under
+    torchvision resolves, and the failure is deferred to use.
+    """
+
+    def find_spec(self, fullname, path=None, target=None):
+        if not fullname.startswith("torchvision."):
+            return None
+        if fullname in _REAL_SUBMODULES:
+            return None  # defer to the real file
+        return importlib.machinery.ModuleSpec(fullname, _ShimLoader(), is_package=True)
+
+
+if not any(isinstance(f, _ShimFinder) for f in sys.meta_path):
+    sys.meta_path.insert(0, _ShimFinder())
+
+from . import io  # noqa: E402,F401
+from . import transforms  # noqa: E402,F401
+
+__getattr__ = _shim_getattr("torchvision")
 '''
 
 
 def _transforms_init_src() -> str:
     members = "\n".join(f'    {name} = "{value}"' for name, value in INTERPOLATION_MEMBERS)
-    return f'''"""ATL benchmark stub — only InterpolationMode. NOT real torchvision.transforms."""
+    return f'''"""ATL benchmark stub — torchvision.transforms. NOT the real thing.
+
+InterpolationMode is defined exactly; everything else resolves to a poison
+object that raises when called. Submodules (functional, v2, v2.functional, …)
+are fabricated by the finder in torchvision/__init__.py.
+
+Generated by benchmarks/common/torchvision_shim.py. Do not edit.
+"""
 
 from enum import Enum
+
+from .. import _shim_support as _s
 
 __atl_shim__ = True
 
@@ -185,12 +307,143 @@ class InterpolationMode(str, Enum):
 
 __all__ = ["InterpolationMode"]
 
+__getattr__ = _s.shim_getattr("torchvision.transforms")
+'''
 
-def __getattr__(name):
-    raise AttributeError(
-        f"torchvision.transforms.{{name}} is not available: this is the ATL "
-        f"benchmark stub, which provides only InterpolationMode."
+
+def _io_init_src() -> str:
+    members = "\n".join(
+        f"    {name} = {value}" for name, value in IMAGE_READ_MODE_MEMBERS
     )
+    return f'''"""ATL benchmark stub — torchvision.io. NOT the real thing.
+
+Reached via transformers/image_utils.py:
+    ``from torchvision.io import ImageReadMode, decode_image``
+which is NOT guarded by is_torchvision_available(), so the symbols must exist
+even though the stub is correctly detected as an unavailable package.
+
+Generated by benchmarks/common/torchvision_shim.py. Do not edit.
+"""
+
+from enum import IntEnum
+
+from .. import _shim_support as _s
+
+__atl_shim__ = True
+
+
+class ImageReadMode(IntEnum):
+    """Mirrors torchvision.io.ImageReadMode, including its integer values."""
+
+{members}
+
+
+def decode_image(*args, **kwargs):
+    """Present for import; raises if actually called.
+
+    Returning a plausible tensor here would be far worse than raising: it would
+    feed fabricated pixel data into a real code path and produce results that
+    look valid. This benchmark drives a text-only Qwen2 model, so this function
+    should never be reached — if it is, that is a genuine finding.
+    """
+    raise RuntimeError(
+        "torchvision.io.decode_image was CALLED through the ATL benchmark stub. "
+        "Real torchvision is not installable on this environment "
+        "(torch 2.11.0+cu130), and the stub never returns image data. A code "
+        "path that genuinely decodes images is being exercised — investigate "
+        "rather than stubbing further."
+    )
+
+
+__all__ = ["ImageReadMode", "decode_image"]
+
+__getattr__ = _s.shim_getattr("torchvision.io")
+'''
+
+
+def _shim_support_src() -> str:
+    """Shared poison factory, importable by the real submodules."""
+    return '''"""Internal support for the ATL torchvision stub. Not part of torchvision."""
+
+import importlib
+import types
+
+__atl_shim__ = True
+
+_MSG = (
+    "{qualname} was reached through the ATL benchmark torchvision stub and "
+    "cannot be executed. Real torchvision is not installable on this "
+    "environment (torch 2.11.0+cu130). The stub exists so imports resolve; "
+    "nothing in it performs real work. If this fires, a code path that "
+    "genuinely needs torchvision is being exercised - investigate rather than "
+    "stubbing further."
+)
+
+
+class _UnavailableMeta(type):
+    """Metaclass so a poison symbol raises on call AND on instantiation."""
+
+    def __call__(cls, *args, **kwargs):
+        raise RuntimeError(cls._atl_message)
+
+    def __repr__(cls):
+        return f"<ATL torchvision stub: {cls.__name__} unavailable>"
+
+
+def unavailable(qualname):
+    """Poison stand-in for ``qualname``.
+
+    A *type*, not a function: types are callable (instantiation raises), usable
+    as base classes, and valid in isinstance checks - so a module that
+    subclasses or annotates against a torchvision symbol still imports.
+    """
+    name = qualname.rsplit(".", 1)[-1]
+    return _UnavailableMeta(
+        name, (), {"_atl_message": _MSG.format(qualname=qualname),
+                   "__atl_shim__": True, "__atl_qualname__": qualname}
+    )
+
+
+def _resolve(module_name, name):
+    """Attribute lookup: prefer a submodule, fall back to a poison symbol.
+
+    The submodule attempt is essential. CPython's `from X import Y` checks
+    `hasattr(X, Y)` BEFORE trying to import `X.Y`, so a __getattr__ that
+    immediately returned a poison symbol would shadow every submodule import -
+    `from torchvision.transforms import functional` would hand back a type
+    rather than a module, and the subsequent `functional.resize` would raise a
+    confusing AttributeError instead of the stub's explanation.
+    """
+    if name.startswith("__") and name.endswith("__"):
+        raise AttributeError(name)
+    try:
+        return importlib.import_module(f"{module_name}.{name}")
+    except Exception:
+        return unavailable(f"{module_name}.{name}")
+
+
+class ShimModule(types.ModuleType):
+    """A fabricated torchvision submodule.
+
+    Callable so that a name imported as a submodule but *used* as a class or
+    function - `from torchvision.transforms import Compose; Compose(...)` -
+    still raises the stub's RuntimeError rather than a bare
+    "module is not callable" TypeError.
+    """
+
+    __atl_shim__ = True
+
+    def __call__(self, *args, **kwargs):
+        raise RuntimeError(_MSG.format(qualname=self.__name__))
+
+    def __getattr__(self, name):
+        return _resolve(self.__name__, name)
+
+
+def shim_getattr(module_name):
+    def __getattr__(name):
+        return _resolve(module_name, name)
+    return __getattr__
 '''
 
 
@@ -259,11 +512,19 @@ def materialize(shim_root: Optional[str] = None) -> str:
     root = os.path.abspath(shim_root or default_shim_root())
     pkg = os.path.join(root, "torchvision")
     transforms = os.path.join(pkg, "transforms")
+    io_dir = os.path.join(pkg, "io")
     os.makedirs(transforms, exist_ok=True)
+    os.makedirs(io_dir, exist_ok=True)
 
+    # NOTE: no .dist-info is written, and none must ever be. Its absence makes
+    # importlib.metadata.version("torchvision") raise, which is what causes
+    # transformers' _is_package_available -> is_torchvision_available() to
+    # report False and skip optional vision paths.
     files = {
+        os.path.join(pkg, "_shim_support.py"): _shim_support_src(),
         os.path.join(pkg, "__init__.py"): _package_init_src(),
         os.path.join(transforms, "__init__.py"): _transforms_init_src(),
+        os.path.join(io_dir, "__init__.py"): _io_init_src(),
     }
     for path, src in files.items():
         # Rewrite only on change, so re-running does not churn mtimes and
@@ -330,18 +591,41 @@ def ensure(
     return {
         "active": True,
         "reason": (
-            "real torchvision does not import; supplying "
-            "transforms.InterpolationMode only"
+            "real torchvision does not import; supplying an import-only stub "
+            "(InterpolationMode + ImageReadMode exact, everything else poison)"
         ),
         "shim_root": root,
         "pythonpath": pythonpath,
         "probe": probe_result,
         "start_method": _start_method(),
+        # No .dist-info is written, so importlib.metadata.version() raises and
+        # transformers' is_torchvision_available() stays False. Reported so a
+        # reader can confirm the stub is not masquerading as an install.
+        "detectable_as_unavailable": not _has_distribution_metadata(),
+        "real_submodules": list(REAL_SUBMODULES),
         "note": (
             "Stub package on PYTHONPATH + sys.path so it reaches vLLM's "
-            "EngineCore child process whether that child is forked or spawned."
+            "EngineCore child process whether that child is forked or spawned. "
+            "Any torchvision.* submodule resolves; every symbol raises "
+            "RuntimeError on use."
         ),
     }
+
+
+def _has_distribution_metadata() -> bool:
+    """True if something has registered torchvision as an installed dist.
+
+    Must stay False for the stub. If it ever goes True, feature detection will
+    start believing torchvision is installed and transformers will take vision
+    code paths that then hit poison objects at runtime.
+    """
+    try:
+        import importlib.metadata as md  # noqa: PLC0415
+
+        md.version("torchvision")
+        return True
+    except Exception:
+        return False
 
 
 def _start_method() -> Optional[str]:
