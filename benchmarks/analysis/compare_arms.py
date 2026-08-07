@@ -151,6 +151,9 @@ def render_markdown(
           else f"| {label} | *(differs or absent)* |\n")
     w("\n")
 
+    cc = prov["config_check"]
+    if cc.get("cross_arm"):
+        w(f"**Config check:** {cc['mode']} — {cc['note']}\n\n")
     w("| Run | Arm | Levels | Layer |\n|---|---|---|---|\n")
     for r in prov["runs"]:
         w(f"| `{r['run_id']}` | {r['arm']} | {r['concurrencies']} | "

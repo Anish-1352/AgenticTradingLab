@@ -180,16 +180,32 @@ def itl_trajectory(records: Sequence[Dict[str, Any]], bins: int = 10) -> Dict[st
     bin_means = [statistics.fmean(v) * 1000.0 if v else None for v in per_bin]
     fit = _linfit([p[0] for p in all_pairs], [p[1] * 1000.0 for p in all_pairs])
 
-    first = next((m for m in bin_means if m is not None), None)
-    last = next((m for m in reversed(bin_means) if m is not None), None)
+    present = [m for m in bin_means if m is not None]
+    first = present[0] if present else None
+    last = present[-1] if present else None
     drift_pct = ((last - first) / first * 100.0) if (first and last) else None
 
-    # A deliberately blunt threshold: it prompts the judgement, it does not
-    # replace it. The bin means are printed so the reader can disagree.
+    # The first bin is frequently an outlier — a batch is still filling, or the
+    # first tokens escape before contention builds — so an endpoint-only drift
+    # can label a flat trajectory as "degrading" on the strength of one bin.
+    # Recomputing without it distinguishes a genuine trend from a start-up
+    # transient.
+    second = present[1] if len(present) > 1 else None
+    drift_excl_first = (
+        ((last - second) / second * 100.0) if (second and last) else None
+    )
+
+    # Deliberately blunt thresholds: they prompt the judgement, they do not
+    # replace it. Bin means are printed so the reader can disagree.
     verdict = "indeterminate"
     if drift_pct is not None:
         if abs(drift_pct) < 10.0:
             verdict = "flat-but-slow (steady serialisation)"
+        elif drift_excl_first is not None and abs(drift_excl_first) < 10.0:
+            verdict = (
+                "flat after an initial transient — the first bin differs, the "
+                "rest is steady (NOT progressive build-up)"
+            )
         elif drift_pct > 0:
             verdict = "degrading (progressive build-up)"
         else:
@@ -203,6 +219,7 @@ def itl_trajectory(records: Sequence[Dict[str, Any]], bins: int = 10) -> Dict[st
         "first_bin_ms": first,
         "last_bin_ms": last,
         "drift_pct": drift_pct,
+        "drift_pct_excl_first_bin": drift_excl_first,
         "fit_vs_position": fit,
         "verdict": verdict,
         "requests_used": len([r for r in ok if len(_itls(r)) >= bins]),
@@ -211,7 +228,9 @@ def itl_trajectory(records: Sequence[Dict[str, Any]], bins: int = 10) -> Dict[st
             "tenth of a request to the last. Near zero means every token pays "
             "the same contention cost (serialisation). Strongly positive means "
             "pressure accumulates as the run proceeds (queue build-up). The two "
-            "imply different bottlenecks and are indistinguishable from a mean."
+            "imply different bottlenecks and are indistinguishable from a mean. "
+            "drift_pct_excl_first_bin repeats the calculation without the first "
+            "decile, which is often a start-up transient rather than a trend."
         ),
     }
 
@@ -240,6 +259,7 @@ def ttft_vs_order(records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     fit = _linfit([float(i) for i in submit_idx], ttfts)
 
     starving = rho is not None and rho > 0.5
+    reversed_order = rho is not None and rho < -0.5
     return {
         "available": True,
         "n": len(ok),
@@ -253,6 +273,10 @@ def ttft_vs_order(records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         "verdict": (
             "later requests waited progressively longer (FIFO queueing)"
             if starving else
+            "later requests were served FASTER — TTFT falls monotonically with "
+            "submission order, consistent with joining an already-warm batch "
+            "rather than queueing behind one"
+            if reversed_order else
             "no strong submission-order penalty; cost spread across requests"
         ),
         "interpretation": (

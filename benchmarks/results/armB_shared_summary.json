@@ -1,0 +1,300 @@
+{
+  "run_id": "armB_shared",
+  "levels": [
+    {
+      "run_id": "armB_shared",
+      "concurrency": 1,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 292.73786375500003,
+      "input_tokens_total": 83840,
+      "output_tokens_total": 8192,
+      "total_tokens": 92032,
+      "input_tok_per_s": 286.3995757998968,
+      "output_tok_per_s": 27.98408068884488,
+      "total_tok_per_s": 314.3836564887417,
+      "completed_requests_per_s": 0.10931281519080031,
+      "ttft_p50": 0.1969774705000873,
+      "ttft_p95": 0.197888079849929,
+      "ttft_p99": 0.19804117983987907,
+      "e2e_p50": 9.139805209000087,
+      "e2e_p95": 9.226396265300139,
+      "e2e_p99": 9.279018786410118,
+      "itl_mean": 0.03496347804199221,
+      "itl_p95": 0.03724702850004178,
+      "resources": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 5855,
+        "requested_hz": 20.0,
+        "achieved_hz": 20.000361485658853,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 15648.0,
+        "vram_steady_state_mb": 15648.0,
+        "vram_steady_state_sample_count": 5755,
+        "util_gpu_mean_pct": 43.86712211784799,
+        "util_gpu_max_pct": 96.0,
+        "util_mem_mean_pct": 25.978309137489326,
+        "cpu_mean_pct_across_cores": 10.633239396527186,
+        "cpu_peak_pct_across_cores": 26.474999999999998,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      },
+      "notes": {
+        "itl_sample_count": 8192,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "torch_peak_allocated_mb": 15036.287109375,
+        "torch_peak_reserved_mb": 15138.0
+      }
+    },
+    {
+      "run_id": "armB_shared",
+      "concurrency": 8,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 593.399375449,
+      "input_tokens_total": 83840,
+      "output_tokens_total": 8192,
+      "total_tokens": 92032,
+      "input_tok_per_s": 141.2876444916408,
+      "output_tok_per_s": 13.80520495796185,
+      "total_tok_per_s": 155.09284944960265,
+      "completed_requests_per_s": 0.05392658186703848,
+      "ttft_p50": 0.7228486064999515,
+      "ttft_p95": 1.624107775749883,
+      "ttft_p99": 1.6377139756099381,
+      "e2e_p50": 148.28704450400005,
+      "e2e_p95": 149.78750436809986,
+      "e2e_p99": 150.21133110373998,
+      "itl_mean": 0.5754069417607423,
+      "itl_p95": 0.6427289411500852,
+      "resources": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 11866,
+        "requested_hz": 20.0,
+        "achieved_hz": 19.99511223750012,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 18150.0,
+        "vram_steady_state_mb": 18148.0,
+        "vram_steady_state_sample_count": 11766,
+        "util_gpu_mean_pct": 24.112253497387492,
+        "util_gpu_max_pct": 100.0,
+        "util_mem_mean_pct": 12.888589246586887,
+        "cpu_mean_pct_across_cores": 18.87208059441542,
+        "cpu_peak_pct_across_cores": 40.96666666666667,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      },
+      "notes": {
+        "itl_sample_count": 8192,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "torch_peak_allocated_mb": 17299.4619140625,
+        "torch_peak_reserved_mb": 17584.0
+      }
+    },
+    {
+      "run_id": "armB_shared",
+      "concurrency": 32,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 597.1182998329996,
+      "input_tokens_total": 83840,
+      "output_tokens_total": 8192,
+      "total_tokens": 92032,
+      "input_tok_per_s": 140.40768809706242,
+      "output_tok_per_s": 13.719224485819838,
+      "total_tok_per_s": 154.12691258288226,
+      "completed_requests_per_s": 0.05359072064773374,
+      "ttft_p50": 6.381264126999895,
+      "ttft_p95": 6.492059854750186,
+      "ttft_p99": 6.50384101737015,
+      "e2e_p50": 596.4757523150001,
+      "e2e_p95": 597.0657248901,
+      "e2e_p99": 597.1066031805296,
+      "itl_mean": 2.3051122746342774,
+      "itl_p95": 2.419961075249921,
+      "resources": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 11943,
+        "requested_hz": 20.0,
+        "achieved_hz": 20.000245300446203,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 25502.0,
+        "vram_steady_state_mb": 25502.0,
+        "vram_steady_state_sample_count": 11843,
+        "util_gpu_mean_pct": 24.232186217868207,
+        "util_gpu_max_pct": 100.0,
+        "util_mem_mean_pct": 12.881939211253455,
+        "cpu_mean_pct_across_cores": 19.880249937201707,
+        "cpu_peak_pct_across_cores": 40.275,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      },
+      "notes": {
+        "itl_sample_count": 8192,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "torch_peak_allocated_mb": 23936.26904296875,
+        "torch_peak_reserved_mb": 24740.0
+      }
+    }
+  ],
+  "arm": "B",
+  "levels_detail": [
+    {
+      "concurrency": 1,
+      "section_wall_s": 292.7383292039999,
+      "torch_peak_allocated_mb": 15036.287109375,
+      "torch_peak_reserved_mb": 15138.0,
+      "memory_note": "Global allocator peak for this level. NOT a per-thread figure and must not be divided by concurrency. Marginal per-request cost is the slope across levels \u2014 see vram_slope in the summary.",
+      "monitor": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 5855,
+        "requested_hz": 20.0,
+        "achieved_hz": 20.000361485658853,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 15648.0,
+        "vram_steady_state_mb": 15648.0,
+        "vram_steady_state_sample_count": 5755,
+        "util_gpu_mean_pct": 43.86712211784799,
+        "util_gpu_max_pct": 96.0,
+        "util_mem_mean_pct": 25.978309137489326,
+        "cpu_mean_pct_across_cores": 10.633239396527186,
+        "cpu_peak_pct_across_cores": 26.474999999999998,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      }
+    },
+    {
+      "concurrency": 8,
+      "section_wall_s": 593.4005994289998,
+      "torch_peak_allocated_mb": 17299.4619140625,
+      "torch_peak_reserved_mb": 17584.0,
+      "memory_note": "Global allocator peak for this level. NOT a per-thread figure and must not be divided by concurrency. Marginal per-request cost is the slope across levels \u2014 see vram_slope in the summary.",
+      "monitor": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 11866,
+        "requested_hz": 20.0,
+        "achieved_hz": 19.99511223750012,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 18150.0,
+        "vram_steady_state_mb": 18148.0,
+        "vram_steady_state_sample_count": 11766,
+        "util_gpu_mean_pct": 24.112253497387492,
+        "util_gpu_max_pct": 100.0,
+        "util_mem_mean_pct": 12.888589246586887,
+        "cpu_mean_pct_across_cores": 18.87208059441542,
+        "cpu_peak_pct_across_cores": 40.96666666666667,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      }
+    },
+    {
+      "concurrency": 32,
+      "section_wall_s": 597.1208301669999,
+      "torch_peak_allocated_mb": 23936.26904296875,
+      "torch_peak_reserved_mb": 24740.0,
+      "memory_note": "Global allocator peak for this level. NOT a per-thread figure and must not be divided by concurrency. Marginal per-request cost is the slope across levels \u2014 see vram_slope in the summary.",
+      "monitor": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 11943,
+        "requested_hz": 20.0,
+        "achieved_hz": 20.000245300446203,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 25502.0,
+        "vram_steady_state_mb": 25502.0,
+        "vram_steady_state_sample_count": 11843,
+        "util_gpu_mean_pct": 24.232186217868207,
+        "util_gpu_max_pct": 100.0,
+        "util_mem_mean_pct": 12.881939211253455,
+        "cpu_mean_pct_across_cores": 19.880249937201707,
+        "cpu_peak_pct_across_cores": 40.275,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      }
+    }
+  ],
+  "vram_slope": {
+    "available": true,
+    "metric": "torch_peak_allocated_mb",
+    "slope_mb_per_request": 284.3789625901442,
+    "intercept_mb": 14870.82686673678,
+    "r_squared": 0.9990900680104281,
+    "points": [
+      [
+        1.0,
+        15036.287109375
+      ],
+      [
+        8.0,
+        17299.4619140625
+      ],
+      [
+        32.0,
+        23936.26904296875
+      ]
+    ],
+    "interpretation": "slope = marginal VRAM per concurrent request (KV cache + per-request activations); intercept = fixed cost (weights + runtime). This is measured across levels, NOT a per-thread division of a global peak.",
+    "caveat": null
+  },
+  "vram_slope_nvml": {
+    "available": true,
+    "metric": "nvml_peak_mb",
+    "slope_mb_per_request": 314.9029003783102,
+    "intercept_mb": 15462.99369482976,
+    "r_squared": 0.9991145658343275,
+    "points": [
+      [
+        1.0,
+        15648.0
+      ],
+      [
+        8.0,
+        18150.0
+      ],
+      [
+        32.0,
+        25502.0
+      ]
+    ],
+    "interpretation": "slope = marginal VRAM per concurrent request (KV cache + per-request activations); intercept = fixed cost (weights + runtime). This is measured across levels, NOT a per-thread division of a global peak.",
+    "caveat": null
+  }
+}

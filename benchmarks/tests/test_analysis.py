@@ -139,12 +139,11 @@ def test_matched_runs_compare_fine(two_arms):
 @pytest.mark.parametrize("field,bad", [
     ("gpu_uuid", GPU_B),
     ("fixture_sha256", "deadbeef" + "0" * 56),
-    ("config_sha256", "other" + "0" * 59),
     ("max_new_tokens", 5),
     ("pip_freeze_sha256", "moved" + "0" * 59),
 ])
-def test_refuses_to_compare_on_each_guarded_field(tmp_path, field, bad):
-    """Every guarded field must be a hard refusal, naming the field."""
+def test_refuses_to_compare_on_each_always_guarded_field(tmp_path, field, bad):
+    """Every always-guarded field must be a hard refusal, naming the field."""
     a = _write_run(tmp_path, "a", "B", [_level(1, 0.2, 28.0, 15648.0)])
     b = _write_run(tmp_path, "b", "C", [_level(1, 0.05, 96.6, 74933.0)],
                    manifest_over={field: bad})
@@ -153,6 +152,52 @@ def test_refuses_to_compare_on_each_guarded_field(tmp_path, field, bad):
         require_comparable(runs)
     assert field in str(exc.value)
     assert "REFUSING TO COMPARE" in str(exc.value)
+
+
+def test_config_sha_mismatch_refused_WITHIN_an_arm(tmp_path):
+    """Two runs of the same arm must share a resolved config."""
+    a = _write_run(tmp_path, "a1", "B", [_level(1, 0.2, 28.0, 15648.0)])
+    b = _write_run(tmp_path, "a2", "B", [_level(1, 0.2, 28.0, 15648.0)],
+                   manifest_over={"config_sha256": "other" + "0" * 59})
+    with pytest.raises(ProvenanceMismatch, match="config_sha256"):
+        require_comparable([load_run(a), load_run(b)])
+
+
+def test_config_sha_may_differ_ACROSS_arms(tmp_path):
+    """Arm C's resolved config carries the vLLM serving knobs, which ARE the
+    independent variable — so the hashes differ by construction. Enforcing
+    equality here would make the study's headline comparison impossible."""
+    a = _write_run(tmp_path, "a", "B", [_level(1, 0.2, 28.0, 15648.0)])
+    b = _write_run(tmp_path, "b", "C", [_level(1, 0.05, 96.6, 74933.0)],
+                   manifest_over={"config_sha256": "vllmcfg" + "0" * 57})
+    require_comparable([load_run(a), load_run(b)])  # must not raise
+
+
+@pytest.mark.parametrize("field,bad", [
+    ("model", "meta-llama/Llama-3-8B"),
+    ("context_tokens", 1024),
+    ("fixture_name", "low_overlap"),
+])
+def test_cross_arm_still_checks_shared_controls(tmp_path, field, bad):
+    """Relaxing config_sha256 across arms must not relax what it stood for."""
+    a = _write_run(tmp_path, "a", "B", [_level(1, 0.2, 28.0, 15648.0)])
+    b = _write_run(tmp_path, "b", "C", [_level(1, 0.05, 96.6, 74933.0)],
+                   manifest_over={field: bad})
+    with pytest.raises(ProvenanceMismatch, match=field):
+        require_comparable([load_run(a), load_run(b)])
+
+
+def test_cross_arm_config_check_is_reported(tmp_path):
+    """The substitution must be visible to the reader, not silent."""
+    from analysis.loader import config_check_mode
+
+    a = _write_run(tmp_path, "a", "B", [_level(1, 0.2, 28.0, 15648.0)])
+    b = _write_run(tmp_path, "b", "C", [_level(1, 0.05, 96.6, 74933.0)])
+    cc = config_check_mode([load_run(a), load_run(b)])
+    assert cc["cross_arm"] is True
+    assert "independent variable" in cc["note"]
+    md = compare_arms.render_markdown([load_run(a), load_run(b)], [1])
+    assert "Config check:" in md
 
 
 def test_refuses_to_compare_across_gpus(tmp_path):
@@ -517,3 +562,46 @@ def test_vram_figure_is_arm_b_only(two_arms, tmp_path):
     assert len(paths) == 2
     svg = open([p for p in paths if p.endswith(".svg")][0]).read()
     assert "Arm C is deliberately absent" in svg or "deliberately absent" in svg
+
+
+def test_itl_trajectory_flat_after_initial_transient():
+    """A fast first bin must not be reported as progressive degradation.
+
+    Observed on the real arm C data: bins 10.3, 12.4, 12.4 ... 12.7. Endpoint
+    drift is +22.8% purely because the first decile is faster (the batch is
+    still filling); everything after it is flat to within 2.4%.
+    """
+    recs = _records(n=4, tokens=40, itl=0.0124)
+    # Make the first tenth of each request faster, leave the rest steady.
+    for r in recs:
+        ts = r["per_token_timestamps"]
+        shift = 0.0
+        for i in range(1, len(ts)):
+            gap = 0.0103 if i <= len(ts) // 10 else 0.0124
+            shift += gap
+            ts[i] = ts[0] + shift
+        r["t_done"] = ts[-1]
+    t = raw_stats.itl_trajectory(recs, bins=10)
+    assert t["available"]
+    assert t["drift_pct"] > 10.0                     # endpoint view says "rising"
+    assert abs(t["drift_pct_excl_first_bin"]) < 10.0  # but the trend is flat
+    assert "initial transient" in t["verdict"]
+    assert "NOT progressive build-up" in t["verdict"]
+
+
+def test_ttft_vs_order_names_a_reversed_correlation():
+    """rho ~ -1 means later requests were served FASTER, not 'no effect'."""
+    recs = _records(n=12, tokens=6)
+    for i, r in enumerate(recs):
+        # TTFT falls monotonically with submission order.
+        r["t_submit"] = i * 0.01
+        r["t_first_token"] = r["t_submit"] + (0.4 - i * 0.02)
+        span = r["per_token_timestamps"][-1] - r["per_token_timestamps"][0]
+        r["per_token_timestamps"] = [
+            r["t_first_token"] + (span * k / 5) for k in range(6)
+        ]
+        r["t_done"] = r["per_token_timestamps"][-1]
+    o = raw_stats.ttft_vs_order(recs)
+    assert o["spearman_submit_vs_ttft"] < -0.9
+    assert "FASTER" in o["verdict"]
+    assert "already-warm batch" in o["verdict"]

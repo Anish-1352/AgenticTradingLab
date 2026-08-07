@@ -23,6 +23,9 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 __all__ = [
     "GUARDED_FIELDS",
+    "ALWAYS_GUARDED",
+    "CROSS_ARM_CONTROLS",
+    "config_check_mode",
     "ProvenanceMismatch",
     "RunSet",
     "load_run",
@@ -47,6 +50,36 @@ GUARDED_FIELDS: Tuple[str, ...] = (
     "config_sha256",
     "max_new_tokens",
     "pip_freeze_sha256",
+)
+
+# Enforced no matter which arms are involved.
+ALWAYS_GUARDED: Tuple[str, ...] = (
+    "gpu_uuid",
+    "fixture_sha256",
+    "max_new_tokens",
+    "pip_freeze_sha256",
+)
+
+# ``config_sha256`` hashes the RESOLVED config, which for arm C includes the
+# vLLM serving knobs (enable_prefix_caching, max_num_seqs,
+# gpu_memory_utilization). Those knobs ARE the independent variable of a B-vs-C
+# comparison, so two different arms can never share a config hash — enforcing
+# equality across arms would make the study's headline comparison permanently
+# impossible, and routinely waiving it would hollow the guard out.
+#
+# So the check is arm-aware:
+#   * same arm  -> config_sha256 must match. A workload change inside one arm
+#                  is a genuine red flag.
+#   * different arms -> config_sha256 is EXPECTED to differ, and the shared
+#                  controlled variables below are checked individually instead.
+#                  Nothing is relaxed: every quantity that must be held constant
+#                  is still verified, just from first-class manifest fields
+#                  rather than through an aggregate hash.
+SAME_ARM_ONLY_GUARDED: Tuple[str, ...] = ("config_sha256",)
+CROSS_ARM_CONTROLS: Tuple[str, ...] = (
+    "model",
+    "context_tokens",
+    "fixture_name",
 )
 
 
@@ -197,21 +230,57 @@ def require_comparable(runs: Sequence[RunSet], allow: Sequence[str] = ()) -> Non
               "anything. Locate its *_manifest.json or exclude the run."
         )
 
+    def disagreement(field_name: str, subset: Sequence[RunSet]) -> Optional[str]:
+        seen: Dict[Any, List[str]] = {}
+        for r in subset:
+            seen.setdefault(r.manifest.get(field_name), []).append(r.run_id)
+        if len(seen) <= 1:
+            return None
+        lines = [f"  {field_name}:"]
+        for value, ids in seen.items():
+            shown = value if value is not None else "<missing>"
+            lines.append(f"    {shown}")
+            for rid in ids:
+                lines.append(f"      <- {rid}")
+        return "\n".join(lines)
+
+    arms = {r.arm for r in runs}
+    cross_arm = len(arms) > 1
     problems: List[str] = []
-    for field_name in GUARDED_FIELDS:
+
+    for field_name in ALWAYS_GUARDED:
         if field_name in allow:
             continue
-        seen: Dict[Any, List[str]] = {}
-        for r in runs:
-            seen.setdefault(r.manifest.get(field_name), []).append(r.run_id)
-        if len(seen) > 1:
-            lines = [f"  {field_name}:"]
-            for value, ids in seen.items():
-                shown = value if value is not None else "<missing>"
-                lines.append(f"    {shown}")
-                for rid in ids:
-                    lines.append(f"      <- {rid}")
-            problems.append("\n".join(lines))
+        found = disagreement(field_name, runs)
+        if found:
+            problems.append(found)
+
+    if cross_arm:
+        # config_sha256 legitimately differs between arms; verify the shared
+        # controlled variables directly instead.
+        for field_name in CROSS_ARM_CONTROLS:
+            if field_name in allow:
+                continue
+            found = disagreement(field_name, runs)
+            if found:
+                problems.append(found)
+        # …and require it to be internally consistent WITHIN each arm.
+        for arm in sorted(arms):
+            same = [r for r in runs if r.arm == arm]
+            if len(same) < 2 or "config_sha256" in allow:
+                continue
+            found = disagreement("config_sha256", same)
+            if found:
+                problems.append(
+                    f"  (within arm {arm}) " + found.lstrip().replace("\n  ", "\n  ")
+                )
+    else:
+        for field_name in SAME_ARM_ONLY_GUARDED:
+            if field_name in allow:
+                continue
+            found = disagreement(field_name, runs)
+            if found:
+                problems.append(found)
 
     if problems:
         raise ProvenanceMismatch(
@@ -237,6 +306,31 @@ def _mismatch_guidance() -> str:
     )
 
 
+def config_check_mode(runs: Sequence[RunSet]) -> Dict[str, Any]:
+    """How config_sha256 was verified, so the report can state it."""
+    arms = sorted({r.arm for r in runs})
+    if len(arms) <= 1:
+        return {"cross_arm": False, "mode": "config_sha256 equality",
+                "note": "All runs share an arm, so the resolved config hash "
+                        "must match exactly."}
+    return {
+        "cross_arm": True,
+        "arms": arms,
+        "mode": "shared controlled variables",
+        "checked": list(CROSS_ARM_CONTROLS),
+        "note": (
+            "Runs span arms " + ", ".join(arms) + ". config_sha256 hashes the "
+            "RESOLVED config, which for arm C includes the vLLM serving knobs "
+            "(enable_prefix_caching, max_num_seqs, gpu_memory_utilization) — "
+            "those knobs are the independent variable, so the hashes differ by "
+            "design. The shared controlled variables were verified individually "
+            "instead (" + ", ".join(CROSS_ARM_CONTROLS) + "), alongside "
+            + ", ".join(ALWAYS_GUARDED) + ". Nothing that must be held constant "
+            "went unchecked."
+        ),
+    }
+
+
 def describe_provenance(runs: Sequence[RunSet]) -> Dict[str, Any]:
     """Common provenance across runs, plus per-run identity."""
     common: Dict[str, Any] = {}
@@ -248,6 +342,7 @@ def describe_provenance(runs: Sequence[RunSet]) -> Dict[str, Any]:
         common[key] = values.pop() if len(values) == 1 else None
     return {
         "common": common,
+        "config_check": config_check_mode(runs),
         "runs": [
             {
                 "run_id": r.run_id,

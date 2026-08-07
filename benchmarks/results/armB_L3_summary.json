@@ -1,0 +1,121 @@
+{
+  "run_id": "armB_L3",
+  "levels": [
+    {
+      "run_id": "armB_L3",
+      "concurrency": 8,
+      "requested": 16,
+      "completed": 16,
+      "errored": 0,
+      "wall_time": 361.9620598780002,
+      "input_tokens_total": 41920,
+      "output_tokens_total": 4096,
+      "total_tokens": 46016,
+      "input_tok_per_s": 115.81324300709635,
+      "output_tok_per_s": 11.316103133517812,
+      "total_tok_per_s": 127.12934614061416,
+      "completed_requests_per_s": 0.04420352786530395,
+      "ttft_p50": 1.2026212820001092,
+      "ttft_p95": 1.6107633567497714,
+      "ttft_p99": 1.6108245081497217,
+      "e2e_p50": 150.11906441700012,
+      "e2e_p95": 214.29278668675033,
+      "e2e_p99": 215.3386380893502,
+      "itl_mean": 0.6566772321594241,
+      "itl_p95": 0.6596222494998756,
+      "resources": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 8640,
+        "requested_hz": 20.0,
+        "achieved_hz": 13.973615065184921,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 18128.0,
+        "vram_steady_state_mb": 18068.0,
+        "vram_steady_state_sample_count": 8540,
+        "util_gpu_mean_pct": 17.167708333333334,
+        "util_gpu_max_pct": 100.0,
+        "util_mem_mean_pct": 8.860879629629629,
+        "cpu_mean_pct_across_cores": 17.563804976851852,
+        "cpu_peak_pct_across_cores": 41.425000000000004,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      },
+      "notes": {
+        "itl_sample_count": 4096,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "torch_peak_allocated_mb": 17137.11669921875,
+        "torch_peak_reserved_mb": 17446.0
+      }
+    }
+  ],
+  "arm": "B",
+  "levels_detail": [
+    {
+      "concurrency": 8,
+      "section_wall_s": 361.963595832,
+      "torch_peak_allocated_mb": 17137.11669921875,
+      "torch_peak_reserved_mb": 17446.0,
+      "memory_note": "Global allocator peak for this level. NOT a per-thread figure and must not be divided by concurrency. Marginal per-request cost is the slope across levels \u2014 see vram_slope in the summary.",
+      "profiling": {
+        "captured": true,
+        "schedule": {
+          "wait": 5,
+          "warmup": 2,
+          "active": 4,
+          "repeat": 1
+        },
+        "total_steps": 16,
+        "active_step_range": [
+          7,
+          11
+        ],
+        "active_window_s": 212.72159751900017,
+        "section_wall_s": 361.963595832,
+        "profiled_window_fraction": 0.5876878226663759,
+        "completions_in_window": 4,
+        "completions_total": 16,
+        "note": "The active window is a bounded slice OF THE CONCURRENT SECTION (not a separate sequential run). Steps are request completions.",
+        "warning": null,
+        "trace_path": "/content/drive/MyDrive/atl_bench/traces/armB_L3_c8_torch.json.gz",
+        "trace_bytes": 238690960
+      },
+      "monitor": {
+        "nvml_available": true,
+        "vram_source": "nvml_process",
+        "sample_count": 8640,
+        "requested_hz": 20.0,
+        "achieved_hz": 13.973615065184921,
+        "warmup_s": 5.0,
+        "vram_peak_mb": 18128.0,
+        "vram_steady_state_mb": 18068.0,
+        "vram_steady_state_sample_count": 8540,
+        "util_gpu_mean_pct": 17.167708333333334,
+        "util_gpu_max_pct": 100.0,
+        "util_mem_mean_pct": 8.860879629629629,
+        "cpu_mean_pct_across_cores": 17.563804976851852,
+        "cpu_peak_pct_across_cores": 41.425000000000004,
+        "cpu_max_single_core_pct": 100.0,
+        "cpu_core_count": 12,
+        "caveats": [
+          "util_gpu_pct is NVML's 'at least one kernel resident' measure. It is NOT achieved occupancy and must not be reported as such.",
+          "NVML cannot measure Tensor Core utilization or SM activity. Use nsys (Layer 2) and ncu (Layer 4).",
+          "vram_peak_mb is the provisioning number; vram_steady_state_mb is the post-warmup median working set."
+        ]
+      }
+    }
+  ],
+  "vram_slope": {
+    "available": false,
+    "reason": "need at least 2 levels"
+  },
+  "vram_slope_nvml": {
+    "available": false,
+    "reason": "need at least 2 levels"
+  }
+}

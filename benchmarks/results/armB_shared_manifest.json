@@ -1,0 +1,38 @@
+{
+  "run_id": "armB_shared",
+  "utc_timestamp": "2026-08-06T02:32:11Z",
+  "arm": "B",
+  "concurrency": 1,
+  "upstream_sha": "030b17701afd8d366aa1e40c4beeb4c5dde8d2b2",
+  "upstream_ref": "origin/main",
+  "branch_sha": "141e5a51d86b972569bb91f53becd84af0c43c72-dirty",
+  "gpu_name": "NVIDIA A100-SXM4-80GB",
+  "gpu_uuid": "GPU-3bda9160-0081-328d-0755-6afe70878e7c",
+  "total_vram_mb": 81920,
+  "driver_version": "580.82.07",
+  "cuda_version": "13.0",
+  "pip_freeze_sha256": "29deea666a5c3e1634e7f22d2f4e9bec183545d396bd8ddef7a78db581e48dae",
+  "config_sha256": "395ad6c1dc258514200b02c0443c504fe3988248391eb680c99036ad344fa80f",
+  "fixture_sha256": "a69c2be743189489d0ab5b4a2f7fe09c163fdf3cd034429a904840e810135968",
+  "max_new_tokens": 256,
+  "profiling_layer": 1,
+  "profiled_window_fraction": null,
+  "trace_url": null,
+  "trace_sha256": null,
+  "torchvision_shim": null,
+  "fixture_name": "shared_prefix",
+  "context_tokens": 2620,
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "manifest_complete": true,
+  "collection_errors": [],
+  "extra": {
+    "config_sha256_recomputed": "3eba4161f25cf7a490adaa55f4be78ecae034625a9357d80e7f901b638f9bd91",
+    "concurrency_sweep": [
+      1,
+      8,
+      32
+    ],
+    "common_prefix_tokens": 2603,
+    "requests_per_level": 32
+  }
+}

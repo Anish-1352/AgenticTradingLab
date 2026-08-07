@@ -164,7 +164,47 @@ def detect_caveats(runs: Sequence[RunSet]) -> List[Dict[str, str]]:
                 ),
             })
 
-    # 5. Incomplete manifests.
+    # 5. Dirty working trees. RUN_MANIFEST_SCHEMA.md: a `-dirty` branch_sha
+    #    means the tree had uncommitted changes, so the exact code that ran
+    #    cannot be recovered from the SHA alone.
+    dirty = [r for r in runs if str(r.manifest.get("branch_sha", "")).endswith("-dirty")]
+    if dirty:
+        out.append({
+            "id": "dirty-tree",
+            "title": "Runs were made from a dirty working tree",
+            "body": (
+                "These runs carry a `-dirty` branch SHA: "
+                + ", ".join(f"`{r.run_id}` ({r.manifest.get('branch_sha')})"
+                            for r in dirty)
+                + ". The tree had uncommitted changes, so the exact code that "
+                  "produced these numbers cannot be reconstructed from the SHA "
+                  "alone. `RUN_MANIFEST_SCHEMA.md` treats a dirty result as "
+                  "non-citable; treat these as provisional and re-run from a "
+                  "clean tree before publishing."
+            ),
+        })
+
+    # 6. Runs made at different branch SHAs.
+    shas = {str(r.manifest.get("branch_sha", "")).replace("-dirty", "")
+            for r in runs if r.manifest.get("branch_sha")}
+    if len(shas) > 1:
+        out.append({
+            "id": "branch-sha-differs",
+            "title": "Arms were run at different harness commits",
+            "body": (
+                "Runs span branch SHAs "
+                + ", ".join(f"`{s[:10]}`" for s in sorted(shas))
+                + ". The harness code was not identical when each arm executed. "
+                  "Whether that matters depends entirely on *what* changed: if "
+                  "the diff touches `common/metrics.py`, `common/monitor.py`, "
+                  "`common/fixtures.py` or `runners/`, the arms were measured "
+                  "differently and the comparison is compromised. Verify with "
+                  "`git diff --name-only <shaA> <shaB> -- benchmarks/common "
+                  "benchmarks/runners` before relying on any delta."
+            ),
+        })
+
+    # 7. Incomplete manifests.
     for r in runs:
         if r.manifest and not r.manifest.get("manifest_complete", True):
             out.append({
@@ -293,6 +333,8 @@ def build_results(
     excluded: Sequence[Tuple[str, str]] = (),
     waived: Sequence[str] = (),
     command: str = "",
+    notes: Sequence[Tuple[str, str]] = (),
+    out_path: Optional[str] = None,
 ) -> str:
     out = io.StringIO()
     w = out.write
@@ -323,6 +365,10 @@ def build_results(
         w(f"| {label} | `{value}` |\n" if value is not None
           else f"| {label} | *(differs across runs, or absent)* |\n")
     w("\n")
+
+    cc = prov.get("config_check") or {}
+    if cc.get("cross_arm"):
+        w(f"**How `config_sha256` was checked:** {cc['note']}\n\n")
 
     w("### Runs included\n\n")
     w("| run_id | Arm | Levels | Layer | Timestamp |\n|---|---|---|---|---|\n")
@@ -400,10 +446,18 @@ def build_results(
     if figures_dir:
         made = (figures or {}).get("figures", {})
         skipped = (figures or {}).get("skipped", {})
+        # Image links must be relative to the DOCUMENT, not to the cwd the
+        # generator happened to run from — otherwise every figure in the
+        # rendered markdown is a broken image.
+        doc_dir = os.path.dirname(os.path.abspath(out_path or "."))
+        try:
+            fig_rel = os.path.relpath(os.path.abspath(figures_dir), doc_dir)
+        except ValueError:
+            fig_rel = figures_dir
         for name, caption in FIGURE_CAPTIONS.items():
             w(f"### {name}\n\n")
             if name in made:
-                w(f"![{name}]({os.path.join(figures_dir, name + '.png')})\n\n")
+                w(f"![{name}]({os.path.join(fig_rel, name + '.png')})\n\n")
                 w(f"{caption}\n\n")
             else:
                 why = skipped.get(name, "not generated")
@@ -428,9 +482,13 @@ def build_results(
     for i, cav in enumerate(caveats, 1):
         w(f"### 6.{i} {cav['title']}\n\n{cav['body']}\n\n")
 
+    for j, (title, body) in enumerate(notes, len(caveats) + 1):
+        w(f"### 6.{j} {title}\n\n{body}\n\n")
+
     if trace_summary:
         pd = trace_summary.get("prefill_decode") or {}
-        w(f"### 6.{len(caveats) + 1} Prefill/decode split provenance\n\n")
+        w(f"### 6.{len(caveats) + len(notes) + 1} Prefill/decode split "
+          f"provenance\n\n")
         w(f"Method: `{pd.get('method')}` "
           f"(confidence: {pd.get('method_confidence')}).\n\n")
         if pd.get("caveat"):
@@ -461,6 +519,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                     metavar="PATH=REASON",
                     help="record an excluded run and why, repeatable")
     ap.add_argument("--allow-mismatch", nargs="*", default=[])
+    ap.add_argument("--note", action="append", default=[], metavar="TITLE=BODY",
+                    help="record a verified finding the artifacts cannot know "
+                         "(repeatable). Keeps RESULTS.md generated rather than "
+                         "hand-edited after the fact.")
     args = ap.parse_args(argv)
 
     runs: List[RunSet] = []
@@ -490,6 +552,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         path, _, reason = item.partition("=")
         excluded.append((path, reason or "no reason given"))
 
+    notes: List[Tuple[str, str]] = []
+    for item in args.note:
+        title, _, body = item.partition("=")
+        notes.append((title, body or ""))
+
     figures = None
     if args.render_figures and args.figures_dir:
         from analysis import plots  # noqa: PLC0415
@@ -505,7 +572,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     doc = build_results(
         runs, trace_summary=trace_summary, figures_dir=args.figures_dir,
         figures=figures, excluded=excluded, waived=args.allow_mismatch,
-        command=command,
+        command=command, notes=notes, out_path=args.out,
     )
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)

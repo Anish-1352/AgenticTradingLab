@@ -164,6 +164,7 @@ def fig2_latency_cdf(runs: Sequence[RunSet], out_dir: str,
     """
     plt = _plt()
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
+    spreads: List[Tuple[RunSet, float]] = []
 
     for r, colour in zip(runs, (ARM_B_COLOUR, ARM_C_COLOUR)):
         try:
@@ -175,8 +176,18 @@ def fig2_latency_cdf(runs: Sequence[RunSet], out_dir: str,
         if not vals:
             continue
         ys = [(i + 1) / len(vals) for i in range(len(vals))]
+        # Spread, stated in the legend. On a shared log axis spanning two
+        # orders of magnitude a tight distribution renders as a vertical line,
+        # which is indistinguishable from a rendering artifact unless the
+        # dispersion is written down.
+        lo_i = max(0, int(0.05 * (len(vals) - 1)))
+        hi_i = min(len(vals) - 1, int(0.95 * (len(vals) - 1)))
+        spread = (vals[hi_i] / vals[lo_i]) if vals[lo_i] > 0 else float("nan")
+        med = vals[len(vals) // 2]
         ax.step(vals, ys, where="post", color=colour, linewidth=2,
-                label=f"{r.display}  (n={len(vals)})")
+                label=(f"{r.display}  (n={len(vals)}, p50 {med / 1000:.2f}s, "
+                       f"p95/p5 {spread:.3f}x)"))
+        spreads.append((r, spread))
 
     ax.set_xscale("log")
     ax.set_xlabel(f"End-to-end latency at concurrency {concurrency} (ms, log scale)")
@@ -186,6 +197,15 @@ def fig2_latency_cdf(runs: Sequence[RunSet], out_dir: str,
     ax.grid(True, which="both", **GRID_KW)
     if ax.get_legend_handles_labels()[0]:
         ax.legend(frameon=False, fontsize=8, loc="lower right")
+    if spreads and all(sp < 1.05 for _, sp in spreads):
+        ax.text(0.5, -0.19,
+                "Both CDFs are near-vertical because both distributions are "
+                "TIGHT (p95/p5 within 5%), not because the axis hides "
+                "structure.\nUnder steady serialisation every request takes "
+                "essentially the same total time, so arm B is not the broad "
+                "smear one might expect.",
+                transform=ax.transAxes, fontsize=7, color="#444444",
+                ha="center", va="top")
     _require_plotted(ax, "fig2_latency_cdf", "no completed requests at this concurrency in _raw.json")
     return _finish(fig, ax, runs, out_dir, "fig2_latency_cdf",
                    f"C={concurrency}")
@@ -202,6 +222,7 @@ def fig3_gpu_utilisation_timeseries(runs: Sequence[RunSet], out_dir: str,
     plt = _plt()
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
 
+    series = []
     for r, colour in zip(runs, (ARM_B_COLOUR, ARM_C_COLOUR)):
         try:
             rows = r.monitor(concurrency)
@@ -214,12 +235,29 @@ def fig3_gpu_utilisation_timeseries(runs: Sequence[RunSet], out_dir: str,
         t0 = pts[0][0]
         xs = [t - t0 for t, _ in pts]
         ys = [u for _, u in pts]
+        series.append((r, colour, xs, ys, max(xs) if xs else 0.0))
+
+    # The arms can differ enormously in duration at the same offered load — on
+    # the real C=32 data, ~600s against ~3.5s. On a shared ABSOLUTE time axis the
+    # faster arm collapses into a one-pixel spike and the figure shows nothing.
+    # Normalising each series to its own elapsed fraction keeps both readable on
+    # shared axes; the durations then go in the legend, because the gap between
+    # them is itself one of the findings rather than something to hide.
+    durations = [d for *_, d in series if d > 0]
+    normalise = bool(durations) and (max(durations) / min(durations) > 3.0)
+
+    for r, colour, xs, ys, dur in series:
         mean = sum(ys) / len(ys)
-        ax.plot(xs, ys, color=colour, linewidth=1.1, alpha=0.85,
-                label=f"{r.display}  (mean {mean:.0f}%)")
+        plot_x = [x / dur for x in xs] if (normalise and dur > 0) else xs
+        label = f"{r.display}  (mean {mean:.0f}%, {dur:.1f}s)"
+        ax.plot(plot_x, ys, color=colour, linewidth=1.1, alpha=0.85, label=label)
         ax.axhline(mean, color=colour, linestyle=":", linewidth=1, alpha=0.7)
 
-    ax.set_xlabel("Time since level start (s)")
+    if normalise:
+        ax.set_xlabel("Fraction of the level elapsed (normalised per arm)")
+        ax.set_xlim(0, 1)
+    else:
+        ax.set_xlabel("Time since level start (s)")
     ax.set_ylabel("NVML GPU utilisation (%)")
     ax.set_ylim(0, 105)
     ax.set_title(f"GPU utilisation over the run (C={concurrency})")
@@ -229,12 +267,18 @@ def fig3_gpu_utilisation_timeseries(runs: Sequence[RunSet], out_dir: str,
     # The one caveat that must not be lost when this figure is quoted. Placed
     # BELOW the axes rather than inside them: at these two utilisation bands an
     # in-axes annotation lands on top of the arm B trace.
-    ax.text(0.5, -0.16,
-            "NVML utilisation is the fraction of time at least one kernel was "
-            "resident. It is NOT achieved occupancy —\na single small kernel "
-            "pins it at 100%. Occupancy requires ncu (Layer 4).",
-            transform=ax.transAxes, fontsize=7, color="#444444",
-            ha="center", va="top")
+    caption = ("NVML utilisation is the fraction of time at least one kernel "
+               "was resident. It is NOT achieved occupancy —\na single small "
+               "kernel pins it at 100%. Occupancy requires ncu (Layer 4).")
+    if normalise:
+        caption = (
+            f"x-axis is normalised per arm: the two levels differ in duration "
+            f"by {max(durations) / min(durations):.0f}x (see legend), so shared "
+            f"absolute time would\ncollapse the faster arm to a single spike. "
+            + caption
+        )
+    ax.text(0.5, -0.16, caption, transform=ax.transAxes, fontsize=7,
+            color="#444444", ha="center", va="top")
     _require_plotted(ax, "fig3_gpu_utilisation_timeseries", "no monitor CSV rows at this concurrency")
     return _finish(fig, ax, runs, out_dir, "fig3_gpu_utilisation_timeseries",
                    f"C={concurrency}")
@@ -327,18 +371,23 @@ def fig5_itl_distribution(runs: Sequence[RunSet], out_dir: str,
         except FileNotFoundError:
             continue
         vals: List[float] = []
+        dropped = 0
         for rec in records:
             if _ok(rec):
-                vals.extend(g * 1000.0 for g in _itls(rec) if g > 0)
+                for g in _itls(rec):
+                    if g > 0:
+                        vals.append(g * 1000.0)
+                    else:
+                        dropped += 1
         if vals:
-            series.append((r, vals, colour))
+            series.append((r, vals, colour, dropped))
 
     if series:
-        lo = min(min(v) for _, v, _ in series)
-        hi = max(max(v) for _, v, _ in series)
+        lo = min(min(v) for _, v, _, _ in series)
+        hi = max(max(v) for _, v, _, _ in series)
         bins = [10 ** e for e in _linspace(math.log10(max(lo, 1e-3)),
                                            math.log10(hi), 60)]
-        for r, vals, colour in series:
+        for r, vals, colour, dropped in series:
             mean = sum(vals) / len(vals)
             ax.hist(vals, bins=bins, color=colour, alpha=0.55,
                     label=f"{r.display}  (mean {mean:.1f} ms, n={len(vals)})")
@@ -351,6 +400,18 @@ def fig5_itl_distribution(runs: Sequence[RunSet], out_dir: str,
     ax.grid(True, which="both", **GRID_KW)
     if ax.get_legend_handles_labels()[0]:
         ax.legend(frameon=False, fontsize=8)
+    total_dropped = sum(d for *_, d in series)
+    if total_dropped:
+        # A log axis cannot render a zero-length gap. Excluding them shifts the
+        # mean shown here slightly above the summary's itl_mean, which includes
+        # them — say so rather than let two "mean ITL" figures silently differ.
+        ax.text(0.5, -0.18,
+                f"{total_dropped} zero-length gap(s) excluded: a log axis "
+                f"cannot render them. The means above are therefore over "
+                f"positive gaps only,\nand read slightly higher than "
+                f"summary.itl_mean, which includes every gap.",
+                transform=ax.transAxes, fontsize=7, color="#444444",
+                ha="center", va="top")
     _require_plotted(ax, "fig5_itl_distribution", "no inter-token gaps at this concurrency")
     return _finish(fig, ax, runs, out_dir, "fig5_itl_distribution",
                    f"C={concurrency}")
