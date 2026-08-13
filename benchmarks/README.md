@@ -4,9 +4,10 @@ A before/after study of LLM inference serving for Agentic Trading Lab: what the
 platform's agent workload costs on a hosted API, on a naive self-hosted stack,
 and on an optimized self-hosted stack.
 
-**Phase 4 — analysis and figures.** Everything from phase 3 plus an
-`analysis/` package that turns run artifacts into a matched comparison, six
-figures, and a generated `RESULTS.md`. Arm A (hosted API) is still outstanding.
+**Phase 5 — arm A and the economics.** All three arms plus the analysis layer.
+Arm A routes the same workload through a hosted API to measure what an agent
+decision actually costs, where the provider's rate limit binds, what pooling
+shared context saves, and at what agent count self-hosting wins.
 
 Start here: [COLAB.md](COLAB.md) has the exact cell sequence.
 
@@ -41,6 +42,7 @@ careless import away from breaking prod deploys.
 ```
 benchmarks/
 ├── COLAB.md              # THE ENTRY POINT — exact cell sequence for the A100 runtime
+├── COLAB_API.md          # Arm A on Colab — no GPU needed, but it bills real money
 ├── colab_bootstrap.py    # Cell 2 — one-command environment setup; idempotent
 ├── session_start.py      # Cell 4 — per-session provenance; shouts if the GPU changed
 ├── probe_environment.py  # Cell 5 — writes ENVIRONMENT.md, gates the profiling layers
@@ -56,6 +58,7 @@ benchmarks/
 ├── configs/              # workload.yaml — all controlled variables
 ├── fixtures/             # Built prompt sets (*.meta.json committed, *.json not)
 ├── runners/              # Arm drivers — one per serving stack
+│   ├── bench_api_baseline.py   # Arm A — hosted API (COSTS MONEY; --dry-run first)
 │   ├── bench_hf_baseline.py    # Arm B — threads + transformers
 │   └── bench_vllm_optimized.py # Arm C — asyncio + vLLM
 ├── profiling/            # run_nsys.sh (Layer 2), run_ncu.sh (Layer 4)
@@ -66,6 +69,9 @@ benchmarks/
 │   ├── raw_stats.py     #   per-request: ITL trajectory, starvation, ignore_eos
 │   ├── plots.py         #   six figures, PNG + SVG, each carrying its provenance
 │   ├── make_results.py  #   generates RESULTS.md from the JSONs, one command
+│   ├── context_pooling.py     # what pooling shared context saves (and does not)
+│   ├── rate_limit_probe.py    # where the provider's rate limit binds
+│   ├── arm_a_vs_bc_model.py   # cost model + crossover + sensitivity
 │   └── RESULTS.md       #   GENERATED — never hand-edited
 ├── ablations/            # Single-variable isolations; each condition a fresh subprocess
 │   ├── prefix_cache.py         #   caching ON/OFF x both fixtures -> a bracket
@@ -131,6 +137,15 @@ exist because of failures that already cost real time.
 The study's headline is the **B → C** delta. Arm A is the cost/latency baseline
 the platform runs on today and sets the bar both self-hosted arms must clear to
 be worth operating.
+
+**Arm A costs real money and has a ceiling the others do not.** Every request is
+billed, so it defaults to a dry run and refuses to start above `--max-cost-usd`.
+Its limit is not VRAM but the provider's rate limit — above that the option is
+not expensive, it is unavailable. See [COLAB_API.md](COLAB_API.md).
+
+Note the tokeniser asymmetry: arm A sends the same prompt **text** but the
+provider tokenises with its own vocabulary and bills on that. Per-*request*
+comparisons across arms are valid; per-*token* ones are not.
 
 Each arm is swept across concurrency levels. **One run = one arm at one
 concurrency**, emitting one manifest. A sweep is N runs, never one run with

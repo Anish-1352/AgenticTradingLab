@@ -38,6 +38,14 @@ py-spy
 pyyaml
 numpy
 
+# --- arm A: hosted API ---
+# httpx for async HTTP with SSE streaming (TTFT/ITL need a token stream).
+# redis is OPTIONAL: analysis/context_pooling.py ships an in-process mock so the
+# pooling comparison runs with no server, and only uses a real Redis when one is
+# configured.
+httpx
+redis
+
 # --- analysis / figures ---
 # Figures are rendered headless (Agg). No seaborn: one plotting dependency is
 # enough, and the figures are deliberately plain. Only benchmarks/analysis/

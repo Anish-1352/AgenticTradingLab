@@ -1,0 +1,176 @@
+{
+  "inputs": {
+    "api_cost_per_request": 0.0001822,
+    "api_cost_source": "--api-cost-per-request",
+    "decisions_per_agent_per_day": 390,
+    "gpu_usd_per_hour": 2.0,
+    "context_sync_cost_per_day": 0.0
+  },
+  "throughput": {
+    "arm_b": {
+      "available": true,
+      "run_id": "armB_shared",
+      "arm": "B",
+      "concurrency": 32,
+      "requests_per_s": 0.05359072064773374,
+      "requests_per_day": 4630.2382639641955,
+      "wall_s_for_level": 597.1182998329996
+    },
+    "arm_c": {
+      "available": true,
+      "run_id": "armC_shared",
+      "arm": "C",
+      "concurrency": 32,
+      "requests_per_s": 9.280090140113586,
+      "requests_per_day": 801799.7881058138,
+      "wall_s_for_level": 3.4482423680001375
+    }
+  },
+  "rows": [
+    {
+      "agents": 1,
+      "decisions_per_day": 390,
+      "api_cost_per_day": 0.07105800000000001,
+      "context_sync_cost_per_day": 0.0,
+      "arm_b_gpus": 1,
+      "arm_b_cost_per_day": 48.0,
+      "arm_b_utilisation": 0.08422892684276252,
+      "arm_c_gpus": 1,
+      "arm_c_cost_per_day": 48.0,
+      "arm_c_utilisation": 0.00048640571597224165,
+      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "arm_b_cost_per_agent_per_day": 48.0,
+      "arm_c_cost_per_agent_per_day": 48.0
+    },
+    {
+      "agents": 10,
+      "decisions_per_day": 3900,
+      "api_cost_per_day": 0.71058,
+      "context_sync_cost_per_day": 0.0,
+      "arm_b_gpus": 1,
+      "arm_b_cost_per_day": 48.0,
+      "arm_b_utilisation": 0.8422892684276253,
+      "arm_c_gpus": 1,
+      "arm_c_cost_per_day": 48.0,
+      "arm_c_utilisation": 0.0048640571597224165,
+      "api_cost_per_agent_per_day": 0.071058,
+      "arm_b_cost_per_agent_per_day": 4.8,
+      "arm_c_cost_per_agent_per_day": 4.8
+    },
+    {
+      "agents": 100,
+      "decisions_per_day": 39000,
+      "api_cost_per_day": 7.1058,
+      "context_sync_cost_per_day": 0.0,
+      "arm_b_gpus": 9,
+      "arm_b_cost_per_day": 432.0,
+      "arm_b_utilisation": 0.9358769649195837,
+      "arm_c_gpus": 1,
+      "arm_c_cost_per_day": 48.0,
+      "arm_c_utilisation": 0.048640571597224166,
+      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "arm_b_cost_per_agent_per_day": 4.32,
+      "arm_c_cost_per_agent_per_day": 0.48
+    },
+    {
+      "agents": 500,
+      "decisions_per_day": 195000,
+      "api_cost_per_day": 35.529,
+      "context_sync_cost_per_day": 0.0,
+      "arm_b_gpus": 43,
+      "arm_b_cost_per_day": 2064.0,
+      "arm_b_utilisation": 0.9794061260786341,
+      "arm_c_gpus": 1,
+      "arm_c_cost_per_day": 48.0,
+      "arm_c_utilisation": 0.24320285798612082,
+      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "arm_b_cost_per_agent_per_day": 4.128,
+      "arm_c_cost_per_agent_per_day": 0.096
+    },
+    {
+      "agents": 1000,
+      "decisions_per_day": 390000,
+      "api_cost_per_day": 71.058,
+      "context_sync_cost_per_day": 0.0,
+      "arm_b_gpus": 85,
+      "arm_b_cost_per_day": 4080.0,
+      "arm_b_utilisation": 0.9909285510913238,
+      "arm_c_gpus": 1,
+      "arm_c_cost_per_day": 48.0,
+      "arm_c_utilisation": 0.48640571597224164,
+      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "arm_b_cost_per_agent_per_day": 4.08,
+      "arm_c_cost_per_agent_per_day": 0.048
+    }
+  ],
+  "crossover": {
+    "arm_b": {
+      "available": false,
+      "never_cheaper": true,
+      "reason": "self-hosting is never cheaper at any agent count",
+      "self_hosted_cost_per_agent_per_day": 4.042992,
+      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "cost_ratio": 56.89706999915561,
+      "interpretation": "Throughput is low enough that serving one agent-day costs $4.0430 on this stack against $0.0711 through the API \u2014 a factor of 57. Adding agents adds GPUs at roughly the same rate, so the lines never cross. This stack does not justify self-hosting at any scale; the batching runtime is what changes that."
+    },
+    "arm_c": {
+      "available": true,
+      "crossover_agents": 676,
+      "crossover_agents_exact": 675.5045174364602,
+      "gpus_at_crossover": 1,
+      "gpu_capacity_decisions_per_day": 801799.7881058138,
+      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "interpretation": "Below ~676 agents the API is cheaper \u2014 a rented GPU would sit mostly idle. Above it, self-hosting wins because the GPU's marginal cost is zero until the next one is needed."
+    }
+  },
+  "sensitivity": [
+    {
+      "scenario": "baseline",
+      "api_cost_per_request": 0.0001822,
+      "gpu_usd_per_hour": 2.0,
+      "crossover_agents": 676,
+      "available": true
+    },
+    {
+      "scenario": "API price x2",
+      "api_cost_per_request": 0.0003644,
+      "gpu_usd_per_hour": 2.0,
+      "crossover_agents": 338,
+      "available": true
+    },
+    {
+      "scenario": "API price x0.5",
+      "api_cost_per_request": 9.11e-05,
+      "gpu_usd_per_hour": 2.0,
+      "crossover_agents": 1352,
+      "available": true
+    },
+    {
+      "scenario": "GPU $3/hr",
+      "api_cost_per_request": 0.0001822,
+      "gpu_usd_per_hour": 3.0,
+      "crossover_agents": 1014,
+      "available": true
+    },
+    {
+      "scenario": "GPU $1/hr (spot)",
+      "api_cost_per_request": 0.0001822,
+      "gpu_usd_per_hour": 1.0,
+      "crossover_agents": 338,
+      "available": true
+    },
+    {
+      "scenario": "API x2 + GPU $3/hr",
+      "api_cost_per_request": 0.0003644,
+      "gpu_usd_per_hour": 3.0,
+      "crossover_agents": 507,
+      "available": true
+    }
+  ],
+  "omissions": [
+    "Engineering and on-call cost of self-hosting \u2014 usually dominant at small N, not priced here. The crossover is a LOWER bound.",
+    "Rate limits: the API line assumes unbounded purchasable throughput. Above the measured ceiling it is unavailable at any price without a contract change (see rate_limit_probe.py).",
+    "Latency: cost parity is not user-experience parity.",
+    "Reliability, cold starts, and failover."
+  ]
+}

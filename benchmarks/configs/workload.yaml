@@ -64,6 +64,27 @@ workload:
   # open-loop Poisson arrival model is a Phase 3 ablation, not the default.
   arrival: burst
 
+api:
+  # Arm A — hosted API. ATL's current production default.
+  model: nvidia/nemotron-3-nano-30b-a3b
+  base_url: https://openrouter.ai/api/v1/chat/completions
+  # USD per million tokens. Provider pricing CHANGES; these are defaults, and
+  # whatever values a run actually used are written into its manifest with a
+  # capture date, so a future reader can tell which schedule produced a cost.
+  price_input_per_m: 0.05
+  price_output_per_m: 0.20
+  # SSE streaming. Without it there is no first-token signal, so TTFT and ITL
+  # are unavailable and e2e collapses to a single instant.
+  stream: true
+  timeout_s: 300
+  max_retries: 4
+
+workload_api:
+  # Arm A reaches higher offered load than the local arms because it is not
+  # bounded by one card — its interesting ceiling is the provider's rate limit,
+  # not VRAM. Kept separate so the local arms' sweep stays untouched.
+  concurrency: [1, 8, 32, 64, 128]
+
 warmup:
   # Discarded, not measured. Without this the first request of every level
   # absorbs lazy CUDA context init and kernel autotuning — which is what

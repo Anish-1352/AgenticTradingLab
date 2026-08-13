@@ -244,7 +244,7 @@ def _vram_section(runs: Sequence[RunSet], levels: Sequence[int]) -> str:
 
 def render_csv(runs: Sequence[RunSet], levels: Sequence[int]) -> str:
     out = io.StringIO()
-    writer = csv.writer(out)
+    writer = csv.writer(out, lineterminator="\n")
     writer.writerow(["concurrency", "metric", "unit"] + [r.display for r in runs])
     for c in levels:
         for row in build_table(runs, c):
