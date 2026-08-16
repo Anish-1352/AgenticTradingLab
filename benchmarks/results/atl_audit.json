@@ -1,0 +1,441 @@
+{
+  "backend_root": "dashboard/backend",
+  "files_scanned": 95,
+  "call_sites": [
+    {
+      "file": "dashboard/backend/domain/backtesting/algo_service.py",
+      "line": 173,
+      "callee": "client.messages.create",
+      "function": "process_chat",
+      "function_stack": [
+        "process_chat"
+      ],
+      "in_loop": false,
+      "loops": [],
+      "in_try": true,
+      "is_async": false,
+      "max_tokens": "1500",
+      "model": "LLM_MODEL",
+      "system": "system",
+      "temperature": "0.2"
+    },
+    {
+      "file": "dashboard/backend/domain/chat/service.py",
+      "line": 234,
+      "callee": "client.messages.create",
+      "function": "chat_with_agent",
+      "function_stack": [
+        "chat_with_agent"
+      ],
+      "in_loop": true,
+      "loops": [
+        {
+          "kind": "for \u2026 in enumerate(candidates)",
+          "line": 231
+        }
+      ],
+      "in_try": true,
+      "is_async": true,
+      "max_tokens": "1200",
+      "model": "candidate",
+      "system": "SYSTEM_PROMPT",
+      "temperature": null
+    },
+    {
+      "file": "dashboard/backend/domain/chat/service.py",
+      "line": 367,
+      "callee": "client.messages.create",
+      "function": "synthesize_strategy_prompt",
+      "function_stack": [
+        "synthesize_strategy_prompt"
+      ],
+      "in_loop": true,
+      "loops": [
+        {
+          "kind": "for \u2026 in enumerate(candidates)",
+          "line": 364
+        }
+      ],
+      "in_try": true,
+      "is_async": true,
+      "max_tokens": "900",
+      "model": "candidate",
+      "system": "STRATEGY_SYNTH_SYSTEM",
+      "temperature": null
+    },
+    {
+      "file": "dashboard/backend/infrastructure/llm/backtest_harness.py",
+      "line": 209,
+      "callee": "client.messages.create",
+      "function": "request_trading_decision",
+      "function_stack": [
+        "request_trading_decision"
+      ],
+      "in_loop": false,
+      "loops": [],
+      "in_try": false,
+      "is_async": false,
+      "max_tokens": null,
+      "model": null,
+      "system": null,
+      "temperature": null
+    },
+    {
+      "file": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+      "line": 381,
+      "callee": "client.messages.create",
+      "function": "run_post_trade_analysis",
+      "function_stack": [
+        "run_post_trade_analysis"
+      ],
+      "in_loop": true,
+      "loops": [
+        {
+          "kind": "for \u2026 in enumerate(post_trade_steps)",
+          "line": 369
+        }
+      ],
+      "in_try": true,
+      "is_async": false,
+      "max_tokens": "DEFAULT_MAX_OUTPUT_TOKENS",
+      "model": "model or LLM_MODEL_NAME",
+      "system": "POST_TRADE_SYSTEM_PROMPT",
+      "temperature": null
+    },
+    {
+      "file": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+      "line": 466,
+      "callee": "client.messages.create",
+      "function": "run_pipeline_decision",
+      "function_stack": [
+        "run_pipeline_decision"
+      ],
+      "in_loop": true,
+      "loops": [
+        {
+          "kind": "for \u2026 in enumerate(decision_steps)",
+          "line": 451
+        }
+      ],
+      "in_try": false,
+      "is_async": false,
+      "max_tokens": "DEFAULT_MAX_OUTPUT_TOKENS",
+      "model": "model or LLM_MODEL_NAME",
+      "system": "PIPELINE_SYSTEM_PROMPT",
+      "temperature": null
+    }
+  ],
+  "summary": {
+    "total_call_sites": 6,
+    "call_sites_in_loops": 4,
+    "call_sites_fixed": 2,
+    "calls_per_decision_is_fixed": false,
+    "by_function": {
+      "chat_with_agent": [
+        {
+          "file": "dashboard/backend/domain/chat/service.py",
+          "line": 234,
+          "in_loop": true,
+          "max_tokens": "1200",
+          "loops": [
+            {
+              "kind": "for \u2026 in enumerate(candidates)",
+              "line": 231
+            }
+          ]
+        }
+      ],
+      "process_chat": [
+        {
+          "file": "dashboard/backend/domain/backtesting/algo_service.py",
+          "line": 173,
+          "in_loop": false,
+          "max_tokens": "1500",
+          "loops": []
+        }
+      ],
+      "request_trading_decision": [
+        {
+          "file": "dashboard/backend/infrastructure/llm/backtest_harness.py",
+          "line": 209,
+          "in_loop": false,
+          "max_tokens": null,
+          "loops": []
+        }
+      ],
+      "run_pipeline_decision": [
+        {
+          "file": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+          "line": 466,
+          "in_loop": true,
+          "max_tokens": "DEFAULT_MAX_OUTPUT_TOKENS",
+          "loops": [
+            {
+              "kind": "for \u2026 in enumerate(decision_steps)",
+              "line": 451
+            }
+          ]
+        }
+      ],
+      "run_post_trade_analysis": [
+        {
+          "file": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+          "line": 381,
+          "in_loop": true,
+          "max_tokens": "DEFAULT_MAX_OUTPUT_TOKENS",
+          "loops": [
+            {
+              "kind": "for \u2026 in enumerate(post_trade_steps)",
+              "line": 369
+            }
+          ]
+        }
+      ],
+      "synthesize_strategy_prompt": [
+        {
+          "file": "dashboard/backend/domain/chat/service.py",
+          "line": 367,
+          "in_loop": true,
+          "max_tokens": "900",
+          "loops": [
+            {
+              "kind": "for \u2026 in enumerate(candidates)",
+              "line": 364
+            }
+          ]
+        }
+      ]
+    },
+    "sequential_vs_concurrent": {
+      "async_call_sites": 2,
+      "sync_call_sites": 4,
+      "note": "A synchronous call inside a for-loop is a SEQUENTIAL chain: per-decision latency is the sum of every step, not the max. No call site here is dispatched concurrently."
+    },
+    "max_tokens_settings": [
+      "1200",
+      "1500",
+      "900",
+      "DEFAULT_MAX_OUTPUT_TOKENS"
+    ],
+    "retry_surfaces": [
+      {
+        "file": "dashboard/backend/domain/chat/service.py",
+        "line": 234,
+        "function": "chat_with_agent",
+        "loops": [
+          {
+            "kind": "for \u2026 in enumerate(candidates)",
+            "line": 231
+          }
+        ],
+        "why": "call sits inside a loop AND a try block \u2014 a retry path here multiplies calls per decision"
+      },
+      {
+        "file": "dashboard/backend/domain/chat/service.py",
+        "line": 367,
+        "function": "synthesize_strategy_prompt",
+        "loops": [
+          {
+            "kind": "for \u2026 in enumerate(candidates)",
+            "line": 364
+          }
+        ],
+        "why": "call sits inside a loop AND a try block \u2014 a retry path here multiplies calls per decision"
+      },
+      {
+        "file": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+        "line": 381,
+        "function": "run_post_trade_analysis",
+        "loops": [
+          {
+            "kind": "for \u2026 in enumerate(post_trade_steps)",
+            "line": 369
+          }
+        ],
+        "why": "call sits inside a loop AND a try block \u2014 a retry path here multiplies calls per decision"
+      }
+    ]
+  },
+  "prompt_composition": {
+    "dashboard/backend/infrastructure/llm/pipeline_runner.py::_build_step_prompt": {
+      "available": true,
+      "function": "_build_step_prompt",
+      "static_segment_count": 16,
+      "static_segments": [
+        "=== REQUIRED OUTPUT FORMAT ===",
+        "=== SUB-AGENT:",
+        "===",
+        "{\"output\": \"...\"}",
+        "Return ONLY valid JSON matching the required output format.",
+        "=== MARKET SNAPSHOT ===",
+        "=== UPSTREAM PIPELINE OUTPUTS ===",
+        "=== EXECUTION RULES ===",
+        "- Trade ONLY symbols listed in the market snapshot.",
+        "- Only SELL symbols that appear in current_holdings.",
+        "- Respect available cash for buy orders.",
+        "- Use integer share quantities.",
+        "label",
+        "Step",
+        "prompt",
+        "outputFormat"
+      ],
+      "dynamic_segment_count": 8,
+      "dynamic_segments": [
+        {
+          "line": 99,
+          "via": "strip",
+          "source_expression": "step.get('label') or f'Step {step_index + 1}'",
+          "conditional": false
+        },
+        {
+          "line": 100,
+          "via": "strip",
+          "source_expression": "step.get('prompt') or ''",
+          "conditional": false
+        },
+        {
+          "line": 101,
+          "via": "strip",
+          "source_expression": "step.get('outputFormat') or ''",
+          "conditional": false
+        },
+        {
+          "line": 142,
+          "via": "join",
+          "source_expression": "parts",
+          "conditional": false
+        },
+        {
+          "line": 104,
+          "via": "f-string",
+          "source_expression": "label",
+          "conditional": false
+        },
+        {
+          "line": 99,
+          "via": "f-string",
+          "source_expression": "step_index + 1",
+          "conditional": false
+        },
+        {
+          "line": 116,
+          "via": "json.dumps",
+          "source_expression": "market_snapshot",
+          "conditional": true
+        },
+        {
+          "line": 125,
+          "via": "json.dumps",
+          "source_expression": "prior_outputs",
+          "conditional": true
+        }
+      ],
+      "conditional_branches": [
+        {
+          "line": 111,
+          "condition": "step_index == 0"
+        },
+        {
+          "line": 120,
+          "condition": "prior_outputs"
+        },
+        {
+          "line": 129,
+          "condition": "is_last"
+        }
+      ],
+      "interpretation": "Static segments are candidates for a shared prefix. Dynamic ones are not, and a dynamic segment that appears EARLY in the prompt truncates the shareable prefix at that point regardless of how much static text follows it."
+    },
+    "dashboard/backend/infrastructure/llm/pipeline_runner.py::_build_post_trade_prompt": {
+      "available": true,
+      "function": "_build_post_trade_prompt",
+      "static_segment_count": 25,
+      "static_segments": [
+        "trading_day",
+        "day_start_equity",
+        "day_end_equity",
+        "day_return",
+        "trade_count",
+        "trades",
+        "latest_step_outputs",
+        "decision_prompts",
+        "trading_day",
+        "day_start_equity",
+        "day_end_equity",
+        "day_return",
+        "trade_count",
+        "=== REQUIRED OUTPUT FORMAT ===",
+        "=== DAY EPISODE CONTEXT ===",
+        "Return ONLY valid JSON matching the required output format.",
+        "Post-trade Analysis",
+        "latest_step_outputs",
+        "=== SUB-AGENT:",
+        "===",
+        "JSON: { \"summary\": \"...\", \"prompt_problems\": [], \"prompt_patches\": [] }",
+        "label",
+        "prompt",
+        "outputFormat",
+        "trades"
+      ],
+      "dynamic_segment_count": 6,
+      "dynamic_segments": [
+        {
+          "line": 314,
+          "via": "strip",
+          "source_expression": "step.get('label') or 'Post-trade Analysis'",
+          "conditional": false
+        },
+        {
+          "line": 315,
+          "via": "strip",
+          "source_expression": "step.get('prompt') or ''",
+          "conditional": false
+        },
+        {
+          "line": 316,
+          "via": "strip",
+          "source_expression": "step.get('outputFormat') or ''",
+          "conditional": false
+        },
+        {
+          "line": 327,
+          "via": "join",
+          "source_expression": "[f'=== SUB-AGENT: {label} ===', task, '', '=== REQUIRED OUTPUT FORMAT ===', output_format or 'JSON: { \"summary\": \"...\", \"prompt_problems\": [], \"prompt_patches\":",
+          "conditional": false
+        },
+        {
+          "line": 329,
+          "via": "f-string",
+          "source_expression": "label",
+          "conditional": false
+        },
+        {
+          "line": 339,
+          "via": "json.dumps",
+          "source_expression": "context",
+          "conditional": false
+        }
+      ],
+      "conditional_branches": [],
+      "interpretation": "Static segments are candidates for a shared prefix. Dynamic ones are not, and a dynamic segment that appears EARLY in the prompt truncates the shareable prefix at that point regardless of how much static text follows it."
+    }
+  },
+  "errors": [],
+  "unknowns": [
+    {
+      "unknown": "calls per decision (absolute number)",
+      "why": "The pipeline is user-configured DATA, not code: one LLM call is made per configured step. Static analysis can say 'one per step' and locate the loop; only a real run's metadata.initial_pipeline says how many steps an agent had.",
+      "how_to_resolve": "Read metadata.initial_pipeline from agent_runs, or llm_calls / number-of-decisions for the observed average. atl_token_extract.py does both."
+    },
+    {
+      "unknown": "input tokens per call",
+      "why": "Prompt size is dominated by the market snapshot and the accumulated upstream outputs, both runtime values.",
+      "how_to_resolve": "agent_runs.input_tokens / agent_runs.llm_calls gives the MEAN. The distribution is not recoverable \u2014 see atl_token_extract.py."
+    },
+    {
+      "unknown": "how often retry paths fire",
+      "why": "Retries are triggered by malformed model output at runtime.",
+      "how_to_resolve": "Instrument the retry branch with a counter."
+    }
+  ]
+}

@@ -61,10 +61,116 @@ if _BENCH_ROOT not in sys.path:
 from analysis.loader import load_run  # noqa: E402
 
 __all__ = ["throughput_per_gpu", "model_costs", "find_crossover",
-           "sensitivity", "to_csv", "format_report"]
+           "sensitivity", "lever_sensitivity", "cost_per_decision",
+           "to_csv", "format_report"]
+
+# USD per million tokens, for the lever table. Model choice spans ~100x, which
+# is why it is listed first: it dominates every other lever combined.
+MODEL_PRICES = {
+    "nvidia/nemotron-3-nano-30b-a3b": (0.05, 0.20),
+    "deepseek/deepseek-v4-pro": (0.435, 0.87),
+    "qwen/qwen3.7-plus": (0.40, 1.60),
+    "anthropic/claude-sonnet-4-6": (3.0, 15.0),
+    "openai/gpt-5.5": (5.0, 30.0),
+}
+
+
+def cost_per_decision(
+    calls_per_decision: float,
+    input_tokens_per_call: float,
+    output_tokens_per_call: float,
+    price_in_per_m: float,
+    price_out_per_m: float,
+    prefix_cache_hit_rate: float = 0.0,
+    cached_input_discount: float = 0.1,
+) -> float:
+    """USD for one agent decision.
+
+    A decision is ``calls_per_decision`` LLM calls, not one — ATL's pipeline
+    issues one call per configured step, sequentially. Getting this wrong scales
+    the entire cost model linearly.
+
+    ``prefix_cache_hit_rate`` discounts only the INPUT side, and only the cached
+    fraction: output tokens are generated fresh every time and never cached.
+    """
+    hit = max(0.0, min(1.0, prefix_cache_hit_rate))
+    effective_in = input_tokens_per_call * (
+        (1.0 - hit) + hit * cached_input_discount
+    )
+    per_call = (effective_in / 1e6) * price_in_per_m + (
+        output_tokens_per_call / 1e6) * price_out_per_m
+    return per_call * calls_per_decision
+
+
+def lever_sensitivity(
+    *,
+    baseline_calls: float,
+    baseline_input: float,
+    baseline_output: float,
+    price_in: float,
+    price_out: float,
+    calls_range=(1, 3, 6),
+    input_range=(2620, 4790, 20000),
+    hit_rates=(0.0, 0.5, 0.9),
+) -> Dict[str, Any]:
+    """Rank the levers by how far each moves cost per decision.
+
+    Ordered by measured effect size rather than by intuition. Model choice
+    spanning ~100x while prefix caching saves at most the input side is itself
+    the finding: optimising the cache before checking the model is optimising
+    the smaller term.
+    """
+    base = cost_per_decision(baseline_calls, baseline_input, baseline_output,
+                             price_in, price_out)
+
+    def _span(values):
+        lo, hi = min(values), max(values)
+        return (hi / lo) if lo else None
+
+    model_costs_ = {
+        name: cost_per_decision(baseline_calls, baseline_input, baseline_output,
+                                pin, pout)
+        for name, (pin, pout) in MODEL_PRICES.items()
+    }
+    call_costs = {
+        n: cost_per_decision(n, baseline_input, baseline_output, price_in, price_out)
+        for n in calls_range
+    }
+    input_costs = {
+        n: cost_per_decision(baseline_calls, n, baseline_output, price_in, price_out)
+        for n in input_range
+    }
+    cache_costs = {
+        h: cost_per_decision(baseline_calls, baseline_input, baseline_output,
+                             price_in, price_out, prefix_cache_hit_rate=h)
+        for h in hit_rates
+    }
+
+    levers = [
+        {"lever": "model choice", "values": model_costs_,
+         "span_factor": _span(list(model_costs_.values()))},
+        {"lever": "calls per decision", "values": call_costs,
+         "span_factor": _span(list(call_costs.values()))},
+        {"lever": "input tokens per call", "values": input_costs,
+         "span_factor": _span(list(input_costs.values()))},
+        {"lever": "prefix cache hit rate", "values": cache_costs,
+         "span_factor": _span(list(cache_costs.values()))},
+    ]
+    levers.sort(key=lambda l: l["span_factor"] or 0, reverse=True)
+    return {
+        "baseline_cost_per_decision": base,
+        "levers": levers,
+        "note": (
+            "Span factor is max/min cost across the values tried for that lever "
+            "alone. Model choice dominating the list means a cache or a shorter "
+            "prompt cannot rescue an expensive model — pick the model first."
+        ),
+    }
 
 DEFAULT_AGENT_COUNTS = (1, 10, 100, 500, 1000)
 DEFAULT_GPU_USD_PER_HOUR = 2.0
+DEFAULT_PRICE_IN = 0.05
+DEFAULT_PRICE_OUT = 0.20
 DEFAULT_DECISIONS_PER_AGENT_PER_DAY = 390  # one per minute over a 6.5h session
 SECONDS_PER_DAY = 86400.0
 
@@ -321,6 +427,17 @@ def format_report(result: Dict[str, Any]) -> str:
           f"{s['gpu_usd_per_hour']:>10.2f} "
           f"{(str(s['crossover_agents']) if s['crossover_agents'] else '—'):>12}")
 
+    lv = result.get("levers")
+    if lv:
+        A("")
+        A(f"  Levers, by effect size (baseline "
+          f"${lv['baseline_cost_per_decision']:.6f}/decision):")
+        for l in lv["levers"]:
+            span = l["span_factor"]
+            A(f"    {l['lever']:<24} span {span:>7.1f}x" if span
+              else f"    {l['lever']:<24} span      —")
+        A(f"    {lv['note']}")
+
     A("")
     A("  OMITTED — and these move the answer:")
     for note in result["omissions"]:
@@ -342,6 +459,15 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="arm A *_summary.json; its measured cost/request is "
                          "used in preference to --api-cost-per-request")
     ap.add_argument("--api-cost-per-request", type=float, default=None)
+    ap.add_argument("--calls-per-decision", type=float, default=1.0,
+                    help="LLM calls per agent decision. ATL's pipeline issues "
+                         "one per configured step — see atl_pipeline_audit.py. "
+                         "The default of 1 is the ORIGINAL ASSUMPTION.")
+    ap.add_argument("--input-tokens", type=float, default=None,
+                    help="measured input tokens per call (atl_token_extract.py)")
+    ap.add_argument("--output-tokens", type=float, default=None,
+                    help="measured output tokens per call")
+    ap.add_argument("--prefix-cache-hit-rate", type=float, default=0.0)
     ap.add_argument("--decisions-per-agent-per-day", type=int,
                     default=DEFAULT_DECISIONS_PER_AGENT_PER_DAY)
     ap.add_argument("--gpu-usd-per-hour", type=float, default=DEFAULT_GPU_USD_PER_HOUR)
@@ -368,9 +494,23 @@ def main(argv: Optional[List[str]] = None) -> int:
                 api_cost = note["api_cost_per_request"]
                 api_source = f"measured, {run_a.run_id} C={c}"
                 break
+    # Measured tokens override a flat per-request price, and the call count
+    # multiplies whichever is used.
+    assumed_cost = api_cost
+    if args.input_tokens is not None and args.output_tokens is not None:
+        api_cost = cost_per_decision(
+            args.calls_per_decision, args.input_tokens, args.output_tokens,
+            DEFAULT_PRICE_IN, DEFAULT_PRICE_OUT,
+            prefix_cache_hit_rate=args.prefix_cache_hit_rate)
+        api_source = (f"measured tokens x {args.calls_per_decision} calls/decision")
+    elif api_cost is not None and args.calls_per_decision != 1.0:
+        api_cost = api_cost * args.calls_per_decision
+        api_source += f" x {args.calls_per_decision} calls/decision"
+
     if api_cost is None:
-        print("ERROR: supply --api-cost-per-request or --arm-a with a measured "
-              "cost. The model will not invent a price.", file=sys.stderr)
+        print("ERROR: supply --api-cost-per-request, --arm-a, or "
+              "--input-tokens/--output-tokens. The model will not invent a "
+              "price.", file=sys.stderr)
         return 2
 
     rows = model_costs(
@@ -405,6 +545,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         "throughput": tput,
         "rows": rows,
         "crossover": crossover,
+        "assumed_cost_per_request_one_call": assumed_cost,
+        "levers": lever_sensitivity(
+            baseline_calls=args.calls_per_decision,
+            baseline_input=args.input_tokens or 2620.0,
+            baseline_output=args.output_tokens or 256.0,
+            price_in=DEFAULT_PRICE_IN, price_out=DEFAULT_PRICE_OUT,
+        ),
         "sensitivity": sensitivity(
             {}, api_cost_per_request=api_cost,
             decisions_per_agent_per_day=args.decisions_per_agent_per_day,

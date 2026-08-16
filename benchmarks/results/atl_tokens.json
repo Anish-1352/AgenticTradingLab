@@ -1,0 +1,370 @@
+{
+  "extract": {
+    "available": true,
+    "db_path": "/Users/ark/Columbia MAFN/Quantum FinAI LAB/AgenticTradingLab/dashboard/storage/data/backtest.db",
+    "runs": [
+      {
+        "run_id": "agent_20260525_140635",
+        "agent_name": "Agent",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-05-25 18:06:35",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "buyhold_20260525_140635",
+        "agent_name": "buy-and-hold",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-05-25 18:06:35",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "djia_index_20260525_140635",
+        "agent_name": "DJIA",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-05-25 18:06:35",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "djia_paper_baseline_20260705_020057_7b8acda8",
+        "agent_name": "DJIA Index",
+        "mode": "paper_baseline",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:00:57",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "bah_paper_baseline_20260705_020057_e9b7c4a9",
+        "agent_name": "Buy & Hold DJIA",
+        "mode": "paper_baseline",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:00:57",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_spy_index_20260415_20260515",
+        "agent_name": "Agentic Trading Lab",
+        "mode": "leaderboard",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:06:28",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_djia_index_20260415_20260515",
+        "agent_name": "Agentic Trading Lab",
+        "mode": "leaderboard",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:06:28",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_buy_hold_djia_20260415_20260515",
+        "agent_name": "Agentic Trading Lab",
+        "mode": "leaderboard",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:06:28",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_mean_variance_djia_20260415_20260515",
+        "agent_name": "Agentic Trading Lab",
+        "mode": "leaderboard",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:06:28",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_equal_weight_djia_20260415_20260515",
+        "agent_name": "Agentic Trading Lab",
+        "mode": "leaderboard",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-07-05 06:06:28",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_claude_haiku_4_5_20260415_20260515",
+        "agent_name": "Claude Haiku 4.5",
+        "mode": "leaderboard",
+        "llm_calls": 161,
+        "input_tokens": 794319,
+        "output_tokens": 186272,
+        "est_cost_usd": 1.725679,
+        "created_at": "2026-07-05 05:39:28",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 4933.658385093167,
+        "mean_output_tokens_per_call": 1156.9689440993789,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_qwen3_7_plus_20260415_20260515",
+        "agent_name": "Qwen3.7 Plus",
+        "mode": "leaderboard",
+        "llm_calls": 161,
+        "input_tokens": 841100,
+        "output_tokens": 785559,
+        "est_cost_usd": 1.593334,
+        "created_at": "2026-07-05 15:35:37",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 5224.223602484472,
+        "mean_output_tokens_per_call": 4879.248447204969,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_gemini_3_1_pro_preview_20260415_20260515",
+        "agent_name": "Gemini 3.1 Pro Preview",
+        "mode": "leaderboard",
+        "llm_calls": 161,
+        "input_tokens": 796905,
+        "output_tokens": 805731,
+        "est_cost_usd": 11.262582,
+        "created_at": "2026-07-05 16:39:02",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 4949.72049689441,
+        "mean_output_tokens_per_call": 5004.540372670807,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_gpt_5_5_20260415_20260515",
+        "agent_name": "GPT-5.5",
+        "mode": "leaderboard",
+        "llm_calls": 161,
+        "input_tokens": 627104,
+        "output_tokens": 358422,
+        "est_cost_usd": 13.88818,
+        "created_at": "2026-07-05 16:58:33",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 3895.055900621118,
+        "mean_output_tokens_per_call": 2226.223602484472,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_deepseek_v4_pro_20260415_20260515",
+        "agent_name": "DeepSeek V4 Pro",
+        "mode": "leaderboard",
+        "llm_calls": 161,
+        "input_tokens": 644824,
+        "output_tokens": 546694,
+        "est_cost_usd": 0.756122,
+        "created_at": "2026-07-05 19:32:40",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 4005.11801242236,
+        "mean_output_tokens_per_call": 3395.614906832298,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_nemotron_3_nano_30b_20260415_20260515",
+        "agent_name": "Nemotron 3 Nano 30B",
+        "mode": "leaderboard",
+        "llm_calls": 160,
+        "input_tokens": 880293,
+        "output_tokens": 137630,
+        "est_cost_usd": 0.071541,
+        "created_at": "2026-07-12 07:49:30",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 5501.83125,
+        "mean_output_tokens_per_call": 860.1875,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      },
+      {
+        "run_id": "lb_claude_sonnet_4_6_20260415_20260515",
+        "agent_name": "Claude Sonnet 4.6",
+        "mode": "leaderboard",
+        "llm_calls": 161,
+        "input_tokens": 807731,
+        "output_tokens": 167861,
+        "est_cost_usd": 4.941108,
+        "created_at": "2026-07-12 08:44:40",
+        "pipeline": {
+          "available": false,
+          "reason": "no metadata"
+        },
+        "mean_input_tokens_per_call": 5016.962732919254,
+        "mean_output_tokens_per_call": 1042.6149068322982,
+        "decisions_recorded": 0,
+        "observed_calls_per_decision": null
+      }
+    ],
+    "agent_runs_columns": [
+      "run_id",
+      "agent_name",
+      "mode",
+      "start_date",
+      "end_date",
+      "initial_equity",
+      "final_equity",
+      "total_return",
+      "sharpe_ratio",
+      "max_drawdown",
+      "num_trades",
+      "created_at",
+      "updated_at",
+      "session_id",
+      "llm_model",
+      "baseline_djia_run_id",
+      "baseline_buyhold_run_id",
+      "llm_calls",
+      "input_tokens",
+      "output_tokens",
+      "est_cost_usd",
+      "metadata"
+    ],
+    "has_per_call_table": false
+  },
+  "summary": {
+    "available": true,
+    "runs_with_llm_calls": 7,
+    "models": [],
+    "input_tokens_per_call": {
+      "n_runs": 7,
+      "mean_of_run_means": 4789.510054347826,
+      "min_run_mean": 3895.055900621118,
+      "max_run_mean": 5501.83125,
+      "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
+    },
+    "output_tokens_per_call": {
+      "n_runs": 7,
+      "mean_of_run_means": 2652.1998114463177,
+      "min_run_mean": 860.1875,
+      "max_run_mean": 5004.540372670807,
+      "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
+    },
+    "calls_per_decision_observed": null,
+    "calls_per_decision_from_pipeline_config": [],
+    "per_call_distribution": {
+      "available": false,
+      "reason": "agent_runs stores summed totals; backtest_decisions carries no token columns. min/median/p95/max cannot be derived \u2014 the distribution was destroyed by summation before persistence.",
+      "instrumentation_gap": {
+        "what_is_missing": "per-LLM-call token records",
+        "why": "portfolio_manager and engine accumulate input_tokens / output_tokens / llm_calls with += over the whole run, and insert_run writes the three totals. The per-call values exist only as transient locals.",
+        "minimal_fix": "A table `llm_call_usage(run_id, decision_index, step_index, model, input_tokens, output_tokens, created_at)` written where extract_token_usage() already returns the pair \u2014 pipeline_runner.py line ~473 and ~388, and portfolio_manager.py line ~399. Those three sites already hold everything the row needs; nothing new has to be computed.",
+        "why_it_is_worth_it": "It converts every downstream cost figure from an assumption into a measurement, and it is the only way to see whether the first pipeline step dominates input tokens \u2014 which decides whether prefix caching helps ATL at all."
+      }
+    }
+  }
+}

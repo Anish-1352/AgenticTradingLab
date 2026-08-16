@@ -397,9 +397,118 @@ def build_low_overlap(
     )
 
 
+def build_atl_realistic(
+    tokenizer: Tokenizer,
+    n_requests: int,
+    context_tokens: int = DEFAULT_CONTEXT_TOKENS,
+    seed: int = DEFAULT_SEED,
+    *,
+    static_tokens: Optional[int] = None,
+    per_agent_tokens: Optional[int] = None,
+    derived_from: Optional[Dict[str, Any]] = None,
+) -> Fixture:
+    """A third point between ``shared_prefix`` and ``low_overlap``, from measurement.
+
+    The other two fixtures are deliberate BOUNDS: 99.4% and 0.3% common prefix,
+    both chosen. This one's composition comes from
+    ``analysis/atl_pipeline_audit.py``, which found that a pipeline step prompt
+    is assembled as:
+
+      1. a static frame  ("=== SUB-AGENT: …", the output-format header, the
+         execution rules) — identical for every agent and every decision;
+      2. the step's own configured ``prompt`` / ``outputFormat`` / ``label`` —
+         **per agent**, and rewritten daily by post-trade prompt patching;
+      3. ``json.dumps(market_snapshot)`` on step 0, or
+         ``json.dumps(prior_outputs)`` on later steps — **per decision**.
+
+    The per-decision JSON is what caps prefix sharing: it appears partway into
+    the prompt, so nothing after it is shareable no matter how much static text
+    follows. Two agents share only segment 1; the same agent across two
+    decisions shares segments 1 and 2.
+
+    ``derived_from`` records which audit/extract outputs produced these numbers,
+    so the fixture is traceable to a measurement rather than to a guess. Building
+    it without that provenance is allowed but flagged in the meta.
+    """
+    # Defaults are deliberately conservative and OVERRIDDEN by measurement:
+    # roughly a tenth static frame, a fifth per-agent configuration, the rest
+    # per-decision payload.
+    static_n = static_tokens if static_tokens is not None else max(1, context_tokens // 10)
+    agent_n = per_agent_tokens if per_agent_tokens is not None else max(1, context_tokens // 5)
+    decision_n = context_tokens - static_n - agent_n
+    if decision_n <= 0:
+        raise ValueError(
+            f"static_tokens + per_agent_tokens ({static_n + agent_n}) must be "
+            f"less than context_tokens ({context_tokens})"
+        )
+
+    def _static(min_words: int) -> str:
+        return (
+            _SYSTEM_PROMPT
+            + "\n\n=== REQUIRED OUTPUT FORMAT ===\n"
+            + _paragraphs(random.Random(seed), min_words)
+        )
+
+    static_ids = _exact_ids(tokenizer, _static, static_n)
+
+    requests: List[Dict[str, Any]] = []
+    for i in range(n_requests):
+        ticker = _TICKERS[i % len(_TICKERS)]
+        # Per-agent: the configured step prompt. Constant for one agent across
+        # decisions, different between agents.
+        agent_seed = seed + 3_000_000 + (i % len(_TICKERS))
+
+        def _agent(min_words: int, _s=agent_seed, _t=ticker) -> str:
+            return (f"\n\n=== SUB-AGENT: {_t} desk ===\n"
+                    + _paragraphs(random.Random(_s), min_words))
+
+        def _decision(min_words: int, _i=i) -> str:
+            return ("\n\n=== MARKET SNAPSHOT ===\n"
+                    + _paragraphs(random.Random(seed + 4_000_000 + _i), min_words))
+
+        ids = (list(static_ids)
+               + _exact_ids(tokenizer, _agent, agent_n)
+               + _exact_ids(tokenizer, _decision, decision_n))
+        requests.append({
+            "request_id": f"atl_realistic-{i:04d}",
+            "ticker": ticker,
+            "prompt_token_ids": ids,
+            "prompt_text": tokenizer.decode(ids),
+        })
+
+    return Fixture(
+        name="atl_realistic",
+        tokenizer_name=getattr(tokenizer, "name", "unknown"),
+        tokenizer_is_stub=bool(getattr(tokenizer, "is_stub", False)),
+        seed=seed,
+        context_tokens=context_tokens,
+        n_requests=n_requests,
+        requests=requests,
+        meta={
+            "design": (
+                "static frame + per-agent configured prompt + per-decision "
+                "market payload, in the order pipeline_runner assembles them"
+            ),
+            "static_tokens": static_n,
+            "per_agent_tokens": agent_n,
+            "per_decision_tokens": decision_n,
+            "expected_cross_agent_prefix_tokens": static_n,
+            "expected_same_agent_prefix_tokens": static_n + agent_n,
+            "derived_from": derived_from or {
+                "warning": (
+                    "NOT derived from a measurement — default proportions were "
+                    "used. Pass derived_from with the audit/extract outputs, or "
+                    "treat this fixture as another guess."
+                )
+            },
+        },
+    )
+
+
 FIXTURE_BUILDERS = {
     "shared_prefix": build_shared_prefix,
     "low_overlap": build_low_overlap,
+    "atl_realistic": build_atl_realistic,
 }
 
 
