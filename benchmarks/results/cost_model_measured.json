@@ -1,7 +1,7 @@
 {
   "inputs": {
-    "api_cost_per_request": 0.0001822,
-    "api_cost_source": "--api-cost-per-request",
+    "api_cost_per_request": 0.0023097,
+    "api_cost_source": "measured tokens x 3.0 calls/decision",
     "decisions_per_agent_per_day": 390,
     "gpu_usd_per_hour": 2.0,
     "context_sync_cost_per_day": 0.0
@@ -30,7 +30,7 @@
     {
       "agents": 1,
       "decisions_per_day": 390,
-      "api_cost_per_day": 0.07105800000000001,
+      "api_cost_per_day": 0.900783,
       "context_sync_cost_per_day": 0.0,
       "arm_b_gpus": 1,
       "arm_b_cost_per_day": 48.0,
@@ -38,14 +38,14 @@
       "arm_c_gpus": 1,
       "arm_c_cost_per_day": 48.0,
       "arm_c_utilisation": 0.00048640571597224165,
-      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "api_cost_per_agent_per_day": 0.900783,
       "arm_b_cost_per_agent_per_day": 48.0,
       "arm_c_cost_per_agent_per_day": 48.0
     },
     {
       "agents": 10,
       "decisions_per_day": 3900,
-      "api_cost_per_day": 0.71058,
+      "api_cost_per_day": 9.00783,
       "context_sync_cost_per_day": 0.0,
       "arm_b_gpus": 1,
       "arm_b_cost_per_day": 48.0,
@@ -53,14 +53,14 @@
       "arm_c_gpus": 1,
       "arm_c_cost_per_day": 48.0,
       "arm_c_utilisation": 0.0048640571597224165,
-      "api_cost_per_agent_per_day": 0.071058,
+      "api_cost_per_agent_per_day": 0.900783,
       "arm_b_cost_per_agent_per_day": 4.8,
       "arm_c_cost_per_agent_per_day": 4.8
     },
     {
       "agents": 100,
       "decisions_per_day": 39000,
-      "api_cost_per_day": 7.1058,
+      "api_cost_per_day": 90.0783,
       "context_sync_cost_per_day": 0.0,
       "arm_b_gpus": 9,
       "arm_b_cost_per_day": 432.0,
@@ -68,14 +68,14 @@
       "arm_c_gpus": 1,
       "arm_c_cost_per_day": 48.0,
       "arm_c_utilisation": 0.048640571597224166,
-      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "api_cost_per_agent_per_day": 0.900783,
       "arm_b_cost_per_agent_per_day": 4.32,
       "arm_c_cost_per_agent_per_day": 0.48
     },
     {
       "agents": 500,
       "decisions_per_day": 195000,
-      "api_cost_per_day": 35.529,
+      "api_cost_per_day": 450.3915,
       "context_sync_cost_per_day": 0.0,
       "arm_b_gpus": 43,
       "arm_b_cost_per_day": 2064.0,
@@ -83,14 +83,14 @@
       "arm_c_gpus": 1,
       "arm_c_cost_per_day": 48.0,
       "arm_c_utilisation": 0.24320285798612082,
-      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "api_cost_per_agent_per_day": 0.900783,
       "arm_b_cost_per_agent_per_day": 4.128,
       "arm_c_cost_per_agent_per_day": 0.096
     },
     {
       "agents": 1000,
       "decisions_per_day": 390000,
-      "api_cost_per_day": 71.058,
+      "api_cost_per_day": 900.783,
       "context_sync_cost_per_day": 0.0,
       "arm_b_gpus": 85,
       "arm_b_cost_per_day": 4080.0,
@@ -98,7 +98,7 @@
       "arm_c_gpus": 1,
       "arm_c_cost_per_day": 48.0,
       "arm_c_utilisation": 0.48640571597224164,
-      "api_cost_per_agent_per_day": 0.07105800000000001,
+      "api_cost_per_agent_per_day": 0.900783,
       "arm_b_cost_per_agent_per_day": 4.08,
       "arm_c_cost_per_agent_per_day": 0.048
     }
@@ -109,21 +109,21 @@
       "never_cheaper": true,
       "reason": "self-hosting is never cheaper at any agent count",
       "self_hosted_cost_per_agent_per_day": 4.042992,
-      "api_cost_per_agent_per_day": 0.07105800000000001,
-      "cost_ratio": 56.89706999915561,
-      "interpretation": "Throughput is low enough that serving one agent-day costs $4.0430 on this stack against $0.0711 through the API \u2014 a factor of 57. Adding agents adds GPUs at roughly the same rate, so the lines never cross. This stack does not justify self-hosting at any scale; the batching runtime is what changes that."
+      "api_cost_per_agent_per_day": 0.900783,
+      "cost_ratio": 4.48830850493404,
+      "interpretation": "Throughput is low enough that serving one agent-day costs $4.0430 on this stack against $0.9008 through the API \u2014 a factor of 4. Adding agents adds GPUs at roughly the same rate, so the lines never cross. This stack does not justify self-hosting at any scale; the batching runtime is what changes that."
     },
     "arm_c": {
       "available": true,
-      "crossover_agents": 676,
-      "crossover_agents_exact": 675.5045174364602,
+      "crossover_agents": 54,
+      "crossover_agents_exact": 53.2869736662437,
       "gpus_at_crossover": 1,
       "gpu_capacity_decisions_per_day": 801799.7881058138,
-      "api_cost_per_agent_per_day": 0.07105800000000001,
-      "interpretation": "Below ~676 agents the API is cheaper \u2014 a rented GPU would sit mostly idle. Above it, self-hosting wins because the GPU's marginal cost is zero until the next one is needed."
+      "api_cost_per_agent_per_day": 0.900783,
+      "interpretation": "Below ~54 agents the API is cheaper \u2014 a rented GPU would sit mostly idle. Above it, self-hosting wins because the GPU's marginal cost is zero until the next one is needed."
     }
   },
-  "assumed_cost_per_request_one_call": 0.0001822,
+  "assumed_cost_per_request_one_call": null,
   "per_model": {
     "rows": [
       {
@@ -131,96 +131,96 @@
         "db_model": "nemotron_3_nano_30b",
         "price_in_per_m": 0.05,
         "price_out_per_m": 0.2,
-        "input_tokens_per_call": 5501.8,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 860.2,
         "output_tokens_source": "measured, lb_nemotron_3_nano_30b_20260415_20260515",
-        "cost_per_decision": 0.0013413900000000002,
-        "cost_per_decision_shared_output": 0.0024164700000000004,
-        "own_over_shared_factor": 0.5551031049423333
+        "cost_per_decision": 0.00123462,
+        "cost_per_decision_shared_output": 0.0023097,
+        "own_over_shared_factor": 0.5345369528510197
       },
       {
         "model": "deepseek/deepseek-v4-pro",
         "db_model": "deepseek_v4_pro",
         "price_in_per_m": 0.435,
         "price_out_per_m": 0.87,
-        "input_tokens_per_call": 4005.1,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 3395.6,
         "output_tokens_source": "measured, lb_deepseek_v4_pro_20260415_20260515",
-        "cost_per_decision": 0.014089171499999999,
-        "cost_per_decision_shared_output": 0.012148375500000001,
-        "own_over_shared_factor": 1.1597576564866634
+        "cost_per_decision": 0.015113465999999997,
+        "cost_per_decision_shared_output": 0.01317267,
+        "own_over_shared_factor": 1.1473350505250643
       },
       {
         "model": "qwen/qwen3.7-plus",
         "db_model": "qwen3_7_plus",
         "price_in_per_m": 0.4,
         "price_out_per_m": 1.6,
-        "input_tokens_per_call": 5224.2,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 4879.2,
         "output_tokens_source": "measured, lb_qwen3_7_plus_20260415_20260515",
-        "cost_per_decision": 0.0296892,
-        "cost_per_decision_shared_output": 0.01899864,
-        "own_over_shared_factor": 1.5627013302004773
+        "cost_per_decision": 0.029168160000000002,
+        "cost_per_decision_shared_output": 0.0184776,
+        "own_over_shared_factor": 1.5785686452786076
       },
       {
         "model": "anthropic/claude-haiku-4-5",
         "db_model": "claude_haiku_4_5",
         "price_in_per_m": 1.0,
         "price_out_per_m": 5.0,
-        "input_tokens_per_call": 4933.7,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 1157.0,
         "output_tokens_source": "measured, lb_claude_haiku_4_5_20260415_20260515",
-        "cost_per_decision": 0.03215610000000001,
-        "cost_per_decision_shared_output": 0.0545811,
-        "own_over_shared_factor": 0.5891434947261965
+        "cost_per_decision": 0.031725,
+        "cost_per_decision_shared_output": 0.054150000000000004,
+        "own_over_shared_factor": 0.5858725761772854
       },
       {
         "model": "anthropic/claude-sonnet-4-6",
         "db_model": "claude_sonnet_4_6",
         "price_in_per_m": 3.0,
         "price_out_per_m": 15.0,
-        "input_tokens_per_call": 5016.9,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 1042.6,
         "output_tokens_source": "measured, lb_claude_sonnet_4_6_20260415_20260515",
-        "cost_per_decision": 0.09206909999999999,
-        "cost_per_decision_shared_output": 0.16449209999999997,
-        "own_over_shared_factor": 0.5597174575557124
+        "cost_per_decision": 0.090027,
+        "cost_per_decision_shared_output": 0.16244999999999998,
+        "own_over_shared_factor": 0.5541828254847646
       },
       {
         "model": "google/gemini-3.1-pro",
         "db_model": "gemini_3_1_pro_preview",
         "price_in_per_m": 2.0,
         "price_out_per_m": 12.0,
-        "input_tokens_per_call": 4950.3,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 5004.5,
         "output_tokens_source": "measured, lb_gemini_3_1_pro_preview_20260415_20260515",
-        "cost_per_decision": 0.20986380000000002,
-        "cost_per_decision_shared_output": 0.1251738,
-        "own_over_shared_factor": 1.6765792841632994
+        "cost_per_decision": 0.208902,
+        "cost_per_decision_shared_output": 0.12421199999999999,
+        "own_over_shared_factor": 1.681818181818182
       },
       {
         "model": "openai/gpt-5.5",
         "db_model": "gpt_5_5",
         "price_in_per_m": 5.0,
         "price_out_per_m": 30.0,
-        "input_tokens_per_call": 3895.1,
+        "input_tokens_per_call": 4790.0,
         "output_tokens_per_call": 2226.2,
         "output_tokens_source": "measured, lb_gpt_5_5_20260415_20260515",
-        "cost_per_decision": 0.2587845,
-        "cost_per_decision_shared_output": 0.2971065,
-        "own_over_shared_factor": 0.8710159488264309
+        "cost_per_decision": 0.272208,
+        "cost_per_decision_shared_output": 0.31053,
+        "own_over_shared_factor": 0.8765916336585838
       }
     ],
     "calls_per_decision": 3.0,
     "calls_per_decision_basis": "ILLUSTRATIVE \u2014 not measured",
     "prefix_cache_hit_rate": 0.0,
-    "cost_span_factor": 192.92263994811347,
+    "cost_span_factor": 220.47917577878212,
     "output_price_span_factor": 150.0,
     "verbosity_span_factor": 5.817833062078586,
-    "compounding_note": "Output price spans 150x and verbosity spans 5.8x. They multiply, so cost per decision spans 193x \u2014 wider than either effect alone.",
+    "compounding_note": "Output price spans 150x and verbosity spans 5.8x. They multiply, so cost per decision spans 220x \u2014 wider than either effect alone.",
     "production_default": {
       "model": "nvidia/nemotron-3-nano-30b-a3b",
-      "cost_per_decision": 0.0013413900000000002,
+      "cost_per_decision": 0.00123462,
       "rank": 1,
       "of": 7,
       "note": "ATL's default is both the cheapest per token AND the least verbose, so the two effects compound in its favour rather than cancelling. Any move off it pays twice."
@@ -232,47 +232,47 @@
     ]
   },
   "levers": {
-    "baseline_cost_per_decision": 0.0001822,
+    "baseline_cost_per_decision": 0.0023097,
     "levers": [
       {
         "lever": "model choice",
         "values": {
-          "nvidia/nemotron-3-nano-30b-a3b": 0.0001822,
-          "deepseek/deepseek-v4-pro": 0.00136242,
-          "qwen/qwen3.7-plus": 0.0014576,
-          "google/gemini-3.1-pro": 0.008312,
-          "anthropic/claude-haiku-4-5": 0.0039,
-          "anthropic/claude-sonnet-4-6": 0.011699999999999999,
-          "openai/gpt-5.5": 0.02078
+          "nvidia/nemotron-3-nano-30b-a3b": 0.0023097,
+          "deepseek/deepseek-v4-pro": 0.01317267,
+          "qwen/qwen3.7-plus": 0.0184776,
+          "google/gemini-3.1-pro": 0.12421199999999999,
+          "anthropic/claude-haiku-4-5": 0.054150000000000004,
+          "anthropic/claude-sonnet-4-6": 0.16244999999999998,
+          "openai/gpt-5.5": 0.31053
         },
-        "span_factor": 114.05049396267837
+        "span_factor": 134.44603195220157
       },
       {
         "lever": "calls per decision",
         "values": {
-          "1": 0.0001822,
-          "3": 0.0005466000000000001,
-          "6": 0.0010932000000000001
+          "1": 0.0007699,
+          "3": 0.0023097,
+          "6": 0.0046194
         },
         "span_factor": 6.0
       },
       {
         "lever": "input tokens per call",
         "values": {
-          "2620": 0.0001822,
-          "4790": 0.0002907,
-          "20000": 0.0010512
+          "2620": 0.0019842,
+          "4790": 0.0023097,
+          "20000": 0.0045912
         },
-        "span_factor": 5.769484083424808
+        "span_factor": 2.3138796492289084
       },
       {
         "lever": "prefix cache hit rate",
         "values": {
-          "0.0": 0.0001822,
-          "0.5": 0.00012325000000000001,
-          "0.9": 7.609e-05
+          "0.0": 0.0023097,
+          "0.5": 0.001986375,
+          "0.9": 0.0017277150000000001
         },
-        "span_factor": 2.394532790116967
+        "span_factor": 1.3368524322587927
       }
     ],
     "note": "Span factor is max/min cost across the values tried for that lever alone. Model choice dominating the list means a cache or a shorter prompt cannot rescue an expensive model \u2014 pick the model first."
@@ -280,44 +280,44 @@
   "sensitivity": [
     {
       "scenario": "baseline",
-      "api_cost_per_request": 0.0001822,
+      "api_cost_per_request": 0.0023097,
       "gpu_usd_per_hour": 2.0,
-      "crossover_agents": 676,
+      "crossover_agents": 54,
       "available": true
     },
     {
       "scenario": "API price x2",
-      "api_cost_per_request": 0.0003644,
+      "api_cost_per_request": 0.0046194,
       "gpu_usd_per_hour": 2.0,
-      "crossover_agents": 338,
+      "crossover_agents": 27,
       "available": true
     },
     {
       "scenario": "API price x0.5",
-      "api_cost_per_request": 9.11e-05,
+      "api_cost_per_request": 0.00115485,
       "gpu_usd_per_hour": 2.0,
-      "crossover_agents": 1352,
+      "crossover_agents": 107,
       "available": true
     },
     {
       "scenario": "GPU $3/hr",
-      "api_cost_per_request": 0.0001822,
+      "api_cost_per_request": 0.0023097,
       "gpu_usd_per_hour": 3.0,
-      "crossover_agents": 1014,
+      "crossover_agents": 80,
       "available": true
     },
     {
       "scenario": "GPU $1/hr (spot)",
-      "api_cost_per_request": 0.0001822,
+      "api_cost_per_request": 0.0023097,
       "gpu_usd_per_hour": 1.0,
-      "crossover_agents": 338,
+      "crossover_agents": 27,
       "available": true
     },
     {
       "scenario": "API x2 + GPU $3/hr",
-      "api_cost_per_request": 0.0003644,
+      "api_cost_per_request": 0.0046194,
       "gpu_usd_per_hour": 3.0,
-      "crossover_agents": 507,
+      "crossover_agents": 40,
       "available": true
     }
   ],

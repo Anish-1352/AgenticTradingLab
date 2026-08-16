@@ -6,6 +6,7 @@
       {
         "run_id": "agent_20260525_140635",
         "agent_name": "Agent",
+        "llm_model": "claude-haiku-4-5-20251001",
         "mode": "backtest",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -16,14 +17,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "claude-haiku-4-5-20251001",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "claude-haiku-4-5-20251001",
+        "decision_count": {
+          "decisions": 42,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 42,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 42,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "buyhold_20260525_140635",
         "agent_name": "buy-and-hold",
+        "llm_model": "rule-based",
         "mode": "backtest",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -34,14 +63,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "rule-based",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 42,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 42,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 42,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "djia_index_20260525_140635",
         "agent_name": "DJIA",
+        "llm_model": "rule-based",
         "mode": "backtest",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -52,14 +109,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "rule-based",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 42,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 42,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 42,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "djia_paper_baseline_20260705_020057_7b8acda8",
         "agent_name": "DJIA Index",
+        "llm_model": "rule-based",
         "mode": "paper_baseline",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -70,14 +155,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "rule-based",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 22,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 22,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 22,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "bah_paper_baseline_20260705_020057_e9b7c4a9",
         "agent_name": "Buy & Hold DJIA",
+        "llm_model": "rule-based",
         "mode": "paper_baseline",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -88,14 +201,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "rule-based",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 22,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 22,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 22,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_spy_index_20260415_20260515",
         "agent_name": "Agentic Trading Lab",
+        "llm_model": "spy_index",
         "mode": "leaderboard",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -106,14 +247,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "spy_index",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "spy_index",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_djia_index_20260415_20260515",
         "agent_name": "Agentic Trading Lab",
+        "llm_model": "djia_index",
         "mode": "leaderboard",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -124,14 +293,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "djia_index",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "djia_index",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_buy_hold_djia_20260415_20260515",
         "agent_name": "Agentic Trading Lab",
+        "llm_model": "buy_hold_djia",
         "mode": "leaderboard",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -142,14 +339,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "buy_hold_djia",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "buy_hold_djia",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_mean_variance_djia_20260415_20260515",
         "agent_name": "Agentic Trading Lab",
+        "llm_model": "mean_variance_djia",
         "mode": "leaderboard",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -160,14 +385,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "mean_variance_djia",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "mean_variance_djia",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_equal_weight_djia_20260415_20260515",
         "agent_name": "Agentic Trading Lab",
+        "llm_model": "equal_weight_djia",
         "mode": "leaderboard",
         "llm_calls": 0,
         "input_tokens": 0,
@@ -178,14 +431,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "equal_weight_djia",
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "equal_weight_djia",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_claude_haiku_4_5_20260415_20260515",
         "agent_name": "Claude Haiku 4.5",
+        "llm_model": "claude_haiku_4_5",
         "mode": "leaderboard",
         "llm_calls": 161,
         "input_tokens": 794319,
@@ -196,14 +477,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "claude_haiku_4_5",
         "mean_input_tokens_per_call": 4933.658385093167,
         "mean_output_tokens_per_call": 1156.9689440993789,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "claude_haiku_4_5",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 1.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 1.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_qwen3_7_plus_20260415_20260515",
         "agent_name": "Qwen3.7 Plus",
+        "llm_model": "qwen3_7_plus",
         "mode": "leaderboard",
         "llm_calls": 161,
         "input_tokens": 841100,
@@ -214,14 +523,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "qwen3_7_plus",
         "mean_input_tokens_per_call": 5224.223602484472,
         "mean_output_tokens_per_call": 4879.248447204969,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "qwen3_7_plus",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 1.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 1.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_gemini_3_1_pro_preview_20260415_20260515",
         "agent_name": "Gemini 3.1 Pro Preview",
+        "llm_model": "gemini_3_1_pro_preview",
         "mode": "leaderboard",
         "llm_calls": 161,
         "input_tokens": 796905,
@@ -232,14 +569,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "gemini_3_1_pro_preview",
         "mean_input_tokens_per_call": 4949.72049689441,
         "mean_output_tokens_per_call": 5004.540372670807,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "gemini_3_1_pro_preview",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 1.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 1.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_gpt_5_5_20260415_20260515",
         "agent_name": "GPT-5.5",
+        "llm_model": "gpt_5_5",
         "mode": "leaderboard",
         "llm_calls": 161,
         "input_tokens": 627104,
@@ -250,14 +615,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "gpt_5_5",
         "mean_input_tokens_per_call": 3895.055900621118,
         "mean_output_tokens_per_call": 2226.223602484472,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "gpt_5_5",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 1.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 1.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_deepseek_v4_pro_20260415_20260515",
         "agent_name": "DeepSeek V4 Pro",
+        "llm_model": "deepseek_v4_pro",
         "mode": "leaderboard",
         "llm_calls": 161,
         "input_tokens": 644824,
@@ -268,14 +661,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "deepseek_v4_pro",
         "mean_input_tokens_per_call": 4005.11801242236,
         "mean_output_tokens_per_call": 3395.614906832298,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "deepseek_v4_pro",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 1.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 1.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_nemotron_3_nano_30b_20260415_20260515",
         "agent_name": "Nemotron 3 Nano 30B",
+        "llm_model": "nemotron_3_nano_30b",
         "mode": "leaderboard",
         "llm_calls": 160,
         "input_tokens": 880293,
@@ -286,14 +707,42 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "nemotron_3_nano_30b",
         "mean_input_tokens_per_call": 5501.83125,
         "mean_output_tokens_per_call": 860.1875,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "nemotron_3_nano_30b",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 0.9937888198757764,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.9937888198757764,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       },
       {
         "run_id": "lb_claude_sonnet_4_6_20260415_20260515",
         "agent_name": "Claude Sonnet 4.6",
+        "llm_model": "claude_sonnet_4_6",
         "mode": "leaderboard",
         "llm_calls": 161,
         "input_tokens": 807731,
@@ -304,10 +753,37 @@
           "available": false,
           "reason": "no metadata"
         },
+        "model": "claude_sonnet_4_6",
         "mean_input_tokens_per_call": 5016.962732919254,
         "mean_output_tokens_per_call": 1042.6149068322982,
-        "decisions_recorded": 0,
-        "observed_calls_per_decision": null
+        "output_tokens_model_tag": "claude_sonnet_4_6",
+        "decision_count": {
+          "decisions": 161,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 161,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 161,
+        "observed_calls_per_decision": 1.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 1.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
       }
     ],
     "agent_runs_columns": [
@@ -339,7 +815,15 @@
   "summary": {
     "available": true,
     "runs_with_llm_calls": 7,
-    "models": [],
+    "models": [
+      "claude_haiku_4_5",
+      "claude_sonnet_4_6",
+      "deepseek_v4_pro",
+      "gemini_3_1_pro_preview",
+      "gpt_5_5",
+      "nemotron_3_nano_30b",
+      "qwen3_7_plus"
+    ],
     "input_tokens_per_call": {
       "n_runs": 7,
       "mean_of_run_means": 4789.510054347826,
@@ -354,8 +838,103 @@
       "max_run_mean": 5004.540372670807,
       "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
     },
-    "calls_per_decision_observed": null,
+    "output_tokens_per_call_warning": "This aggregate spans MULTIPLE MODELS and is not a usable cost input. Output length is model-specific \u2014 use output_tokens_by_model.",
+    "output_tokens_by_model": {
+      "available": true,
+      "models": {
+        "claude_haiku_4_5": {
+          "model": "claude_haiku_4_5",
+          "run_ids": [
+            "lb_claude_haiku_4_5_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 1156.9689440993789,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        },
+        "qwen3_7_plus": {
+          "model": "qwen3_7_plus",
+          "run_ids": [
+            "lb_qwen3_7_plus_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 4879.248447204969,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        },
+        "gemini_3_1_pro_preview": {
+          "model": "gemini_3_1_pro_preview",
+          "run_ids": [
+            "lb_gemini_3_1_pro_preview_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 5004.540372670807,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        },
+        "gpt_5_5": {
+          "model": "gpt_5_5",
+          "run_ids": [
+            "lb_gpt_5_5_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 2226.223602484472,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        },
+        "deepseek_v4_pro": {
+          "model": "deepseek_v4_pro",
+          "run_ids": [
+            "lb_deepseek_v4_pro_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 3395.614906832298,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        },
+        "nemotron_3_nano_30b": {
+          "model": "nemotron_3_nano_30b",
+          "run_ids": [
+            "lb_nemotron_3_nano_30b_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 860.1875,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        },
+        "claude_sonnet_4_6": {
+          "model": "claude_sonnet_4_6",
+          "run_ids": [
+            "lb_claude_sonnet_4_6_20260415_20260515"
+          ],
+          "mean_output_tokens_per_call": 1042.6149068322982,
+          "n_runs": 1,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
+        }
+      },
+      "spread_factor": 5.817964539906482,
+      "note": "Output tokens per call under an IDENTICAL prompt. The spread is the model's verbosity, not the workload's. Never carry one model's figure to another \u2014 use output_tokens_for_model, which raises instead of substituting."
+    },
+    "calls_per_decision_observed": {
+      "n_runs": 7,
+      "mean_of_run_means": 0.9991126885536824,
+      "min_run_mean": 0.9937888198757764,
+      "max_run_mean": 1.0,
+      "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
+    },
     "calls_per_decision_from_pipeline_config": [],
+    "calls_per_decision_derivations": {
+      "a_observed": "llm_calls / decisions",
+      "b_configured": "decision steps in metadata.initial_pipeline",
+      "decision_denominator_sources_used": [
+        "equity_timeseries"
+      ],
+      "runs_reconciled": 7,
+      "runs_in_disagreement": 0,
+      "disagreements": [],
+      "note": "Disagreement means retries fired (a > b) or steps did not run (a < b). It is reported, not reconciled."
+    },
     "per_call_distribution": {
       "available": false,
       "reason": "agent_runs stores summed totals; backtest_decisions carries no token columns. min/median/p95/max cannot be derived \u2014 the distribution was destroyed by summation before persistence.",
@@ -366,5 +945,54 @@
         "why_it_is_worth_it": "It converts every downstream cost figure from an assumption into a measurement, and it is the only way to see whether the first pipeline step dominates input tokens \u2014 which decides whether prefix caching helps ATL at all."
       }
     }
+  },
+  "comparison": {
+    "columns": {
+      "original_assumption": {
+        "label": "original assumption",
+        "source": "benchmarks GPU fixture, arms A/B/C (see RESULTS.md)",
+        "calls_per_decision": 1.0,
+        "input_tokens_per_call": 2620.0,
+        "output_tokens_per_call": 256.0,
+        "model": null,
+        "model_note": "No model \u2014 the fixture pinned output length with ignore_eos, so 256 is a knob setting, not a measurement of any model's verbosity.",
+        "available": true
+      },
+      "seed_db": {
+        "label": "seed DB",
+        "source": "dashboard/storage/data/backtest.db, 7 leaderboard runs",
+        "available": true,
+        "runs": 7,
+        "calls_per_decision_observed": 0.9991126885536824,
+        "calls_per_decision_observed_range": [
+          0.9937888198757764,
+          1.0
+        ],
+        "calls_per_decision_configured": null,
+        "input_tokens_per_call": 4789.510054347826,
+        "output_tokens_per_call": 2652.1998114463177,
+        "output_tokens_models": [
+          "claude_haiku_4_5",
+          "claude_sonnet_4_6",
+          "deepseek_v4_pro",
+          "gemini_3_1_pro_preview",
+          "gpt_5_5",
+          "nemotron_3_nano_30b",
+          "qwen3_7_plus"
+        ],
+        "output_is_model_specific": true
+      },
+      "local_pipeline_run": {
+        "label": "local pipeline run",
+        "source": "locally produced DB via --local-db",
+        "available": false,
+        "reason": "not supplied"
+      }
+    },
+    "deltas": {
+      "seed_vs_assumption_input_tokens_per_call": 1.8280572726518418,
+      "seed_vs_assumption_output_tokens_per_call": 10.360155513462178
+    },
+    "note": "Columns are independent measurements, not revisions. Output tokens are comparable only within a column AND within a model; input tokens and calls per decision are comparable across all three."
   }
 }

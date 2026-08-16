@@ -62,6 +62,7 @@ from analysis.loader import load_run  # noqa: E402
 
 __all__ = ["throughput_per_gpu", "model_costs", "find_crossover",
            "sensitivity", "lever_sensitivity", "cost_per_decision",
+           "MEASURED_OUTPUT_TOKENS", "per_model_cost_table",
            "to_csv", "format_report"]
 
 # USD per million tokens, for the lever table. Model choice spans ~100x, which
@@ -70,9 +71,55 @@ MODEL_PRICES = {
     "nvidia/nemotron-3-nano-30b-a3b": (0.05, 0.20),
     "deepseek/deepseek-v4-pro": (0.435, 0.87),
     "qwen/qwen3.7-plus": (0.40, 1.60),
+    "google/gemini-3.1-pro": (2.0, 12.0),
+    "anthropic/claude-haiku-4-5": (1.0, 5.0),
     "anthropic/claude-sonnet-4-6": (3.0, 15.0),
     "openai/gpt-5.5": (5.0, 30.0),
 }
+
+# Mean output tokens per call, measured per model from the seed DB's seven
+# leaderboard runs (~161 calls each) under an IDENTICAL prompt. Input is
+# recorded beside it for the contrast: input spans 1.4x across these models and
+# output spans 5.8x, which is why one shared output length understates the
+# per-model cost spread badly.
+#
+# The DB records the model as an underscored name (`nemotron_3_nano_30b`) that
+# does NOT substring-match token_cost.py's priced slugs, so five of the seven
+# fall through to that module's default (1.0, 5.0) if re-derived from the name
+# today. The mapping below was therefore not read off the name: each pairing was
+# verified by recomputing the run's cost from its stored token totals and
+# checking it against the stored `est_cost_usd` — all seven agree to <1e-6 USD.
+MEASURED_OUTPUT_TOKENS = {
+    "nvidia/nemotron-3-nano-30b-a3b": {
+        "db_model": "nemotron_3_nano_30b", "output": 860.2, "input": 5501.8,
+        "run_id": "lb_nemotron_3_nano_30b_20260415_20260515"},
+    "anthropic/claude-sonnet-4-6": {
+        "db_model": "claude_sonnet_4_6", "output": 1042.6, "input": 5016.9,
+        "run_id": "lb_claude_sonnet_4_6_20260415_20260515"},
+    "anthropic/claude-haiku-4-5": {
+        "db_model": "claude_haiku_4_5", "output": 1157.0, "input": 4933.7,
+        "run_id": "lb_claude_haiku_4_5_20260415_20260515"},
+    "openai/gpt-5.5": {
+        "db_model": "gpt_5_5", "output": 2226.2, "input": 3895.1,
+        "run_id": "lb_gpt_5_5_20260415_20260515"},
+    "deepseek/deepseek-v4-pro": {
+        "db_model": "deepseek_v4_pro", "output": 3395.6, "input": 4005.1,
+        "run_id": "lb_deepseek_v4_pro_20260415_20260515"},
+    "qwen/qwen3.7-plus": {
+        "db_model": "qwen3_7_plus", "output": 4879.2, "input": 5224.2,
+        "run_id": "lb_qwen3_7_plus_20260415_20260515"},
+    "google/gemini-3.1-pro": {
+        "db_model": "gemini_3_1_pro_preview", "output": 5004.5, "input": 4950.3,
+        "run_id": "lb_gemini_3_1_pro_preview_20260415_20260515"},
+}
+
+# ATL's production default. Named rather than inferred, because the interesting
+# result below is that the default is the cheapest model on BOTH axes at once.
+PRODUCTION_DEFAULT_MODEL = "nvidia/nemotron-3-nano-30b-a3b"
+
+# The calls-per-decision figure used when nothing has been measured. Kept as a
+# named constant so it can never be mistaken for a measurement in the output.
+ILLUSTRATIVE_CALLS_PER_DECISION = 3.0
 
 
 def cost_per_decision(
@@ -100,6 +147,116 @@ def cost_per_decision(
     per_call = (effective_in / 1e6) * price_in_per_m + (
         output_tokens_per_call / 1e6) * price_out_per_m
     return per_call * calls_per_decision
+
+
+def per_model_cost_table(
+    *,
+    calls_per_decision: float,
+    calls_are_measured: bool,
+    input_tokens_per_call: Optional[float] = None,
+    prefix_cache_hit_rate: float = 0.0,
+    shared_output_tokens: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Cost per decision per model, using each model's OWN measured output length.
+
+    Model choice moves cost through two effects that MULTIPLY:
+
+    * **price** — $0.05/$0.20 per M for Nemotron against $5/$30 for GPT-5.5,
+      about 134x on the output side.
+    * **verbosity** — 860 output tokens against 5,005 under the *same* prompt,
+      about 5.8x.
+
+    Applying one shared output length across every model — which is what the
+    lever table does — captures only the first and understates the true spread.
+    Both are priced here from the same measurement.
+
+    ``input_tokens_per_call`` defaults per-model to that model's own measured
+    input, which varies only 1.4x and is a property of the prompt rather than
+    the model. Passing a value overrides all of them with a single figure, which
+    is the right choice when modelling one fixed prompt across candidate models.
+
+    ``shared_output_tokens``, when given, is also costed for every model so the
+    understatement is visible as a ratio rather than asserted.
+    """
+    rows: List[Dict[str, Any]] = []
+    for slug, m in MEASURED_OUTPUT_TOKENS.items():
+        price = MODEL_PRICES.get(slug)
+        if not price:
+            continue
+        pin, pout = price
+        in_tok = input_tokens_per_call if input_tokens_per_call is not None else m["input"]
+        own = cost_per_decision(calls_per_decision, in_tok, m["output"],
+                                pin, pout,
+                                prefix_cache_hit_rate=prefix_cache_hit_rate)
+        row: Dict[str, Any] = {
+            "model": slug,
+            "db_model": m["db_model"],
+            "price_in_per_m": pin,
+            "price_out_per_m": pout,
+            "input_tokens_per_call": in_tok,
+            "output_tokens_per_call": m["output"],
+            "output_tokens_source": f"measured, {m['run_id']}",
+            "cost_per_decision": own,
+        }
+        if shared_output_tokens is not None:
+            shared = cost_per_decision(calls_per_decision, in_tok,
+                                       shared_output_tokens, pin, pout,
+                                       prefix_cache_hit_rate=prefix_cache_hit_rate)
+            row["cost_per_decision_shared_output"] = shared
+            # >1: the shared figure UNDERstates this model (it is more verbose
+            # than the shared length). <1: it OVERstates. Naming it for one
+            # direction only would mislabel half the table.
+            row["own_over_shared_factor"] = (own / shared) if shared else None
+        rows.append(row)
+    rows.sort(key=lambda r: r["cost_per_decision"])
+
+    costs = [r["cost_per_decision"] for r in rows]
+    span = (max(costs) / min(costs)) if costs and min(costs) else None
+    prices_out = [r["price_out_per_m"] for r in rows]
+    outputs = [r["output_tokens_per_call"] for r in rows]
+    price_span = (max(prices_out) / min(prices_out)) if prices_out and min(prices_out) else None
+    verbosity_span = (max(outputs) / min(outputs)) if outputs and min(outputs) else None
+
+    default_row = next(
+        (r for r in rows if r["model"] == PRODUCTION_DEFAULT_MODEL), None)
+
+    return {
+        "rows": rows,
+        "calls_per_decision": calls_per_decision,
+        "calls_per_decision_basis": (
+            "MEASURED" if calls_are_measured else "ILLUSTRATIVE — not measured"),
+        "prefix_cache_hit_rate": prefix_cache_hit_rate,
+        "cost_span_factor": span,
+        "output_price_span_factor": price_span,
+        "verbosity_span_factor": verbosity_span,
+        "compounding_note": (
+            f"Output price spans {price_span:.0f}x and verbosity spans "
+            f"{verbosity_span:.1f}x. They multiply, so cost per decision spans "
+            f"{span:.0f}x — wider than either effect alone."
+            if (span and price_span and verbosity_span) else None
+        ),
+        "production_default": (
+            {
+                "model": default_row["model"],
+                "cost_per_decision": default_row["cost_per_decision"],
+                "rank": rows.index(default_row) + 1,
+                "of": len(rows),
+                "note": (
+                    "ATL's default is both the cheapest per token AND the least "
+                    "verbose, so the two effects compound in its favour rather "
+                    "than cancelling. Any move off it pays twice."
+                ),
+            } if default_row else None
+        ),
+        "caveats": [
+            "Output lengths are per-model measurements from ONE run each "
+            "(~161 calls). They are means; the per-call spread was destroyed "
+            "by summation before storage (see atl_token_extract.py).",
+            "Verbosity was measured under ATL's prompt. A different prompt, or "
+            "a lower llm_max_output_tokens cap, moves these numbers.",
+            "Prices are list rates and change without notice.",
+        ],
+    }
 
 
 def lever_sensitivity(
@@ -438,6 +595,42 @@ def format_report(result: Dict[str, Any]) -> str:
               else f"    {l['lever']:<24} span      —")
         A(f"    {lv['note']}")
 
+    pm = result.get("per_model")
+    if pm and pm.get("rows"):
+        A("")
+        A(f"  COST PER DECISION BY MODEL — each model's OWN measured output length")
+        A(f"    calls/decision: {pm['calls_per_decision']:g} "
+          f"[{pm['calls_per_decision_basis']}]")
+        shared = any("cost_per_decision_shared_output" in r for r in pm["rows"])
+        head = (f"    {'model':<32}{'$/M in':>8}{'$/M out':>9}"
+                f"{'out tok':>9}{'$/decision':>13}")
+        if shared:
+            head += f"{'vs shared':>11}"
+        A(head)
+        A("    " + "-" * (len(head) - 4))
+        for r in pm["rows"]:
+            line = (f"    {r['model']:<32}{r['price_in_per_m']:>8.3f}"
+                    f"{r['price_out_per_m']:>9.2f}"
+                    f"{r['output_tokens_per_call']:>9,.0f}"
+                    f"{r['cost_per_decision']:>13.6f}")
+            if shared and r.get("own_over_shared_factor"):
+                line += f"{r['own_over_shared_factor']:>10.2f}x"
+            A(line)
+        if pm.get("compounding_note"):
+            A(f"    {pm['compounding_note']}")
+        pd_ = pm.get("production_default")
+        if pd_:
+            A(f"    ATL default {pd_['model']} ranks {pd_['rank']} of "
+              f"{pd_['of']} at ${pd_['cost_per_decision']:.6f}/decision.")
+            A(f"    {pd_['note']}")
+        if shared:
+            A("    'vs shared' = own measured output length over one shared "
+              "length: >1 the shared figure UNDERstates this model, <1 it "
+              "OVERstates. A single shared length is wrong in both directions "
+              "at once, which is why the span it reports is too narrow.")
+        for c in pm["caveats"]:
+            A(f"    - {c}")
+
     A("")
     A("  OMITTED — and these move the answer:")
     for note in result["omissions"]:
@@ -463,6 +656,20 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="LLM calls per agent decision. ATL's pipeline issues "
                          "one per configured step — see atl_pipeline_audit.py. "
                          "The default of 1 is the ORIGINAL ASSUMPTION.")
+    ap.add_argument("--calls-per-decision-measured", action="store_true",
+                    help="assert that --calls-per-decision came from a "
+                         "measurement (atl_token_extract.py). Without this "
+                         "flag the per-model table labels the value "
+                         "ILLUSTRATIVE, so an assumed number can never be read "
+                         "as a measured one.")
+    ap.add_argument("--per-model-calls-per-decision", type=float, default=None,
+                    help="calls/decision for the per-model table only. "
+                         f"Defaults to the illustrative "
+                         f"{ILLUSTRATIVE_CALLS_PER_DECISION:g}.")
+    ap.add_argument("--per-model-shared-output", type=float, default=None,
+                    help="also cost every model at this one shared output "
+                         "length, to show how much a single shared figure "
+                         "understates the per-model spread.")
     ap.add_argument("--input-tokens", type=float, default=None,
                     help="measured input tokens per call (atl_token_extract.py)")
     ap.add_argument("--output-tokens", type=float, default=None,
@@ -546,6 +753,22 @@ def main(argv: Optional[List[str]] = None) -> int:
         "rows": rows,
         "crossover": crossover,
         "assumed_cost_per_request_one_call": assumed_cost,
+        "per_model": per_model_cost_table(
+            # The per-model table takes its call count from D2 when one was
+            # measured; otherwise it uses the illustrative 3 and SAYS SO in the
+            # basis field, which is printed beside the number.
+            calls_per_decision=(
+                args.per_model_calls_per_decision
+                if args.per_model_calls_per_decision is not None
+                else (args.calls_per_decision if args.calls_per_decision_measured
+                      else ILLUSTRATIVE_CALLS_PER_DECISION)),
+            calls_are_measured=(
+                args.calls_per_decision_measured
+                and args.per_model_calls_per_decision is None),
+            input_tokens_per_call=args.input_tokens,
+            prefix_cache_hit_rate=args.prefix_cache_hit_rate,
+            shared_output_tokens=args.per_model_shared_output,
+        ),
         "levers": lever_sensitivity(
             baseline_calls=args.calls_per_decision,
             baseline_input=args.input_tokens or 2620.0,

@@ -144,6 +144,24 @@ It reports calls-per-decision two independent ways — `llm_calls / decisions`
 and the step count from `metadata.initial_pipeline` — and flags disagreement,
 because disagreement means retries fired.
 
+Omit `--local-db` and it reports the seed DB alone. Supplied, it prints both
+extracts and then a three-way comparison against the original assumption; the
+earlier figures are kept as their own column rather than overwritten.
+
+### The decision denominator is not `backtest_decisions`
+
+`backtest_decisions` is the obvious source and the wrong one. `engine.py` calls
+`insert_decisions` **only** under the `ai_hedge_fund` runtime — under the native
+pipeline runtime, the path this measurement is about, the table is never written
+at all. It is empty in the seed DB (0 rows, all 17 runs) and it will be empty in
+your local DB too. That is the schema behaving as written, not your run failing.
+
+The denominator used instead is `equity_timeseries`, one row per simulated bar,
+with one decision per bar. It is a proxy and is labelled as one in every figure
+(`decision_count.is_proxy`). On the seed data it gives 1.000 calls/decision for
+six runs and 0.994 for Nemotron — 160 calls across 161 bars, i.e. one bar that
+never reached the model.
+
 ---
 
 ## If it does not run
@@ -159,3 +177,23 @@ Report what blocked it rather than working around it. Likely stops:
 
 That last row is the failure that matters: it is exactly the state all seven
 seed runs are in, and it means the measurement did not happen.
+
+## Current status: BLOCKED, no key present
+
+As of the D2/D3 work, no usable credential is set in this environment:
+
+```
+$ python -c "from dashboard.backend.infrastructure.llm.providers import make_llm_client; print(make_llm_client())"
+None
+```
+
+`resolve_integration(None)` falls through to `anthropic`, and
+`ANTHROPIC_API_KEY` is unset — as are `OPENROUTER_API_KEY` and
+`COMMONSTACK_API_KEY`. `dashboard/.env` does not exist. A `None` client means
+the backtest runs the rule-based fallback and records `llm_calls = 0`, so
+running one now would cost time and produce no measurement.
+
+The tooling is finished and tested against both the seed DB and synthetic
+fixtures; the `local_pipeline_run` column reports **NOT AVAILABLE — not
+supplied** rather than being filled with anything. Export one key from the list
+above, run steps 4–6, and that column populates with no further code changes.
