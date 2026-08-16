@@ -254,3 +254,9 @@ credentials/*
 # To commit a genuine nested CLAUDE.md on purpose: git add -f path/to/CLAUDE.md
 **/CLAUDE.md
 !/CLAUDE.md
+
+# Local pipeline-measurement DB (benchmarks/analysis/local_atl_setup.md).
+# A local experiment must never reach the repo, and never the seed DB.
+local_atl.db
+local_atl.db-shm
+local_atl.db-wal

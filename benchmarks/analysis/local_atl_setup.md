@@ -24,6 +24,55 @@ the slug `google/gemini-3.1-pro`, which `token_cost.py` lists as
 **CommonStack-verified**. Gemini arrived *through a gateway*, not through a
 Google key.
 
+### A second blocker: the backtest script cannot select OpenRouter
+
+`OPENROUTER_API_KEY` alone will **not** work, despite the engine's own error
+message advertising it:
+
+```
+⚠️  No LLM key (COMMONSTACK_API_KEY / OPENROUTER_API_KEY / ANTHROPIC_API_KEY) set.
+```
+— `dashboard/backend/domain/backtesting/engine.py:242`
+
+`engine.py:235` calls `make_llm_client()` with **no arguments**, so
+`resolve_integration(None)` runs — and that returns CommonStack when
+`COMMONSTACK_API_KEY` is set, otherwise native Anthropic. It never returns
+OpenRouter. The providers package says so outright:
+
+> OpenRouter is never auto-selected — set `integration: "openrouter"` on the
+> leaderboard entry (or pass the kwarg).
+> — `dashboard/backend/infrastructure/llm/providers/__init__.py:11-12`
+
+`backtest_hourly_agent.py` exposes no `--integration` flag and no env var
+selects one. So with only `OPENROUTER_API_KEY` set, the client resolves to
+`None` and the run silently falls back to rule-based with `llm_calls = 0` —
+the documented "measurement did not happen" state.
+
+**Env-only workaround, no `dashboard/` change.** `commonstack.make_client`
+builds `Anthropic(api_key=COMMONSTACK_API_KEY, base_url=COMMONSTACK_BASE_URL)`,
+and OpenRouter's Anthropic skin is wire-compatible — which is precisely what
+`openrouter.make_client` constructs. So pointing the CommonStack provider at
+OpenRouter works:
+
+```bash
+export COMMONSTACK_API_KEY="$OPENROUTER_API_KEY"
+export COMMONSTACK_BASE_URL="https://openrouter.ai/api"
+```
+
+Two things this costs, both worth knowing before trusting a number from it:
+
+1. **The OpenRouter reasoning wrapper is bypassed.** `_OpenRouterMessages`
+   normally injects a `reasoning.max_tokens` budget; via the CommonStack path
+   it never runs, so the provider's raw default applies. The openrouter module
+   warns what that does to reasoning models: they "often return only
+   thinking/redacted_thinking and no JSON text", which aborts the pipeline
+   step. **Prefer a non-reasoning model on this path.**
+2. **Provenance lies.** The run is OpenRouter but every code path calls it
+   CommonStack. Record the real gateway alongside any result from this route.
+
+The clean fix is a one-line `integration` passthrough in the engine, but that
+is a `dashboard/` change and out of scope here.
+
 ### What you actually need
 
 Any **one** of these, in preference order for this measurement:
