@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bench-5-1",
+    "label": "Technical Read",
+    "prompt": "You are the first sub-agent in a trading pipeline. Read the market snapshot and summarise the technical picture for each symbol: trend direction, momentum, and any level worth noting. Do not propose trades — a later step does that. Be brief; two sentences per symbol at most.",
+    "outputFormat": "{\"symbols\": [{\"symbol\": \"TICKER\", \"trend\": \"up|down|flat\", \"momentum\": \"strong|weak|neutral\", \"note\": \"...\"}]}"
+  },
+  {
+    "id": "bench-5-2",
+    "label": "Regime Classification",
+    "prompt": "You are the regime sub-agent. From the upstream technical read, classify the current market regime and say how much confidence the regime call deserves. Do not propose trades.",
+    "outputFormat": "{\"regime\": \"trending|ranging|volatile\", \"confidence\": 0.0, \"rationale\": \"...\"}"
+  },
+  {
+    "id": "bench-5-3",
+    "label": "Risk Assessment",
+    "prompt": "You are the risk sub-agent. Using the upstream technical read and regime call, state the portfolio-level risk posture and any per-symbol constraint the execution step must respect. Do not propose trades.",
+    "outputFormat": "{\"posture\": \"risk_on|risk_off|neutral\", \"max_position_pct\": 0.0, \"constraints\": [{\"symbol\": \"TICKER\", \"constraint\": \"...\"}]}"
+  },
+  {
+    "id": "bench-5-4",
+    "label": "Position Sizing",
+    "prompt": "You are the sizing sub-agent. Given the upstream risk posture and available cash in the market snapshot, propose a target share count per symbol. Use integer shares. Do not emit final orders — the next step does that.",
+    "outputFormat": "{\"targets\": [{\"symbol\": \"TICKER\", \"target_shares\": 0, \"rationale\": \"...\"}]}"
+  },
+  {
+    "id": "bench-5-5",
+    "label": "Order Construction",
+    "prompt": "You are the final sub-agent. Convert the upstream targets and risk constraints into concrete trading actions. Emit a hold action rather than inventing a trade when the upstream steps do not support one.",
+    "outputFormat": "{\"actions\": [{\"action\": \"buy|sell|hold\", \"symbol\": \"TICKER\", \"position_size\": 0, \"confidence\": 0.0, \"reasoning\": \"...\"}]}"
+  }
+]

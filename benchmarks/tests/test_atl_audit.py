@@ -514,3 +514,80 @@ def test_measured_output_lengths_match_the_seed_db():
         recomputed = (row["input_tokens"] / 1e6) * pin + (
             row["output_tokens"] / 1e6) * pout
         assert recomputed == pytest.approx(row["est_cost_usd"], abs=1e-5), slug
+
+
+# ---- pipeline probe: calls == steps on the real code path, no key needed ----
+
+from analysis import atl_pipeline_probe as probe  # noqa: E402
+
+_PIPE_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "configs", "atl_pipelines"))
+
+
+def _load(name):
+    with open(os.path.join(_PIPE_DIR, name)) as fh:
+        return json.load(fh)
+
+
+@pytest.mark.parametrize("name,steps", [("pipeline_3step.json", 3),
+                                        ("pipeline_5step.json", 5)])
+def test_committed_pipelines_issue_one_call_per_step(name, steps):
+    """The b derivation, confirmed against execution rather than metadata."""
+    r = probe.probe_pipeline(_load(name))
+    assert r["available"]
+    assert r["configured_decision_steps"] == steps
+    assert r["llm_calls_issued"] == steps
+    assert r["calls_equal_steps"] is True
+
+
+@pytest.mark.parametrize("name", ["pipeline_3step.json", "pipeline_5step.json"])
+def test_committed_pipelines_reach_a_decision(name):
+    """A final step whose outputFormat does not convert would abort the run and
+    silently understate calls per decision."""
+    r = probe.probe_pipeline(_load(name))
+    assert r["decision_produced"] is True
+    assert r["step_outputs_recorded"] == r["configured_decision_steps"]
+
+
+@pytest.mark.parametrize("name", ["pipeline_3step.json", "pipeline_5step.json"])
+def test_snapshot_enters_first_step_only(name):
+    """Bears directly on prefix caching: the static block does not repeat."""
+    r = probe.probe_pipeline(_load(name))
+    assert r["snapshot_in_step"][0] is True
+    assert not any(r["snapshot_in_step"][1:])
+    # ...and every later step instead carries accumulated upstream output.
+    assert r["upstream_outputs_in_step"][0] is False
+    assert all(r["upstream_outputs_in_step"][1:])
+
+
+def test_prompt_grows_across_steps():
+    r = probe.probe_pipeline(_load("pipeline_5step.json"))
+    sizes = r["prompt_chars_per_step"]
+    # Step 1 carries the snapshot, so growth is measured from step 2 onward.
+    assert sizes[1:] == sorted(sizes[1:])
+    assert r["prompt_growth_ratio"] > 1.0
+
+
+def test_pipeline_with_no_decision_steps_issues_no_calls():
+    r = probe.probe_pipeline([{"presetKey": "post_trade_analysis",
+                               "label": "x", "prompt": "y"}])
+    assert r["available"] is False
+    assert "no decision steps" in r["reason"]
+
+
+def test_probe_refuses_to_be_read_as_a_token_measurement():
+    r = probe.probe_pipeline(_load("pipeline_3step.json"))
+    assert "WARNING" in r["stub_token_totals"]
+    assert "NOT a tokenizer" in r["stub_token_totals"]["WARNING"]
+    assert any("LOWER BOUND" in c for c in r["caveats"])
+
+
+def test_post_trade_step_is_split_out_not_counted_as_a_decision_step():
+    pipeline = _load("pipeline_3step.json") + [
+        {"presetKey": "post_trade_analysis", "label": "PT", "prompt": "p",
+         "outputFormat": "{}"}]
+    r = probe.probe_pipeline(pipeline)
+    assert r["configured_decision_steps"] == 3
+    assert r["configured_post_trade_steps"] == 1
+    # Post-trade runs once per DAY, so it must not inflate per-decision calls.
+    assert r["llm_calls_issued"] == 3

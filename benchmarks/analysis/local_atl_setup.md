@@ -178,9 +178,9 @@ Report what blocked it rather than working around it. Likely stops:
 That last row is the failure that matters: it is exactly the state all seven
 seed runs are in, and it means the measurement did not happen.
 
-## Current status: BLOCKED, no key present
+## Current status: BLOCKED on TWO credentials, not one
 
-As of the D2/D3 work, no usable credential is set in this environment:
+### 1. LLM credential — needed for the measurement
 
 ```
 $ python -c "from dashboard.backend.infrastructure.llm.providers import make_llm_client; print(make_llm_client())"
@@ -190,10 +190,64 @@ None
 `resolve_integration(None)` falls through to `anthropic`, and
 `ANTHROPIC_API_KEY` is unset — as are `OPENROUTER_API_KEY` and
 `COMMONSTACK_API_KEY`. `dashboard/.env` does not exist. A `None` client means
-the backtest runs the rule-based fallback and records `llm_calls = 0`, so
-running one now would cost time and produce no measurement.
+the backtest runs the rule-based fallback and records `llm_calls = 0`.
 
-The tooling is finished and tested against both the seed DB and synthetic
-fixtures; the `local_pipeline_run` column reports **NOT AVAILABLE — not
-supplied** rather than being filled with anything. Export one key from the list
-above, run steps 4–6, and that column populates with no further code changes.
+> `dashboard/.env` is loaded by `app.py` only. `backtest_hourly_agent.py` does
+> **not** load it, so for this run the key must be in the real environment.
+
+### 2. Alpaca credentials — needed for the backtest to run at all
+
+This is an *hourly* backtest over real Alpaca bars.
+`ALPACA_API_KEY` / `ALPACA_SECRET_KEY` are unset and `credentials/alpaca.json`
+does not exist (only `alpaca.json.example`), so `AlpacaCredentialsError` fires
+before any pipeline step executes. The committed cache cannot substitute: it
+holds **daily** bars only (`*_1d.csv`, AAPL/MSFT, 2024) and zero hourly files.
+
+### What is already done
+
+`configs/atl_pipelines/pipeline_3step.json` and `pipeline_5step.json` are
+written and verified. `analysis/atl_pipeline_probe.py` drives the **real**
+`run_pipeline_decision` with a stub client — no key, no network — and confirms
+on the actual code path:
+
+| | 3-step | 5-step |
+|---|---|---|
+| configured decision steps | 3 | 5 |
+| LLM calls issued | **3** | **5** |
+| decision produced | yes | yes |
+
+So derivation (b) holds against execution, not just against a metadata field,
+and both pipeline files are known-good before any money is spent. The probe
+also shows the market snapshot enters **step 1 only** — later steps carry
+`prior_outputs` instead, so the static prefix does not repeat and prompt growth
+is driven entirely by upstream model output.
+
+What the probe cannot give: token counts, retries, cost, latency. Its prompt
+sizes are lower bounds, because a stub's output is a few dozen characters where
+a real model emits 860–5,005 tokens.
+
+### To finish it
+
+Set both credentials in the environment, then:
+
+```bash
+export ALPACA_API_KEY=...  ALPACA_SECRET_KEY=...
+export ANTHROPIC_API_KEY=...
+export DATABASE_PATH="$PWD/local_atl.db"
+
+python dashboard/scripts/backtest_hourly_agent.py \
+    --start 2026-04-15 --end 2026-04-17 --use-llm \
+    --pipeline-file benchmarks/configs/atl_pipelines/pipeline_3step.json \
+    --run-id local_pipeline_3step --session-id bench-local
+
+python dashboard/scripts/backtest_hourly_agent.py \
+    --start 2026-04-15 --end 2026-04-17 --use-llm \
+    --pipeline-file benchmarks/configs/atl_pipelines/pipeline_5step.json \
+    --run-id local_pipeline_5step --session-id bench-local
+
+cd benchmarks && python -m analysis.atl_token_extract \
+    --local-db "$DATABASE_PATH" --json-out results/atl_local_pipeline.json
+```
+
+If calls-per-decision does not come out at 3 and 5, the difference is retries —
+the probe has already ruled out a malformed pipeline as the cause.

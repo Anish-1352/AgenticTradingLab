@@ -1,0 +1,94 @@
+{
+  "pipeline_3step.json": {
+    "available": true,
+    "configured_decision_steps": 3,
+    "configured_post_trade_steps": 0,
+    "llm_calls_issued": 3,
+    "calls_equal_steps": true,
+    "decision_produced": true,
+    "step_outputs_recorded": 3,
+    "step_labels": [
+      "Technical Read",
+      "Risk Assessment",
+      "Order Construction"
+    ],
+    "prompt_chars_per_step": [
+      748,
+      655,
+      1004
+    ],
+    "prompt_growth_ratio": 1.3422459893048129,
+    "snapshot_in_step": [
+      true,
+      false,
+      false
+    ],
+    "upstream_outputs_in_step": [
+      false,
+      true,
+      true
+    ],
+    "max_tokens_per_call": [
+      2000
+    ],
+    "stub_token_totals": {
+      "input": 601,
+      "output": 39,
+      "WARNING": "chars/4 from a stub, NOT a tokenizer and NOT a model. Never quote these as token counts."
+    },
+    "caveats": [
+      "Prompt sizes are LOWER BOUNDS: prior_outputs carries real model output (860-5,005 tokens/call in the seed data), so the true growth across steps is far larger than shown here.",
+      "The stub always parses, so no retry surface fires. This run cannot produce the observed>configured disagreement."
+    ]
+  },
+  "pipeline_5step.json": {
+    "available": true,
+    "configured_decision_steps": 5,
+    "configured_post_trade_steps": 0,
+    "llm_calls_issued": 5,
+    "calls_equal_steps": true,
+    "decision_produced": true,
+    "step_outputs_recorded": 5,
+    "step_labels": [
+      "Technical Read",
+      "Regime Classification",
+      "Risk Assessment",
+      "Position Sizing",
+      "Order Construction"
+    ],
+    "prompt_chars_per_step": [
+      748,
+      579,
+      807,
+      926,
+      1317
+    ],
+    "prompt_growth_ratio": 1.7606951871657754,
+    "snapshot_in_step": [
+      true,
+      false,
+      false,
+      false,
+      false
+    ],
+    "upstream_outputs_in_step": [
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "max_tokens_per_call": [
+      2000
+    ],
+    "stub_token_totals": {
+      "input": 1092,
+      "output": 51,
+      "WARNING": "chars/4 from a stub, NOT a tokenizer and NOT a model. Never quote these as token counts."
+    },
+    "caveats": [
+      "Prompt sizes are LOWER BOUNDS: prior_outputs carries real model output (860-5,005 tokens/call in the seed data), so the true growth across steps is far larger than shown here.",
+      "The stub always parses, so no retry surface fires. This run cannot produce the observed>configured disagreement."
+    ]
+  }
+}
