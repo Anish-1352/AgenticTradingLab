@@ -24,6 +24,7 @@ from analysis.cost_model_lib import (  # noqa: E402
     UNMEASURED_INPUTS, calls_to_reach_budget, load_measured,
     load_measured_calls_per_decision,
 )
+from analysis.cadence_model import CADENCES  # noqa: E402
 
 __all__ = ["build_notebook", "main"]
 
@@ -328,6 +329,44 @@ for r in rows:
 print()
 print("[DERIVED] from measured $/call and measured calls-per-backtest.")
 print("[NOT MEASURED] which depth production runs, and actual backtest volume.")
+"""))
+
+    cells.append(_md("""
+## 8. Decision cadence — the scope variable
+
+`decisions_per_agent_per_day` above is the single input that decides whether
+this platform is cheap or expensive. ATL runs hourly bars (~7/day). Nof1's
+Alpha Arena runs every 2-3 minutes, which is 21-70x more.
+
+**The cadence is ASSUMED, not confirmed.** Everything in this cell inherits
+that. The hourly column is measured; the other two are not.
+"""))
+
+    cells.append(_code("""
+from analysis.cadence_model import CADENCES, cadence_table
+
+AGENTS = 300          # [NOT MEASURED] fleet size as stated
+BUDGET = 50_000.0     # [NOT MEASURED] the budget as posed
+
+tbl = cadence_table(MEASURED_DATA, agents=AGENTS, budget_usd=BUDGET)
+
+print(f"{'cadence':<28}{'dec/day':>9}{'calls/dec':>11}{'calls/day':>12}"
+      f"{'models over $50K':>18}")
+print("-" * 78)
+for key in ("hourly", "nof1_equity", "nof1_crypto"):
+    c = CADENCES[key]
+    for depth in (1, 3, 5):
+        rows = [r for r in tbl["rows"]
+                if r["cadence"] == key and r["calls_per_decision"] == depth]
+        over = [r for r in rows if r["over_budget"]]
+        tag = "MEASURED" if c.tier == "MEASURED" else "ASSUMED"
+        print(f"{c.name:<28}{c.decisions_per_day:>9}{depth:>11}"
+              f"{rows[0]['calls_per_day']:>12,}{len(over):>13}/7   [{tag}]")
+print()
+print(f"[DERIVED] {tbl['cells_over_budget']} of {tbl['cells_total']} cells "
+      f"exceed ${BUDGET:,.0f}/month.")
+print("[MEASURED] hourly cadence — 161 bars over ~23 trading days in the seed runs.")
+print("[ASSUMED]  Nof1 cadences — not confirmed with the advisor.")
 """))
 
     cells.append(_md("""

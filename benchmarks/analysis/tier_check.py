@@ -24,9 +24,15 @@ from typing import Dict, List, Sequence
 
 __all__ = ["TIER_TOKENS", "find_untagged_numeric_lines", "check_report"]
 
-TIER_TOKENS = ("[MEASURED]", "[DERIVED]", "[NOT MEASURED]",
-               "| MEASURED |", "| DERIVED |", "| NOT MEASURED |",
-               "`MEASURED`", "`DERIVED`", "`NOT MEASURED`")
+TIER_TOKENS = ("[MEASURED]", "[DERIVED]", "[NOT MEASURED]", "[ASSUMED",
+               "| MEASURED |", "| DERIVED |", "| NOT MEASURED |", "| ASSUMED",
+               "`MEASURED`", "`DERIVED`", "`NOT MEASURED`", "`ASSUMED")
+
+# ASSUMED is a fourth tier used where an input is present and load-bearing but
+# unconfirmed — the Nof1 cadence is the only current instance. It is NOT
+# MEASURED (no run), NOT DERIVED (an input, not arithmetic), and NOT
+# "NOT MEASURED" (that tier means absent). Matched as a prefix so the
+# qualifier — "[ASSUMED — not confirmed with advisor]" — travels with it.
 
 # A digit that is part of a real quantity, not part of an identifier. Excludes
 # digits inside backticked spans, which are code/identifiers rather than claims.
@@ -36,7 +42,7 @@ _CITATION_ONLY = re.compile(r"^\s*[-*|]?\s*`?[\w/.\-]+\.(py|json|md):\d+`?")
 _TABLE_SEP = re.compile(r"^\s*\|[\s:|-]+\|\s*$")
 
 
-_BARE_TIER = re.compile(r"\b(MEASURED|DERIVED|NOT MEASURED)\b")
+_BARE_TIER = re.compile(r"\b(MEASURED|DERIVED|NOT MEASURED|ASSUMED)\b")
 _ORDERED_MARKER = re.compile(r"^\s*\d+\.\s")
 
 
