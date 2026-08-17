@@ -70,6 +70,11 @@ from dashboard.backend.infrastructure.llm.backtest_harness import (
     default_model_name,
     make_llm_client,
 )
+from dashboard.backend.infrastructure.llm.usage_recorder import (
+    UsageRecorder,
+    recording,
+    usage_logging_enabled,
+)
 from dashboard.backend.infrastructure.llm.pipeline_runner import (
     is_last_bar_of_trading_day,
     recombine_pipeline,
@@ -755,7 +760,12 @@ class HourlyBacktester:
     def run_agent_backtest(self) -> Tuple[str, List[Dict]]:
         """Run backtest with agent making hourly decisions."""
         print("🤖 Running Agent backtest (hourly decisions)...\n")
-        
+
+        # Per-call usage recorder, active for this run only. None when disabled
+        # via ATL_LLM_CALL_USAGE, in which case every record_call downstream is
+        # a no-op and behaviour is byte-identical to before this change.
+        usage_recorder = UsageRecorder() if usage_logging_enabled() else None
+
         # Track LLM usage for results metadata
         llm_calls_count = 0
         llm_model = "rule-based"  # Default; hosted runs are attributed below,
@@ -848,131 +858,137 @@ class HourlyBacktester:
         }
         
         # Hourly loop
-        for i, timestamp in enumerate(all_timestamps):
-            day_key = trading_day_key(timestamp)
-            if day_episode["trading_day"] != day_key:
-                day_episode = {
-                    "trading_day": day_key,
-                    "day_start_equity": self._current_equity(manager, timestamp),
-                    "trade_start_index": len(manager.trades),
-                    "latest_step_outputs": [],
-                }
+        # The recorder is installed for the decision loop only: outside it,
+        # record_call is a no-op, so chat / strategy synthesis / API paths
+        # are unaffected. try/finally via the context manager guarantees the
+        # ContextVar is reset even if a step raises, so a failed run cannot
+        # leak its recorder into whatever runs next on this thread.
+        with recording(usage_recorder):
+            for i, timestamp in enumerate(all_timestamps):
+                day_key = trading_day_key(timestamp)
+                if day_episode["trading_day"] != day_key:
+                    day_episode = {
+                        "trading_day": day_key,
+                        "day_start_equity": self._current_equity(manager, timestamp),
+                        "trade_start_index": len(manager.trades),
+                        "latest_step_outputs": [],
+                    }
 
-            # Get market data for this hour (real data when available)
-            market_data = {}
-            for symbol in self.symbols:
-                if symbol not in self.all_data:
-                    continue
-                df = self.all_data[symbol]
-                if timestamp not in df.index:
-                    continue
-                market_data[symbol] = df.loc[timestamp]
+                # Get market data for this hour (real data when available)
+                market_data = {}
+                for symbol in self.symbols:
+                    if symbol not in self.all_data:
+                        continue
+                    df = self.all_data[symbol]
+                    if timestamp not in df.index:
+                        continue
+                    market_data[symbol] = df.loc[timestamp]
             
-            # Get portfolio state (uses real data for signals, forward-fill for valuation)
-            state = manager.get_portfolio_state(market_data, price_cache, timestamp)
-            state["timestamp"] = timestamp  # Add timestamp for LLM context
-            runtime_invoked = False
+                # Get portfolio state (uses real data for signals, forward-fill for valuation)
+                state = manager.get_portfolio_state(market_data, price_cache, timestamp)
+                state["timestamp"] = timestamp  # Add timestamp for LLM context
+                runtime_invoked = False
             
-            # Keep the established pipeline execution path unchanged. Hosted
-            # runtimes alone cross the runtime-dispatch boundary, then return
-            # the same ATL action envelope for PortfolioManager to execute.
-            if self.runtime_type == PIPELINE_RUNTIME_TYPE:
-                if self.use_llm and self.llm_client:
-                    decision = manager.make_trading_decision_with_llm(
-                        state,
-                        self.llm_client,
-                        mode=self.mode,
-                        model=self.model,
-                        strategy_prompt=self.strategy_prompt,
-                        pipeline=self.pipeline,
-                        market_context=self._llm_market_context(),
-                        strict_llm=self.strict_llm,
-                    )
-                    llm_calls_count += 1  # Track that LLM was used
-                    if llm_calls_count == 1:  # Set on first call
-                        llm_model = self.model
-                    if manager.last_pipeline_step_outputs:
-                        day_episode["latest_step_outputs"] = manager.last_pipeline_step_outputs
+                # Keep the established pipeline execution path unchanged. Hosted
+                # runtimes alone cross the runtime-dispatch boundary, then return
+                # the same ATL action envelope for PortfolioManager to execute.
+                if self.runtime_type == PIPELINE_RUNTIME_TYPE:
+                    if self.use_llm and self.llm_client:
+                        decision = manager.make_trading_decision_with_llm(
+                            state,
+                            self.llm_client,
+                            mode=self.mode,
+                            model=self.model,
+                            strategy_prompt=self.strategy_prompt,
+                            pipeline=self.pipeline,
+                            market_context=self._llm_market_context(),
+                            strict_llm=self.strict_llm,
+                        )
+                        llm_calls_count += 1  # Track that LLM was used
+                        if llm_calls_count == 1:  # Set on first call
+                            llm_model = self.model
+                        if manager.last_pipeline_step_outputs:
+                            day_episode["latest_step_outputs"] = manager.last_pipeline_step_outputs
+                    else:
+                        decision = manager.make_trading_decision(state)
                 else:
-                    decision = manager.make_trading_decision(state)
-            else:
-                runtime_calls_before = self.runtime_dispatcher.calls
-                runtime_context = AgentRuntimeContext(
-                    timestamp=timestamp,
-                    backtest_start_date=self.start_date,
-                    symbols=list(self.symbols),
-                    cash=float(manager.cash),
-                    total_equity=float(state["total_equity"]),
-                    positions=dict(manager.positions),
-                    entry_prices=dict(manager.entry_prices),
-                    current_prices={
-                        symbol: float(row["close"])
-                        for symbol, row in market_data.items()
-                    },
-                    latest_market_date_before_decision=prior_market_dates.get(
-                        timestamp.date()
-                    ),
-                    market=self._llm_market_context(),
-                )
-                try:
-                    decision = self.runtime_dispatcher.dispatch(
-                        runtime_context,
-                        pipeline_handler=lambda: manager.make_trading_decision(state),
+                    runtime_calls_before = self.runtime_dispatcher.calls
+                    runtime_context = AgentRuntimeContext(
+                        timestamp=timestamp,
+                        backtest_start_date=self.start_date,
+                        symbols=list(self.symbols),
+                        cash=float(manager.cash),
+                        total_equity=float(state["total_equity"]),
+                        positions=dict(manager.positions),
+                        entry_prices=dict(manager.entry_prices),
+                        current_prices={
+                            symbol: float(row["close"])
+                            for symbol, row in market_data.items()
+                        },
+                        latest_market_date_before_decision=prior_market_dates.get(
+                            timestamp.date()
+                        ),
+                        market=self._llm_market_context(),
                     )
-                except AgentRuntimeConfigurationError:
-                    # Deployment-level and identical on every step. Surface it
-                    # on the first one instead of holding through the run.
-                    raise
-                except AgentRuntimeError as exc:
-                    self.runtime_step_failures.append(
-                        f"{timestamp.isoformat()}: {exc}"
-                    )
-                    failures = len(self.runtime_step_failures)
-                    print(
-                        f"   ⚠️  Runtime step failed ({failures}/"
-                        f"{runtime_failure_budget} tolerated): {exc}",
-                        flush=True,
-                    )
-                    if failures > runtime_failure_budget:
-                        raise AgentRuntimeError(
-                            f"{self.runtime_type} runtime failed {failures} step(s), "
-                            f"over the {runtime_failure_budget} tolerated for this "
-                            f"run; last error: {exc}"
-                        ) from exc
-                    # Hold this step. Trading on a stale view would be worse
-                    # than not trading, and the run keeps its completed steps.
-                    decision = {"actions": []}
-                runtime_invoked = self.runtime_dispatcher.calls > runtime_calls_before
+                    try:
+                        decision = self.runtime_dispatcher.dispatch(
+                            runtime_context,
+                            pipeline_handler=lambda: manager.make_trading_decision(state),
+                        )
+                    except AgentRuntimeConfigurationError:
+                        # Deployment-level and identical on every step. Surface it
+                        # on the first one instead of holding through the run.
+                        raise
+                    except AgentRuntimeError as exc:
+                        self.runtime_step_failures.append(
+                            f"{timestamp.isoformat()}: {exc}"
+                        )
+                        failures = len(self.runtime_step_failures)
+                        print(
+                            f"   ⚠️  Runtime step failed ({failures}/"
+                            f"{runtime_failure_budget} tolerated): {exc}",
+                            flush=True,
+                        )
+                        if failures > runtime_failure_budget:
+                            raise AgentRuntimeError(
+                                f"{self.runtime_type} runtime failed {failures} step(s), "
+                                f"over the {runtime_failure_budget} tolerated for this "
+                                f"run; last error: {exc}"
+                            ) from exc
+                        # Hold this step. Trading on a stale view would be worse
+                        # than not trading, and the run keeps its completed steps.
+                        decision = {"actions": []}
+                    runtime_invoked = self.runtime_dispatcher.calls > runtime_calls_before
             
-            # Execute trades (only if real data available)
-            trades_before_execution = len(manager.trades)
-            manager.execute_actions(decision["actions"], market_data, timestamp)
-            if runtime_invoked:
-                self.runtime_dispatcher.record_latest_execution(
-                    len(manager.trades) - trades_before_execution
-                )
+                # Execute trades (only if real data available)
+                trades_before_execution = len(manager.trades)
+                manager.execute_actions(decision["actions"], market_data, timestamp)
+                if runtime_invoked:
+                    self.runtime_dispatcher.record_latest_execution(
+                        len(manager.trades) - trades_before_execution
+                    )
             
-            # Update equity (uses forward-filled prices for smooth valuation)
-            manager.update_equity(market_data, price_cache, timestamp)
-            manager.equity_history[-1] = (
-                self._require_currency_context().reporting_equity_record(
-                    manager.equity_history[-1]
+                # Update equity (uses forward-filled prices for smooth valuation)
+                manager.update_equity(market_data, price_cache, timestamp)
+                manager.equity_history[-1] = (
+                    self._require_currency_context().reporting_equity_record(
+                        manager.equity_history[-1]
+                    )
                 )
-            )
-            self._publish_live_progress(i + 1, total_steps, manager)
+                self._publish_live_progress(i + 1, total_steps, manager)
 
-            if post_trade_steps and is_last_bar_of_trading_day(all_timestamps, i):
-                self._run_daily_post_trade(
-                    manager=manager,
-                    day_episode=day_episode,
-                    post_trade_steps=post_trade_steps,
-                )
+                if post_trade_steps and is_last_bar_of_trading_day(all_timestamps, i):
+                    self._run_daily_post_trade(
+                        manager=manager,
+                        day_episode=day_episode,
+                        post_trade_steps=post_trade_steps,
+                    )
             
-            # Progress
-            if (i + 1) % 100 == 0:
-                equity = manager.equity_history[-1]["equity"]
-                pct_return = ((equity - self.initial_capital) / self.initial_capital) * 100
-                print(f"   Hour {i+1}/{len(all_timestamps)}: Equity ${equity:,.0f} ({pct_return:+.1f}%)")
+                # Progress
+                if (i + 1) % 100 == 0:
+                    equity = manager.equity_history[-1]["equity"]
+                    pct_return = ((equity - self.initial_capital) / self.initial_capital) * 100
+                    print(f"   Hour {i+1}/{len(all_timestamps)}: Equity ${equity:,.0f} ({pct_return:+.1f}%)")
         
         equity_curve = manager.get_equity_curve()
         
@@ -1040,6 +1056,17 @@ class HourlyBacktester:
         db.insert_trades(run_id, self._serialize_trades(manager.trades))
         if self.runtime_type == AI_HEDGE_FUND_RUNTIME_TYPE:
             db.insert_decisions(run_id, self.runtime_dispatcher.decision_audit_rows)
+        # Per-call usage is observability, never the run's problem: a failure to
+        # persist it must not lose a completed backtest that is already in the
+        # database. Logged and swallowed.
+        if usage_recorder is not None and len(usage_recorder):
+            try:
+                db.insert_llm_call_usage(run_id, usage_recorder.rows())
+            except Exception as usage_write_err:
+                print(
+                    f"     ⚠️  Per-call usage not persisted "
+                    f"({len(usage_recorder)} row(s)): {usage_write_err}"
+                )
         
         print(f"\n  ✅ Agent backtest complete")
         print(f"     • Run ID: {run_id}")

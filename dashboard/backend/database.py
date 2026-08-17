@@ -548,6 +548,161 @@ class BacktestDatabase:
             ON backtest_decisions(run_id, step_index)
         """)
 
+    def _ensure_llm_call_usage_table(self, cursor) -> None:
+        """Per-LLM-call token usage.
+
+        Created on first write rather than by a migration step, matching
+        ``_ensure_decisions_table``: the statement is ``IF NOT EXISTS`` and
+        touches no existing table, so it neither locks nor rewrites anything a
+        live reader depends on. Dropping the table is a complete rollback —
+        ``agent_runs`` keeps its own totals and no read path requires this one.
+        """
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS llm_call_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                call_index INTEGER NOT NULL,
+                step_label TEXT,
+                model TEXT,
+                input_tokens INTEGER NOT NULL DEFAULT 0,
+                output_tokens INTEGER NOT NULL DEFAULT 0,
+                cached_input_tokens INTEGER,
+                latency_ms REAL,
+                timestamp TEXT,
+                error TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES agent_runs(run_id)
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_llm_call_usage_run
+            ON llm_call_usage(run_id, call_index)
+        """)
+
+    def insert_llm_call_usage(self, run_id: str, calls: List[Dict[str, Any]]) -> None:
+        """Batch insert per-call usage rows for one run.
+
+        Batched at end of run, like ``insert_trades`` / ``insert_decisions``: a
+        round trip per LLM call would add write amplification to a hot path for
+        no benefit, since the call it accompanies already took seconds.
+        """
+        if not calls:
+            return
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        self._ensure_llm_call_usage_table(cursor)
+        conn.commit()
+        for entry in calls:
+            cursor.execute("""
+                INSERT INTO llm_call_usage
+                (run_id, call_index, step_label, model, input_tokens,
+                 output_tokens, cached_input_tokens, latency_ms, timestamp, error)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                run_id,
+                entry.get("call_index", 0),
+                entry.get("step_label"),
+                entry.get("model"),
+                entry.get("input_tokens", 0),
+                entry.get("output_tokens", 0),
+                entry.get("cached_input_tokens"),
+                entry.get("latency_ms"),
+                entry.get("timestamp"),
+                entry.get("error"),
+            ))
+        conn.commit()
+        conn.close()
+
+    def get_llm_call_usage(self, run_id: str) -> List[Dict[str, Any]]:
+        """Per-call rows for a run, in call order. Empty when never recorded."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        self._ensure_llm_call_usage_table(cursor)
+        cursor.execute("""
+            SELECT call_index, step_label, model, input_tokens, output_tokens,
+                   cached_input_tokens, latency_ms, timestamp, error
+            FROM llm_call_usage WHERE run_id = ? ORDER BY call_index
+        """, (run_id,))
+        columns = [d[0] for d in cursor.description]
+        rows = [dict(zip(columns, r)) for r in cursor.fetchall()]
+        conn.close()
+        return rows
+
+    def _ensure_backtest_cache_table(self, cursor) -> None:
+        """Cache index: configuration hash -> a previous run_id.
+
+        Stores no results. The run it names owns those, so a cached answer
+        cannot drift from the run that produced it, and invalidation is
+        deleting one row.
+        """
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS backtest_result_cache (
+                cache_key TEXT PRIMARY KEY,
+                run_id TEXT NOT NULL,
+                session_id TEXT,
+                scope TEXT NOT NULL DEFAULT 'user',
+                key_version INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_backtest_cache_run
+            ON backtest_result_cache(run_id)
+        """)
+
+    def get_cached_run_id(self, cache_key: str):
+        """Return (run_id, created_at) for a key, or None.
+
+        Verifies the referenced run still exists: a run deleted out from under
+        the cache must read as a miss, not as a dangling pointer.
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        self._ensure_backtest_cache_table(cursor)
+        cursor.execute(
+            "SELECT run_id, created_at FROM backtest_result_cache WHERE cache_key = ?",
+            (cache_key,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return None
+        cursor.execute("SELECT 1 FROM agent_runs WHERE run_id = ?", (row[0],))
+        still_there = cursor.fetchone() is not None
+        conn.close()
+        return (row[0], row[1]) if still_there else None
+
+    def put_cached_run_id(self, cache_key: str, run_id: str,
+                          session_id=None, scope: str = "user",
+                          key_version: int = 1) -> None:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        self._ensure_backtest_cache_table(cursor)
+        cursor.execute("""
+            INSERT OR REPLACE INTO backtest_result_cache
+            (cache_key, run_id, session_id, scope, key_version)
+            VALUES (?, ?, ?, ?, ?)
+        """, (cache_key, run_id, session_id, scope, key_version))
+        conn.commit()
+        conn.close()
+
+    def invalidate_cached_run(self, cache_key=None, run_id=None) -> int:
+        """Drop entries by key or by the run they point at. Returns rows removed."""
+        if not cache_key and not run_id:
+            return 0
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        self._ensure_backtest_cache_table(cursor)
+        if cache_key:
+            cursor.execute(
+                "DELETE FROM backtest_result_cache WHERE cache_key = ?", (cache_key,))
+        else:
+            cursor.execute(
+                "DELETE FROM backtest_result_cache WHERE run_id = ?", (run_id,))
+        removed = cursor.rowcount or 0
+        conn.commit()
+        conn.close()
+        return removed
+
     def _trades_column_set(self, cursor) -> set:
         cursor.execute("PRAGMA table_info(trades)")
         return {row[1] for row in cursor.fetchall()}

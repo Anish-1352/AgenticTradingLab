@@ -16,6 +16,11 @@ import copy
 import json
 from typing import Any, Dict, List, Optional, Tuple
 
+from dashboard.backend.infrastructure.llm.usage_recorder import (
+    extract_cached_input_tokens,
+    record_call,
+    timed_call,
+)
 from dashboard.backend.infrastructure.llm.backtest_harness import (
     DEFAULT_MAX_OUTPUT_TOKENS,
     LLM_MODEL_NAME,
@@ -378,19 +383,37 @@ def run_post_trade_analysis(
         print(f"\n📉 Post-trade analysis: {label} (day={episode_context.get('trading_day')})")
 
         try:
-            response = client.messages.create(
-                model=model or LLM_MODEL_NAME,
-                max_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
-                system=POST_TRADE_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            with timed_call() as _timing:
+                response = client.messages.create(
+                    model=model or LLM_MODEL_NAME,
+                    max_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
+                    system=POST_TRADE_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": prompt}],
+                )
             llm_calls += 1
             in_delta, out_delta = extract_token_usage(response)
             total_in += in_delta
             total_out += out_delta
+            record_call(
+                input_tokens=in_delta,
+                output_tokens=out_delta,
+                step_label=f"post_trade:{label}",
+                model=model or LLM_MODEL_NAME,
+                cached_input_tokens=extract_cached_input_tokens(response),
+                latency_ms=_timing["latency_ms"],
+            )
             parsed = parse_llm_response(extract_response_text(response))
         except Exception as exc:
             print(f"   ⚠️  Post-trade analysis failed: {exc}")
+            # A failed call still cost latency and may have been billed; record
+            # it so a run's spend is not understated by its failures.
+            record_call(
+                input_tokens=0,
+                output_tokens=0,
+                step_label=f"post_trade:{label}",
+                model=model or LLM_MODEL_NAME,
+                error=str(exc),
+            )
             parsed = None
 
         if not isinstance(parsed, dict):
@@ -463,16 +486,27 @@ def run_pipeline_decision(
         label = step.get("label") or f"Step {index + 1}"
         print(f"\n🔗 Pipeline step {index + 1}/{len(decision_steps)}: {label}")
 
-        response = client.messages.create(
-            model=model or LLM_MODEL_NAME,
-            max_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
-            system=PIPELINE_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        with timed_call() as _timing:
+            response = client.messages.create(
+                model=model or LLM_MODEL_NAME,
+                max_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
+                system=PIPELINE_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": prompt}],
+            )
         llm_calls += 1
         in_delta, out_delta = extract_token_usage(response)
         total_in += in_delta
         total_out += out_delta
+        # step_label carries the step's position AND name: attribution needs to
+        # answer "which step is expensive", and labels are not unique.
+        record_call(
+            input_tokens=in_delta,
+            output_tokens=out_delta,
+            step_label=f"pipeline:{index + 1}:{label}",
+            model=model or LLM_MODEL_NAME,
+            cached_input_tokens=extract_cached_input_tokens(response),
+            latency_ms=_timing["latency_ms"],
+        )
 
         parsed = parse_llm_response(extract_response_text(response))
         if parsed is None:

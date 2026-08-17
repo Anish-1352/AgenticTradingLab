@@ -25,6 +25,7 @@ This module is domain-level orchestration: it must NOT import dashboard scripts,
 import json
 import os
 from datetime import datetime, timedelta
+from time import perf_counter as _perf_counter
 from types import MappingProxyType
 from typing import Dict, List, Mapping, Optional
 
@@ -55,6 +56,11 @@ from dashboard.backend.infrastructure.llm.backtest_harness import (
     request_trading_decision as _request_trading_decision,
 )
 from dashboard.backend.infrastructure.llm.pipeline_runner import run_pipeline_decision
+from dashboard.backend.infrastructure.llm.usage_recorder import (
+    extract_cached_input_tokens,
+    record_call,
+    timed_call,
+)
 
 
 class LLMDecisionError(RuntimeError):
@@ -453,6 +459,8 @@ class PortfolioManager:
                 llm_response = None
                 no_text_retries = 4
                 for attempt in range(no_text_retries + 1):
+                    _timing = {"latency_ms": None}
+                    _t_start = _perf_counter()
                     if attempt == no_text_retries:
                         # Final rescue: force reasoning off for this one call.
                         print(
@@ -482,13 +490,36 @@ class PortfolioManager:
                             temperature=temperature,
                             market_context=market_context,
                         )
+                    _timing["latency_ms"] = (_perf_counter() - _t_start) * 1000.0
                     try:
                         input_delta, output_delta = _extract_token_usage(response)
                         self.input_tokens += input_delta
                         self.output_tokens += output_delta
                         self.llm_calls += 1
+                        # Each retry is a separate billed call, so each gets its
+                        # own row. Collapsing them would hide retry cost, which
+                        # is exactly what this table exists to expose.
+                        record_call(
+                            input_tokens=input_delta,
+                            output_tokens=output_delta,
+                            step_label=(
+                                "single_call:rescue" if attempt == no_text_retries
+                                else f"single_call:attempt_{attempt}"
+                            ),
+                            model=model,
+                            cached_input_tokens=extract_cached_input_tokens(response),
+                            latency_ms=_timing["latency_ms"],
+                        )
                     except Exception as usage_err:
                         print(f"   ⚠️  Could not read token usage: {usage_err}")
+                        record_call(
+                            input_tokens=0,
+                            output_tokens=0,
+                            step_label=f"single_call:attempt_{attempt}",
+                            model=model,
+                            latency_ms=_timing["latency_ms"],
+                            error=f"usage read failed: {usage_err}",
+                        )
                     try:
                         llm_response = _extract_response_text(response)
                         break
