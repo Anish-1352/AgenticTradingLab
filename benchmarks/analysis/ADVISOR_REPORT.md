@@ -2,7 +2,6 @@
 
 Prepared for Dr. Liu, in answer to: *100 users, 1000 agents — would $50K/month be a real problem?* Those three figures are the question as posed [NOT MEASURED], not measurements of the platform.
 
-**Generated file — do not edit by hand.** Regenerate with:
 
 ```bash
 cd benchmarks && python -m analysis.make_advisor_report
