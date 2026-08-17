@@ -18,6 +18,8 @@
           "reason": "no metadata"
         },
         "model": "claude-haiku-4-5-20251001",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "claude-haiku-4-5-20251001",
@@ -64,6 +66,8 @@
           "reason": "no metadata"
         },
         "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "rule-based",
@@ -110,6 +114,8 @@
           "reason": "no metadata"
         },
         "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "rule-based",
@@ -156,6 +162,8 @@
           "reason": "no metadata"
         },
         "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "rule-based",
@@ -202,6 +210,8 @@
           "reason": "no metadata"
         },
         "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "rule-based",
@@ -248,6 +258,8 @@
           "reason": "no metadata"
         },
         "model": "spy_index",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "spy_index",
@@ -294,6 +306,8 @@
           "reason": "no metadata"
         },
         "model": "djia_index",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "djia_index",
@@ -340,6 +354,8 @@
           "reason": "no metadata"
         },
         "model": "buy_hold_djia",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "buy_hold_djia",
@@ -386,6 +402,8 @@
           "reason": "no metadata"
         },
         "model": "mean_variance_djia",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "mean_variance_djia",
@@ -432,6 +450,8 @@
           "reason": "no metadata"
         },
         "model": "equal_weight_djia",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "equal_weight_djia",
@@ -478,6 +498,8 @@
           "reason": "no metadata"
         },
         "model": "claude_haiku_4_5",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 4933.658385093167,
         "mean_output_tokens_per_call": 1156.9689440993789,
         "output_tokens_model_tag": "claude_haiku_4_5",
@@ -524,6 +546,8 @@
           "reason": "no metadata"
         },
         "model": "qwen3_7_plus",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 5224.223602484472,
         "mean_output_tokens_per_call": 4879.248447204969,
         "output_tokens_model_tag": "qwen3_7_plus",
@@ -570,6 +594,8 @@
           "reason": "no metadata"
         },
         "model": "gemini_3_1_pro_preview",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 4949.72049689441,
         "mean_output_tokens_per_call": 5004.540372670807,
         "output_tokens_model_tag": "gemini_3_1_pro_preview",
@@ -616,6 +642,8 @@
           "reason": "no metadata"
         },
         "model": "gpt_5_5",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 3895.055900621118,
         "mean_output_tokens_per_call": 2226.223602484472,
         "output_tokens_model_tag": "gpt_5_5",
@@ -662,6 +690,8 @@
           "reason": "no metadata"
         },
         "model": "deepseek_v4_pro",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 4005.11801242236,
         "mean_output_tokens_per_call": 3395.614906832298,
         "output_tokens_model_tag": "deepseek_v4_pro",
@@ -708,6 +738,8 @@
           "reason": "no metadata"
         },
         "model": "nemotron_3_nano_30b",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 5501.83125,
         "mean_output_tokens_per_call": 860.1875,
         "output_tokens_model_tag": "nemotron_3_nano_30b",
@@ -754,6 +786,8 @@
           "reason": "no metadata"
         },
         "model": "claude_sonnet_4_6",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": 5016.962732919254,
         "mean_output_tokens_per_call": 1042.6149068322982,
         "output_tokens_model_tag": "claude_sonnet_4_6",
@@ -916,6 +950,7 @@
       "spread_factor": 5.817964539906482,
       "note": "Output tokens per call under an IDENTICAL prompt. The spread is the model's verbosity, not the workload's. Never carry one model's figure to another \u2014 use output_tokens_for_model, which raises instead of substituting."
     },
+    "free_tier_runs": null,
     "calls_per_decision_observed": {
       "n_runs": 7,
       "mean_of_run_means": 0.9991126885536824,
@@ -986,18 +1021,20 @@
         "label": "local pipeline run",
         "source": "locally produced DB via --local-db",
         "available": true,
-        "runs": 1,
-        "calls_per_decision_observed": 3.0,
+        "runs": 3,
+        "calls_per_decision_observed": 3.6666666666666665,
         "calls_per_decision_observed_range": [
           3.0,
-          3.0
+          5.0
         ],
         "calls_per_decision_configured": [
-          3
+          3,
+          5
         ],
-        "input_tokens_per_call": 521.1428571428571,
-        "output_tokens_per_call": 668.8095238095239,
+        "input_tokens_per_call": 540.047619047619,
+        "output_tokens_per_call": 665.2349206349207,
         "output_tokens_models": [
+          "nvidia/nemotron-3-nano-30b-a3b",
           "nvidia/nemotron-3-nano-30b-a3b:free"
         ],
         "output_is_model_specific": true
@@ -1006,8 +1043,8 @@
     "deltas": {
       "seed_vs_assumption_input_tokens_per_call": 1.8280572726518418,
       "seed_vs_assumption_output_tokens_per_call": 10.360155513462178,
-      "local_vs_assumption_calls_per_decision": 3.0,
-      "local_vs_seed_calls_per_decision": 3.0026642984014207
+      "local_vs_assumption_calls_per_decision": 3.6666666666666665,
+      "local_vs_seed_calls_per_decision": 3.669923031379514
     },
     "note": "Columns are independent measurements, not revisions. CALLS PER DECISION is the one figure comparable across all three: it is a property of pipeline depth, not of the prompt. TOKEN COUNTS ARE NOT COMPARABLE ACROSS COLUMNS unless the prompt text and the ticker universe match \u2014 a local run over 2 symbols with a short benchmark prompt will show far fewer input tokens than a production run over 30 symbols, and that difference is the workload, not a change in the platform. Output tokens are additionally model-specific."
   },
@@ -1024,7 +1061,7 @@
         "llm_calls": 21,
         "input_tokens": 10944,
         "output_tokens": 14045,
-        "est_cost_usd": 0.003356,
+        "est_cost_usd": null,
         "created_at": "2026-08-17 02:50:07",
         "pipeline": {
           "available": true,
@@ -1039,6 +1076,10 @@
           "llm_max_output_tokens": 2000
         },
         "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+        "est_cost_usd_available": false,
+        "est_cost_usd_stored_but_wrong": 0.003356,
+        "reason": "'nvidia/nemotron-3-nano-30b-a3b:free' is a free-tier slug: the provider billed nothing, but price_for_model() substring-matched it to the paid model's rate and stored 0.003356. That figure describes a charge that never happened. Token counts from this run remain valid; the cost does not. Re-run on the paid slug for a real cost.",
+        "free_tier": true,
         "mean_input_tokens_per_call": 521.1428571428571,
         "mean_output_tokens_per_call": 668.8095238095239,
         "output_tokens_model_tag": "nvidia/nemotron-3-nano-30b-a3b:free",
@@ -1087,6 +1128,8 @@
           "reason": "metadata carries no initial_pipeline/final_pipeline"
         },
         "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "rule-based",
@@ -1133,6 +1176,316 @@
           "reason": "metadata carries no initial_pipeline/final_pipeline"
         },
         "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 7,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 7,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 7,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
+      },
+      {
+        "run_id": "local_pipeline_5step_paid",
+        "agent_name": "Agent",
+        "llm_model": "nvidia/nemotron-3-nano-30b-a3b",
+        "mode": "backtest",
+        "llm_calls": 35,
+        "input_tokens": 20085,
+        "output_tokens": 21943,
+        "est_cost_usd": 0.005393,
+        "created_at": "2026-08-17 03:26:21",
+        "pipeline": {
+          "available": true,
+          "initial_pipeline_total_steps": 5,
+          "initial_pipeline_decision_steps": 5,
+          "initial_pipeline_post_trade_steps": 0,
+          "calls_per_decision_from_pipeline": 5,
+          "post_trade_calls_per_day": 0,
+          "final_pipeline_total_steps": 5,
+          "final_pipeline_decision_steps": 5,
+          "final_pipeline_post_trade_steps": 0,
+          "llm_max_output_tokens": 2000
+        },
+        "model": "nvidia/nemotron-3-nano-30b-a3b",
+        "est_cost_usd_available": true,
+        "free_tier": false,
+        "mean_input_tokens_per_call": 573.8571428571429,
+        "mean_output_tokens_per_call": 626.9428571428572,
+        "output_tokens_model_tag": "nvidia/nemotron-3-nano-30b-a3b",
+        "decision_count": {
+          "decisions": 7,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 7,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 7,
+        "observed_calls_per_decision": 5.0,
+        "pipeline_calls_per_decision": 5,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 5.0,
+          "configured_pipeline_steps": 5,
+          "delta": 0.0,
+          "ratio": 1.0,
+          "agree": true,
+          "verdict": "agree",
+          "interpretation": "Both derivations give 5.000 calls per decision. Every configured step fired exactly once: no retries, no aborts."
+        }
+      },
+      {
+        "run_id": "buyhold_20260816_232621_dc2e3b46",
+        "agent_name": "buy-and-hold",
+        "llm_model": "rule-based",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-08-17 03:26:21",
+        "pipeline": {
+          "available": false,
+          "reason": "metadata carries no initial_pipeline/final_pipeline"
+        },
+        "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 7,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 7,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 7,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
+      },
+      {
+        "run_id": "djia_index_20260816_232622_e6e4b975",
+        "agent_name": "DJIA",
+        "llm_model": "rule-based",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-08-17 03:26:22",
+        "pipeline": {
+          "available": false,
+          "reason": "metadata carries no initial_pipeline/final_pipeline"
+        },
+        "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 7,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 7,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 7,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
+      },
+      {
+        "run_id": "local_pipeline_3step_paid",
+        "agent_name": "Agent",
+        "llm_model": "nvidia/nemotron-3-nano-30b-a3b",
+        "mode": "backtest",
+        "llm_calls": 21,
+        "input_tokens": 11028,
+        "output_tokens": 14699,
+        "est_cost_usd": 0.003491,
+        "created_at": "2026-08-17 03:28:21",
+        "pipeline": {
+          "available": true,
+          "initial_pipeline_total_steps": 3,
+          "initial_pipeline_decision_steps": 3,
+          "initial_pipeline_post_trade_steps": 0,
+          "calls_per_decision_from_pipeline": 3,
+          "post_trade_calls_per_day": 0,
+          "final_pipeline_total_steps": 3,
+          "final_pipeline_decision_steps": 3,
+          "final_pipeline_post_trade_steps": 0,
+          "llm_max_output_tokens": 2000
+        },
+        "model": "nvidia/nemotron-3-nano-30b-a3b",
+        "est_cost_usd_available": true,
+        "free_tier": false,
+        "mean_input_tokens_per_call": 525.1428571428571,
+        "mean_output_tokens_per_call": 699.952380952381,
+        "output_tokens_model_tag": "nvidia/nemotron-3-nano-30b-a3b",
+        "decision_count": {
+          "decisions": 7,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 7,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 7,
+        "observed_calls_per_decision": 3.0,
+        "pipeline_calls_per_decision": 3,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 3.0,
+          "configured_pipeline_steps": 3,
+          "delta": 0.0,
+          "ratio": 1.0,
+          "agree": true,
+          "verdict": "agree",
+          "interpretation": "Both derivations give 3.000 calls per decision. Every configured step fired exactly once: no retries, no aborts."
+        }
+      },
+      {
+        "run_id": "buyhold_20260816_232821_26881fa7",
+        "agent_name": "buy-and-hold",
+        "llm_model": "rule-based",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-08-17 03:28:21",
+        "pipeline": {
+          "available": false,
+          "reason": "metadata carries no initial_pipeline/final_pipeline"
+        },
+        "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
+        "mean_input_tokens_per_call": null,
+        "mean_output_tokens_per_call": null,
+        "output_tokens_model_tag": "rule-based",
+        "decision_count": {
+          "decisions": 7,
+          "source": "equity_timeseries",
+          "is_proxy": true,
+          "attempts": [
+            {
+              "table": "backtest_decisions",
+              "count": 0,
+              "rationale": "One row per logged decision. Authoritative WHEN PRESENT, but engine.py calls insert_decisions() only under the ai_hedge_fund runtime \u2014 under the native pipeline runtime this table is empty by construction, so an empty result here is not evidence of anything."
+            },
+            {
+              "table": "equity_timeseries",
+              "count": 7,
+              "rationale": "One row per simulated bar. The engine takes exactly one decision per bar, so the bar count is the decision count. A PROXY: it is exact for the hourly backtest loop, and it would overcount if a bar were ever recorded without a decision being attempted."
+            }
+          ]
+        },
+        "decisions_recorded": 7,
+        "observed_calls_per_decision": 0.0,
+        "pipeline_calls_per_decision": null,
+        "calls_per_decision_reconciliation": {
+          "observed_llm_calls_over_decisions": 0.0,
+          "configured_pipeline_steps": null,
+          "agree": null,
+          "verdict": "configured count unavailable",
+          "interpretation": "metadata carries no initial_pipeline, so the run used the SINGLE-CALL path \u2014 there were no configured steps to count. The multi-step path remains unmeasured."
+        }
+      },
+      {
+        "run_id": "djia_index_20260816_232821_d111cf75",
+        "agent_name": "DJIA",
+        "llm_model": "rule-based",
+        "mode": "backtest",
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "est_cost_usd": 0.0,
+        "created_at": "2026-08-17 03:28:21",
+        "pipeline": {
+          "available": false,
+          "reason": "metadata carries no initial_pipeline/final_pipeline"
+        },
+        "model": "rule-based",
+        "est_cost_usd_available": true,
+        "free_tier": false,
         "mean_input_tokens_per_call": null,
         "mean_output_tokens_per_call": null,
         "output_tokens_model_tag": "rule-based",
@@ -1193,25 +1546,26 @@
   },
   "local_summary": {
     "available": true,
-    "runs_with_llm_calls": 1,
+    "runs_with_llm_calls": 3,
     "models": [
+      "nvidia/nemotron-3-nano-30b-a3b",
       "nvidia/nemotron-3-nano-30b-a3b:free"
     ],
     "input_tokens_per_call": {
-      "n_runs": 1,
-      "mean_of_run_means": 521.1428571428571,
+      "n_runs": 3,
+      "mean_of_run_means": 540.047619047619,
       "min_run_mean": 521.1428571428571,
-      "max_run_mean": 521.1428571428571,
+      "max_run_mean": 573.8571428571429,
       "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
     },
     "output_tokens_per_call": {
-      "n_runs": 1,
-      "mean_of_run_means": 668.8095238095239,
-      "min_run_mean": 668.8095238095239,
-      "max_run_mean": 668.8095238095239,
+      "n_runs": 3,
+      "mean_of_run_means": 665.2349206349207,
+      "min_run_mean": 626.9428571428572,
+      "max_run_mean": 699.952380952381,
       "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
     },
-    "output_tokens_per_call_warning": null,
+    "output_tokens_per_call_warning": "This aggregate spans MULTIPLE MODELS and is not a usable cost input. Output length is model-specific \u2014 use output_tokens_by_model.",
     "output_tokens_by_model": {
       "available": true,
       "models": {
@@ -1224,20 +1578,39 @@
           "n_runs": 1,
           "mean_input_tokens_per_call": null,
           "substitutable_across_models": false
+        },
+        "nvidia/nemotron-3-nano-30b-a3b": {
+          "model": "nvidia/nemotron-3-nano-30b-a3b",
+          "run_ids": [
+            "local_pipeline_5step_paid",
+            "local_pipeline_3step_paid"
+          ],
+          "mean_output_tokens_per_call": 663.4476190476191,
+          "n_runs": 2,
+          "mean_input_tokens_per_call": null,
+          "substitutable_across_models": false
         }
       },
-      "spread_factor": 1.0,
+      "spread_factor": 1.0080818810829433,
       "note": "Output tokens per call under an IDENTICAL prompt. The spread is the model's verbosity, not the workload's. Never carry one model's figure to another \u2014 use output_tokens_for_model, which raises instead of substituting."
     },
+    "free_tier_runs": {
+      "count": 1,
+      "run_ids": [
+        "local_pipeline_3step"
+      ],
+      "note": "These runs cost nothing. Any est_cost_usd stored against them is fabricated by substring price matching and is withheld; their TOKEN counts are still valid."
+    },
     "calls_per_decision_observed": {
-      "n_runs": 1,
-      "mean_of_run_means": 3.0,
+      "n_runs": 3,
+      "mean_of_run_means": 3.6666666666666665,
       "min_run_mean": 3.0,
-      "max_run_mean": 3.0,
+      "max_run_mean": 5.0,
       "note": "These are statistics over RUN-LEVEL MEANS, not over calls. Each run contributes one number. A per-call percentile does not exist in the stored data."
     },
     "calls_per_decision_from_pipeline_config": [
-      3
+      3,
+      5
     ],
     "calls_per_decision_derivations": {
       "a_observed": "llm_calls / decisions",
@@ -1245,7 +1618,7 @@
       "decision_denominator_sources_used": [
         "equity_timeseries"
       ],
-      "runs_reconciled": 1,
+      "runs_reconciled": 3,
       "runs_in_disagreement": 0,
       "disagreements": [],
       "note": "Disagreement means retries fired (a > b) or steps did not run (a < b). It is reported, not reconciled."

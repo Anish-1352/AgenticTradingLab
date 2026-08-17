@@ -82,6 +82,7 @@ if _BENCH_ROOT not in sys.path:
     sys.path.insert(0, _BENCH_ROOT)
 
 __all__ = ["INSTRUMENTATION_GAP", "DECISION_COUNT_SOURCES", "ORIGINAL_ASSUMPTION",
+           "FREE_TIER_MARKERS", "is_free_tier_model", "guarded_est_cost",
            "extract_runs", "summarise", "pipeline_steps_from_metadata",
            "reconcile_calls_per_decision", "output_tokens_by_model",
            "output_tokens_for_model", "three_way_comparison", "format_report"]
@@ -145,6 +146,38 @@ INSTRUMENTATION_GAP = {
         "helps ATL at all."
     ),
 }
+
+
+# Slugs whose provider bills nothing. token_cost.price_for_model() substring-
+# matches these to the PAID model of the same name — "nvidia/nemotron-3-nano-
+# 30b-a3b:free" matches the "nvidia/nemotron-3-nano-30b-a3b" needle — so the
+# est_cost_usd a free-tier run stores is a real number describing a charge that
+# never happened. Reporting it is worse than reporting nothing, because it is
+# indistinguishable from a measurement.
+FREE_TIER_MARKERS = (":free",)
+
+
+def is_free_tier_model(model: Any) -> bool:
+    name = str(model or "").strip().lower()
+    return any(marker in name for marker in FREE_TIER_MARKERS)
+
+
+def guarded_est_cost(model: Any, stored: Any) -> Dict[str, Any]:
+    """Return the stored cost, or a refusal when the slug is free-tier."""
+    if not is_free_tier_model(model):
+        return {"est_cost_usd": stored, "est_cost_usd_available": True}
+    return {
+        "est_cost_usd": None,
+        "est_cost_usd_available": False,
+        "est_cost_usd_stored_but_wrong": stored,
+        "reason": (
+            f"{model!r} is a free-tier slug: the provider billed nothing, but "
+            f"price_for_model() substring-matched it to the paid model's rate "
+            f"and stored {stored}. That figure describes a charge that never "
+            f"happened. Token counts from this run remain valid; the cost does "
+            f"not. Re-run on the paid slug for a real cost."
+        ),
+    }
 
 
 def _connect(db_path: str) -> sqlite3.Connection:
@@ -330,6 +363,8 @@ def extract_runs(db_path: str, run_id: Optional[str] = None,
             in_tok = int(rec.get("input_tokens") or 0)
             out_tok = int(rec.get("output_tokens") or 0)
             rec["model"] = rec.get("llm_model") or rec.get("model")
+            rec.update(guarded_est_cost(rec["model"], rec.get("est_cost_usd")))
+            rec["free_tier"] = is_free_tier_model(rec["model"])
             rec["mean_input_tokens_per_call"] = (in_tok / calls) if calls else None
             # Output is model-specific; it travels with the model that made it.
             rec["mean_output_tokens_per_call"] = (out_tok / calls) if calls else None
@@ -549,6 +584,7 @@ def summarise(extract: Dict[str, Any]) -> Dict[str, Any]:
             ),
         }
 
+    free_runs = [r for r in llm_runs if r.get("free_tier")]
     by_model = output_tokens_by_model(llm_runs)
     reconciliations = [r["calls_per_decision_reconciliation"] for r in llm_runs
                        if r.get("calls_per_decision_reconciliation")]
@@ -568,6 +604,15 @@ def summarise(extract: Dict[str, Any]) -> Dict[str, Any]:
             "output_tokens_by_model."
         ) if len(by_model.get("models") or {}) > 1 else None,
         "output_tokens_by_model": by_model,
+        "free_tier_runs": {
+            "count": len(free_runs),
+            "run_ids": [r.get("run_id") for r in free_runs],
+            "note": (
+                "These runs cost nothing. Any est_cost_usd stored against them "
+                "is fabricated by substring price matching and is withheld; "
+                "their TOKEN counts are still valid."
+            ),
+        } if free_runs else None,
         "calls_per_decision_observed": _agg(cpd),
         "calls_per_decision_from_pipeline_config": sorted(set(pipeline_cpd)),
         "calls_per_decision_derivations": {

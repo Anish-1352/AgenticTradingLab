@@ -63,21 +63,25 @@ For context: the seed runs recorded 161 bars over a one-month window [MEASURED],
 
 > 100 users x `B` backtests/day x 160.9 calls x 30 days/month = 482,571 x `B` calls/month [DERIVED]; `B` is [NOT MEASURED].
 
-| Model | Backtests/user/day needed for $50K | Tier |
-|---|---:|---|
-| `nvidia/nemotron-3-nano-30b-a3b` | 231.73 | DERIVED |
-| `deepseek/deepseek-v4-pro` | 22.06 | DERIVED |
-| `qwen/qwen3.7-plus` | 10.47 | DERIVED |
-| `anthropic/claude-haiku-4-5` | 9.67 | DERIVED |
-| `anthropic/claude-sonnet-4-6` | 3.38 | DERIVED |
-| `google/gemini-3.1-pro` | 1.48 | DERIVED |
-| `openai/gpt-5.5` | 1.20 | DERIVED |
+Pipeline depth divides every threshold, because a decision costs one call per configured step — measured, not assumed (section three):
 
-**This is the finding worth acting on.** On the platform's default model, reaching $50K would take 232 backtests per user per day [DERIVED] — implausible. On the most expensive measured model it takes 1.20 [DERIVED] — which a single engaged user could exceed before lunch. Backtest volume is unbounded by design: a backtest replays a whole window on demand, where live trading is rate-limited by the bar interval.
+| Model | 1 call/decision | 3 calls | 5 calls | Tier |
+|---|---:|---:|---:|---|
+| `nvidia/nemotron-3-nano-30b-a3b` | 231.73 | 77.24 | 46.35 | DERIVED |
+| `deepseek/deepseek-v4-pro` | 22.06 | 7.35 | 4.41 | DERIVED |
+| `qwen/qwen3.7-plus` | 10.47 | 3.49 | 2.09 | DERIVED |
+| `anthropic/claude-haiku-4-5` | 9.67 | 3.22 | 1.93 | DERIVED |
+| `anthropic/claude-sonnet-4-6` | 3.38 | 1.13 | 0.68 | DERIVED |
+| `google/gemini-3.1-pro` | 1.48 | 0.49 | 0.30 | DERIVED |
+| `openai/gpt-5.5` | 1.20 | 0.40 | 0.24 | DERIVED |
+
+The one-call column is what the earlier version of this report showed. It was derived at the seed runs' single-call rate [MEASURED], which is right for those runs and wrong for any pipeline. On `openai/gpt-5.5` a three-step pipeline moves the threshold to 0.40 backtests/user/day [DERIVED] — under one.
+
+**This is the finding worth acting on.** On the platform's default model, reaching $50K needs 232 backtests per user per day at one call per decision, or 77 at three [DERIVED] — implausible either way. On the most expensive measured model it takes 1.20 at one call and 0.40 at three [DERIVED] — **less than one backtest per user per day**, which a single engaged user would exceed without trying. Backtest volume is unbounded by design: a backtest replays a whole window on demand, where live trading is rate-limited by the bar interval.
 
 ### So the conditional
 
-> $50K/month becomes a real problem **only if** production runs a frontier model **and** backtest volume reaches roughly single-digit runs per user per day [DERIVED]. At the platform's current default model and call pattern, the same load costs on the order of 259 dollars/month [DERIVED] — a 193x difference driven by model choice alone [DERIVED].
+> $50K/month becomes a real problem **only if** production runs a frontier model **and** backtest volume reaches roughly one run per user per day at a three-step pipeline, or single digits at one call per decision [DERIVED]. At the platform's current default model and call pattern, the same load costs on the order of 259 dollars/month [DERIVED] — a 193x difference driven by model choice alone [DERIVED].
 
 Two inputs decide it and neither is in this repository: the production **model mix** and **backtests per user per day**. Both are one SQL query away on the Render database — see `QUESTIONS_FOR_ADVISOR.md`.
 
@@ -106,7 +110,42 @@ The seed DB stores model names in an underscored form that does not substring-ma
 
 The loader raises rather than reporting if any run disagrees, so a drifted price cannot reach this document.
 
-## 3. Measured serving results
+## 3. Calls per decision, and Arm A — both now measured
+
+### Pipeline depth sets calls per decision, exactly
+
+Measured against the real API, not a stub. Each run replayed the same window; `observed` is `llm_calls / bars` and `configured` is the step count in `metadata.initial_pipeline`:
+
+| Configured steps | Observed calls/decision | Agrees | Runs | Tier |
+|---:|---:|---|---:|---|
+| 3 | 3.000 | yes | 2 | MEASURED |
+| 5 | 5.000 | yes | 1 | MEASURED |
+
+Both derivations agree at both depths [MEASURED], so **no retry inflation was observed**. This closes a lever that had been open since the seed data: all seven seed runs used the single-call path, so a multi-step pipeline had never been run anywhere. Depth multiplies cost linearly — a five-step pipeline costs five times a single-call one for the same decisions [DERIVED].
+
+What is still unmeasured is which depth **production** runs. That is the third question in `QUESTIONS_FOR_ADVISOR.md`.
+
+### Arm A — hosted API, measured for the first time
+
+Every previous Arm A figure was modelled from an assumed price. These come from the provider's billed `usage`. Model `nvidia/nemotron-3-nano-30b-a3b`, fixture `a69c2be743189489...` — the same fixture arms B and C ran [MEASURED] — with reasoning `none`, since thinking tokens bill as output.
+
+| Concurrency | req/s | e2e p50 ms | e2e p95 ms | e2e p99 ms | $/request | 429s | errors | Tier |
+|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 1 | 1.438 | 706 | 948 | 981 | 0.000149 | 0 | 0 | MEASURED |
+| 8 | 8.037 | 816 | 1,652 | 1,720 | 0.000149 | 0 | 0 | MEASURED |
+| 32 | 13.043 | 1,105 | 2,449 | 2,451 | 0.000149 | 0 | 0 | MEASURED |
+| 64 | 20.834 | 856 | 1,334 | 1,483 | 0.000148 | 0 | 0 | MEASURED |
+| 128 | 24.097 | 955 | 1,200 | 1,293 | 0.000148 | 0 | 0 | MEASURED |
+
+Cost per request is flat at $0.000148-$0.000149 across every level [MEASURED] — the API prices tokens, not concurrency. The provider's own reported cost matched the figure computed from the price table exactly [MEASURED].
+
+Throughput rises monotonically from 1.438 to 24.097 req/s [MEASURED], with no inversion — the opposite of arm B's behaviour, and unsurprising, since the provider is batching behind the endpoint.
+
+**Prompt caching: none granted.** The provider reported `cached_tokens` totalling 0 across all levels [MEASURED], against a fixture that is 99.4% shared prefix by construction [MEASURED]. So the hosted analogue of arm C's prefix cache did not fire here. That is worth a follow-up — it is a measured absence on this model and endpoint, not a statement about OpenRouter generally.
+
+**Throughput here is NOT comparable to arms B/C.** The provider ignored `min_tokens`, so completions ran far shorter than the 256 tokens the local arms forced [MEASURED]. Cost and latency per request stand on their own; tokens/second does not cross arms.
+
+## 4. Self-hosted serving results (arms B and C)
 
 One GPU, one fixture, one pip freeze. Arm B is a plain HuggingFace generate loop; Arm C is vLLM.
 
@@ -158,7 +197,7 @@ Carried verbatim from the trace artifact's own caveats (3 of them) [MEASURED]:
 - tensor_core_gemm_share is the time share of kernels whose names indicate an HMMA GEMM, not a measure of tensor pipe efficiency.
 ```
 
-## 4. Code findings
+## 5. Code findings
 
 Static reading of `dashboard/backend`; nothing executed. Every citation below is re-read from the file at generation time and this document fails to build if one has drifted (8 of 8 verified [MEASURED]).
 
@@ -244,7 +283,7 @@ Paper trading has no execution path: no order submission, no step loop, and a re
 
 One database fact belongs with these: `backtest_decisions` holds 0 rows across all 17 runs in the seed database [MEASURED], which is the schema behaving as written rather than a broken run.
 
-## 5. What is NOT measured
+## 6. What is NOT measured
 
 Every item here has been kept out of the findings above. Each is listed with what would resolve it.
 
@@ -256,34 +295,35 @@ Every item here has been kept out of the findings above. Each is listed with wha
 | `n_agents` | NOT MEASURED | How many agents run concurrently. Render DB: count of active agents. |
 | `decisions_per_agent_per_day` | NOT MEASURED | Decisions one live agent makes per day. Nothing in this repo runs a live agent — paper_backend.py is an explicit stub with no step loop, so this is a deployment property, not a code property. |
 | `backtests_per_user_per_day` | NOT MEASURED | Backtests a user launches per day. LIKELY THE DOMINANT DRIVER: one leaderboard backtest was ~161 calls, and backtesting is what the platform is for. Render DB: agent_runs grouped by day and user. |
-| `calls_per_decision` | NOT MEASURED | LLM calls per decision. All 7 seed runs used the SINGLE-CALL path (6 at exactly 1.000, Nemotron 0.994). A multi-step pipeline issues one call per step — verified 3->3 and 5->5 against the real runner with a stub client — but no production run has ever been recorded. Render DB: metadata.initial_pipeline step counts across real runs. |
+| `calls_per_decision` | NOT MEASURED | LLM calls per decision — equivalently, YOUR pipeline depth. The relationship is now MEASURED against real API runs: a 3-step pipeline issued exactly 3.000 calls/decision and a 5-step exactly 5.000, with no retry inflation at either depth. What remains unmeasured is which depth PRODUCTION runs — all 7 seed runs used the single-call path. Render DB: metadata.initial_pipeline step counts across real runs. |
 | `model_mix` | NOT MEASURED | Fraction of production calls by model, as {db_model: fraction}. Cost per call spans more than two orders of magnitude across the measured models, so this usually dominates the answer. Render DB: agent_runs grouped by llm_model. |
 | `trading_days_per_month` | NOT MEASURED | Trading days per month. A calendar convention (~21), not a measurement — state it explicitly rather than letting it default. |
 | `calendar_days_per_month` | NOT MEASURED | Calendar days per month for backtest volume (~30). Also a convention, not a measurement. |
-| `infrastructure_usd_per_month` | NOT MEASURED | Hosting, GPU, and database spend. NOT measurable from this repo: no Arm A hosted-API run has ever been executed, and no self-hosted deployment exists to price. Render/AWS billing console. |
+| `infrastructure_usd_per_month` | NOT MEASURED | Hosting, database, and any GPU spend — everything that is NOT per-token LLM cost. Arm A now measures the per-request API price, but that is the token bill, not the platform's fixed running cost, and no self-hosted deployment exists to price. Render/AWS billing console. |
 
 ### Measurements never taken
 
 | Item | Tier | What it would take |
 |---|---|---|
-| Calls per decision for multi-step pipelines in production | NOT MEASURED | All seed runs used the single-call path. A production run with metadata.initial_pipeline populated, or the Render DB. |
-| Retry inflation | NOT MEASURED | Observed calls exceeding configured steps in a real run. The stub probe cannot produce it — it always parses. |
+| Which pipeline DEPTH production runs | NOT MEASURED | The depth->calls relationship is now measured (3->3.000, 5->5.000). What depth production actually configures is not. Render DB: metadata.initial_pipeline step counts. |
+| Retry inflation under failure | NOT MEASURED | Not observed in 77 real API calls across two depths — but those runs had zero parse failures and zero 429s, so the retry path never engaged. A run under provider errors would be needed to see it. |
 | Real cross-agent prompt overlap | NOT MEASURED | Tokenising real production prompts. The shared-prefix fixture is a deliberate upper bound and the low-overlap fixture is CONSTRUCTED, not sampled from production. |
 | Prefix-cache benefit | NOT MEASURED | The ablation was never run. vLLM reported stats_source: null, so no hit rate was observed even in the run that had caching enabled. |
 | Attribution of the Arm C speedup | NOT MEASURED | The arms differ in batching, caching, and engine at once. Decomposing it needs one-variable-at-a-time runs. |
 | Occupancy, Tensor Core utilisation, memory bandwidth, SM activity | NOT MEASURED | ncu and nsys were never run. Kernel residency is not occupancy. |
 | Saturation point | NOT MEASURED | Neither arm was pushed to out-of-memory, so no ceiling was found. |
-| Every Arm A number | NOT MEASURED | No hosted-API run has ever been executed. |
+| Arm A throughput comparable with arms B/C | NOT MEASURED | The provider ignored min_tokens, so completions were far shorter than the forced 256. Cost and latency are measured; tokens/second does not cross arms. |
+| Whether prompt caching would help on a provider that grants it | NOT MEASURED | OpenRouter granted zero cached tokens for this model. A provider with explicit cache control, against the same shared-prefix fixture, would answer it. |
 | Decision latency's effect on trading P&L | NOT MEASURED | The engine cannot express it — see finding on execution.py. A harness-side replay with shifted fills, plus real market data. |
 
 ### Deliberately excluded from this report
 
-- **crossover agent counts** — rests on an Arm A cost per request that has never been measured.
+- **crossover agent counts** — the self-hosted side is a -dirty run, and the crossover is a lower bound that omits engineering and on-call cost entirely.
 - **prefix-cache benefit estimates** — the ablation was never run; vLLM reported stats_source: null [NOT MEASURED], so no hit rate was observed even with caching enabled.
-- **every Arm A figure** — no hosted-API run has ever been executed.
+- **throughput comparison of arm A against arms B/C** — the provider ignored min_tokens, so arm A produced far fewer output tokens per request than the 256 arms B/C forced [MEASURED] — the tok/s figures measure different work.
 - **attribution of the speedup across batching / caching / engine** — never decomposed; the arms differ in more than one variable.
 
-## 6. Caveats
+## 7. Caveats
 
 ### Serving results are provisional
 
@@ -295,6 +335,12 @@ Both serving runs carry a `-dirty` branch SHA [MEASURED]:
 | `armC_shared` | `f40ae8ba55776e10fdbbe5eb325d5bb6173c64f6-dirty` | MEASURED |
 
 `RUN_MANIFEST_SCHEMA.md` treats a dirty result as non-citable: the tree had uncommitted changes, so the exact code that produced these numbers cannot be reconstructed from the SHA alone. **Treat every serving figure in section three as provisional pending a clean-tree re-run.** The cost figures in section two are unaffected — they come from the committed database, not from these runs.
+
+### The rate-limit ceiling was not found
+
+A probe escalated concurrency to 256 and saw zero 429s at every level [MEASURED]; the full Arm A sweep also returned zero 429s and zero errors across all requests [MEASURED].
+
+**This is a property of THIS ACCOUNT TIER, not of the API.** Rate limits are per-key and per-plan and providers change them without notice. The result says what this credential could do on this date — nothing about the provider's capacity, the model's capacity, or what a funded or contracted account would allow. Any claim that hosted serving is blocked by rate limits must carry that qualifier.
 
 ### Scope of the serving measurement
 
@@ -308,7 +354,7 @@ Observed calls per decision across the seed runs ranges 0.994 to 1.000 [DERIVED]
 
 Every code finding above concerns `dashboard/`, which is what ships. `orchestration/FinAgents` is a separate tree containing the paper artifact; it holds transaction-cost and market-impact machinery that the dashboard does not. Neither imports the other — verified in both directions. Conflating them has been a recurring error in this project and no figure here draws on `orchestration/`.
 
-## 7. Questions only you can answer
+## 8. Questions only you can answer
 
 Set out in full in `QUESTIONS_FOR_ADVISOR.md`. In brief:
 

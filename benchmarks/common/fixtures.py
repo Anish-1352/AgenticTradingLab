@@ -559,6 +559,18 @@ def save_fixture(fixture: Fixture, out_dir: str) -> Dict[str, str]:
 def load_fixture(path: str) -> Fixture:
     with open(path) as fh:
         data = json.load(fh)
+    # save_fixture writes the decoded text in a sibling "requests_text" map, so
+    # it stays out of canonical_payload and therefore out of the hash. It has to
+    # be merged back on load or a LOADED fixture silently lacks prompt_text
+    # while a freshly BUILT one has it — which breaks any HTTP runner (arm A
+    # sends text, not ids) only when the fixture cache is warm.
+    requests_text = data.get("requests_text") or {}
+    if requests_text:
+        for r in data["requests"]:
+            if "prompt_text" not in r:
+                text = requests_text.get(r["request_id"])
+                if text:
+                    r["prompt_text"] = text
     fx = Fixture(
         name=data["name"],
         tokenizer_name=data.get("tokenizer_name", "unknown"),

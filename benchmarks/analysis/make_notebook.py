@@ -22,6 +22,7 @@ if _BENCH_ROOT not in sys.path:
 
 from analysis.cost_model_lib import (  # noqa: E402
     UNMEASURED_INPUTS, calls_to_reach_budget, load_measured,
+    load_measured_calls_per_decision,
 )
 
 __all__ = ["build_notebook", "main"]
@@ -106,7 +107,8 @@ if _bench not in sys.path:
 from analysis.cost_model_lib import (
     MissingInput, load_measured, cost_per_call, monthly_breakdown,
     per_model_comparison, sensitivity, measured_calls_per_backtest,
-    calls_to_reach_budget, UNMEASURED_INPUTS,
+    calls_to_reach_budget, backtest_threshold_table,
+    load_arm_a, load_measured_calls_per_decision, UNMEASURED_INPUTS,
 )
 
 MEASURED_DATA = load_measured()          # [MEASURED] seed DB + results/*.json
@@ -128,6 +130,22 @@ print(f"[MEASURED] calls per backtest: {CALLS_PER_BACKTEST['value']:,.1f} "
       f"(range {CALLS_PER_BACKTEST['min']}-{CALLS_PER_BACKTEST['max']}, "
       f"{CALLS_PER_BACKTEST['n_runs']} runs)")
 print(f"           {CALLS_PER_BACKTEST['caveat']}")
+
+DEPTHS = load_measured_calls_per_decision()
+ARM_A = load_arm_a()
+print()
+print("[MEASURED] calls per decision, by configured pipeline depth:")
+for d in DEPTHS.get("depths_measured", []):
+    r = DEPTHS["by_depth"][d]
+    print(f"           {d} steps -> {r['observed_calls_per_decision']:.3f} calls"
+          f"   (agrees: {r['agrees_with_configured']})")
+print("           No retry inflation observed at either depth.")
+if ARM_A.get("available"):
+    print()
+    print(f"[MEASURED] Arm A hosted API, ${ARM_A['cost_per_request_min']:.6f}-"
+          f"${ARM_A['cost_per_request_max']:.6f}/request, "
+          f"{ARM_A['total_429s']} rate-limit rejections, "
+          f"{ARM_A['cached_tokens_total']} cached tokens granted.")
 """))
 
     cells.append(_md("""
@@ -286,17 +304,48 @@ for r in calls_to_reach_budget(MEASURED_DATA, BUDGET):
 """))
 
     cells.append(_md("""
+## 7. Backtests/user/day for $50K, by pipeline depth
+
+Depth divides the threshold: a decision costs one call per configured step, so
+a 3-step pipeline reaches the same spend on a third the user activity. The
+relationship is measured (3 steps -> 3.000 calls, 5 -> 5.000), but **which
+depth production runs is not** — so all three columns are shown rather than one
+being picked.
+"""))
+
+    cells.append(_code("""
+rows = backtest_threshold_table(
+    MEASURED_DATA, BUDGET, n_users=100, calendar_days=30,
+    calls_per_backtest=CALLS_PER_BACKTEST["value"],
+    calls_per_decision_options=(1, 3, 5))
+
+print("backtests/user/day needed to reach $50K/month, at 100 users")
+print(f"{'model':<34}{'1 call/dec':>12}{'3 calls':>11}{'5 calls':>11}")
+print("-" * 68)
+for r in rows:
+    t = r["thresholds"]
+    print(f"{r['slug']:<34}{t[1]:>12,.2f}{t[3]:>11,.2f}{t[5]:>11,.2f}")
+print()
+print("[DERIVED] from measured $/call and measured calls-per-backtest.")
+print("[NOT MEASURED] which depth production runs, and actual backtest volume.")
+"""))
+
+    cells.append(_md("""
 ## What this notebook does not model
 
 Named so none of it is mistaken for a gap in the arithmetic:
 
-* **Retry inflation** — never observed in a real run.
-* **Multi-step pipelines in production** — all seed runs used the single-call
-  path. A pipeline issues one call per step (verified 3→3 and 5→5 against the
-  real runner), so `calls_per_decision` above multiplies everything, but no
-  production run has ever recorded a step count.
-* **Prefix caching** — the ablation was never run; vLLM reported
-  `stats_source: null`, so no hit rate was ever observed.
+* **Retry inflation** — not observed across 77 real API calls at two depths,
+  but those runs had zero parse failures and zero rate-limit rejections, so the
+  retry path never engaged.
+* **Which depth production runs** — the depth→calls relationship is measured
+  (3→3.000, 5→5.000, against the real API), so `calls_per_decision` above
+  multiplies everything linearly. What production actually configures is
+  unmeasured; all seed runs used the single-call path.
+* **Prefix caching** — the local ablation was never run (vLLM reported
+  `stats_source: null`). On the hosted side the provider granted **zero**
+  cached tokens against a 99.4% shared-prefix fixture, so no hosted cache
+  benefit exists to model for this model and endpoint.
 * **Rate limits** — the model assumes purchasable throughput is unbounded.
 * **Engineering and on-call cost** of any self-hosted option.
 * **Backtest window length** — `calls_per_backtest` is measured for a one-month

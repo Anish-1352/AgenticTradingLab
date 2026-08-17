@@ -1,0 +1,4856 @@
+{
+  "run_id": "armA_nemotron",
+  "levels": [
+    {
+      "run_id": "armA_nemotron",
+      "concurrency": 1,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 22.25699200015515,
+      "input_tokens_total": 86651,
+      "output_tokens_total": 2248,
+      "total_tokens": 88899,
+      "input_tok_per_s": 3893.203537989139,
+      "output_tok_per_s": 101.00196827964577,
+      "total_tok_per_s": 3994.205506268785,
+      "completed_requests_per_s": 1.4377504381444237,
+      "ttft_p50": 0.3792960208375007,
+      "ttft_p95": 0.6085896019591018,
+      "ttft_p99": 0.6256239519966766,
+      "e2e_p50": 0.7060401670169085,
+      "e2e_p95": 0.947636333387345,
+      "e2e_p99": 0.9809944167267531,
+      "itl_mean": 0.00358323347287622,
+      "itl_p95": 0.00678752036765218,
+      "resources": {},
+      "notes": {
+        "itl_sample_count": 2183,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "api_cost_total": 0.004782150000000001,
+        "api_cost_per_request": 0.00014944218750000002,
+        "rate_limit_encountered": false,
+        "rate_limit_429_count": 0,
+        "prompt_cache": {
+          "reported_by_provider": true,
+          "cached_tokens_total": 0,
+          "cached_tokens_mean": 0.0,
+          "requests_with_any_cache_hit": 0,
+          "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+        },
+        "provider_reported_cost_usd_total": 0.00478215,
+        "server_processing_ms_mean": null,
+        "network_latency_estimated_ms_mean": null,
+        "context_tokens_fixture": 2620,
+        "prompt_tokens_actual_mean": 2707.84375
+      }
+    },
+    {
+      "run_id": "armA_nemotron",
+      "concurrency": 8,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 3.981485459022224,
+      "input_tokens_total": 86651,
+      "output_tokens_total": 2254,
+      "total_tokens": 88905,
+      "input_tok_per_s": 21763.48523479973,
+      "output_tok_per_s": 566.1203646725207,
+      "total_tok_per_s": 22329.605599472252,
+      "completed_requests_per_s": 8.037201273079265,
+      "ttft_p50": 0.45310304150916636,
+      "ttft_p95": 0.8104279626859352,
+      "ttft_p99": 0.9366045256890358,
+      "e2e_p50": 0.8156532500870526,
+      "e2e_p95": 1.651911154575646,
+      "e2e_p99": 1.7198849168000743,
+      "itl_mean": 0.005905864022238409,
+      "itl_p95": 0.009856043965555674,
+      "resources": {},
+      "notes": {
+        "itl_sample_count": 2190,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "api_cost_total": 0.0047833500000000004,
+        "api_cost_per_request": 0.00014947968750000001,
+        "rate_limit_encountered": false,
+        "rate_limit_429_count": 0,
+        "prompt_cache": {
+          "reported_by_provider": true,
+          "cached_tokens_total": 0,
+          "cached_tokens_mean": 0.0,
+          "requests_with_any_cache_hit": 0,
+          "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+        },
+        "provider_reported_cost_usd_total": 0.00478335,
+        "server_processing_ms_mean": null,
+        "network_latency_estimated_ms_mean": null,
+        "context_tokens_fixture": 2620,
+        "prompt_tokens_actual_mean": 2707.84375
+      }
+    },
+    {
+      "run_id": "armA_nemotron",
+      "concurrency": 32,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 2.4534950419329107,
+      "input_tokens_total": 86651,
+      "output_tokens_total": 2226,
+      "total_tokens": 88877,
+      "input_tok_per_s": 35317.37318357679,
+      "output_tok_per_s": 907.2771544083962,
+      "total_tok_per_s": 36224.65033798519,
+      "completed_requests_per_s": 13.042618571908662,
+      "ttft_p50": 0.5365710835903883,
+      "ttft_p95": 1.7949158733710644,
+      "ttft_p99": 1.9601619458710775,
+      "e2e_p50": 1.1051422292366624,
+      "e2e_p95": 2.4489798296941445,
+      "e2e_p99": 2.4512912797695026,
+      "itl_mean": 0.010013253789766759,
+      "itl_p95": 0.05606715036556122,
+      "resources": {},
+      "notes": {
+        "itl_sample_count": 2155,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "api_cost_total": 0.004777750000000001,
+        "api_cost_per_request": 0.00014930468750000002,
+        "rate_limit_encountered": false,
+        "rate_limit_429_count": 0,
+        "prompt_cache": {
+          "reported_by_provider": true,
+          "cached_tokens_total": 0,
+          "cached_tokens_mean": 0.0,
+          "requests_with_any_cache_hit": 0,
+          "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+        },
+        "provider_reported_cost_usd_total": 0.00477775,
+        "server_processing_ms_mean": null,
+        "network_latency_estimated_ms_mean": null,
+        "context_tokens_fixture": 2620,
+        "prompt_tokens_actual_mean": 2707.84375
+      }
+    },
+    {
+      "run_id": "armA_nemotron",
+      "concurrency": 64,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 1.5359360836446285,
+      "input_tokens_total": 86651,
+      "output_tokens_total": 2079,
+      "total_tokens": 88730,
+      "input_tok_per_s": 56415.75904277574,
+      "output_tok_per_s": 1353.5719501209537,
+      "total_tok_per_s": 57769.33099289669,
+      "completed_requests_per_s": 20.834200290462007,
+      "ttft_p50": 0.5525128748267889,
+      "ttft_p95": 0.7592535333707927,
+      "ttft_p99": 1.002994669354521,
+      "e2e_p50": 0.8561489791609347,
+      "e2e_p95": 1.3336878956761211,
+      "e2e_p99": 1.4834420448727907,
+      "itl_mean": 0.005826039353122163,
+      "itl_p95": 0.010884560924023385,
+      "resources": {},
+      "notes": {
+        "itl_sample_count": 1980,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "api_cost_total": 0.00474835,
+        "api_cost_per_request": 0.0001483859375,
+        "rate_limit_encountered": false,
+        "rate_limit_429_count": 0,
+        "prompt_cache": {
+          "reported_by_provider": true,
+          "cached_tokens_total": 0,
+          "cached_tokens_mean": 0.0,
+          "requests_with_any_cache_hit": 0,
+          "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+        },
+        "provider_reported_cost_usd_total": 0.00474835,
+        "server_processing_ms_mean": null,
+        "network_latency_estimated_ms_mean": null,
+        "context_tokens_fixture": 2620,
+        "prompt_tokens_actual_mean": 2707.84375
+      }
+    },
+    {
+      "run_id": "armA_nemotron",
+      "concurrency": 128,
+      "requested": 32,
+      "completed": 32,
+      "errored": 0,
+      "wall_time": 1.327992457896471,
+      "input_tokens_total": 86651,
+      "output_tokens_total": 2046,
+      "total_tokens": 88697,
+      "input_tok_per_s": 65249.61755976721,
+      "output_tok_per_s": 1540.6714005295232,
+      "total_tok_per_s": 66790.28896029673,
+      "completed_requests_per_s": 24.09652239342363,
+      "ttft_p50": 0.496773396153003,
+      "ttft_p95": 0.6132673043990507,
+      "ttft_p99": 0.7271023531304673,
+      "e2e_p50": 0.954631770728156,
+      "e2e_p95": 1.2001015918096527,
+      "e2e_p99": 1.2933783242851498,
+      "itl_mean": 0.006676924297695098,
+      "itl_p95": 0.010430333460681118,
+      "resources": {},
+      "notes": {
+        "itl_sample_count": 1982,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "api_cost_total": 0.00474175,
+        "api_cost_per_request": 0.0001481796875,
+        "rate_limit_encountered": false,
+        "rate_limit_429_count": 0,
+        "prompt_cache": {
+          "reported_by_provider": true,
+          "cached_tokens_total": 0,
+          "cached_tokens_mean": 0.0,
+          "requests_with_any_cache_hit": 0,
+          "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+        },
+        "provider_reported_cost_usd_total": 0.00474175,
+        "server_processing_ms_mean": null,
+        "network_latency_estimated_ms_mean": null,
+        "context_tokens_fixture": 2620,
+        "prompt_tokens_actual_mean": 2707.84375
+      }
+    }
+  ],
+  "arm": "A",
+  "levels_detail": [
+    {
+      "concurrency": 1,
+      "section_wall_s": 22.257459458895028,
+      "api_cost_total": 0.004782150000000001,
+      "api_cost_per_request": 0.00014944218750000002,
+      "rate_limit_encountered": false,
+      "rate_limit_429_count": 0,
+      "prompt_cache": {
+        "reported_by_provider": true,
+        "cached_tokens_total": 0,
+        "cached_tokens_mean": 0.0,
+        "requests_with_any_cache_hit": 0,
+        "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+      },
+      "provider_reported_cost_usd_total": 0.00478215,
+      "rate_limit_headers_last": {},
+      "server_processing_ms_mean": null,
+      "network_latency_estimated_ms_mean": null,
+      "request_bytes_mean": 15084.71875,
+      "response_bytes_mean": 470.375,
+      "status_counts": {
+        "200": 32
+      },
+      "error_counts": {},
+      "per_request": [
+        {
+          "request_id": "shared_prefix-0000",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014445000000000001,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014445
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0001",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014590000000000002,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001459
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0002",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015000000000000001,
+          "request_bytes": 15088,
+          "response_bytes": 466,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0003",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014345000000000002,
+          "request_bytes": 15092,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014345
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0004",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015205,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015205
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0005",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001431,
+          "request_bytes": 15098,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001431
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0006",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014915000000000002,
+          "request_bytes": 15085,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014915
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0007",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001563,
+          "request_bytes": 15077,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001563
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0008",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001499,
+          "request_bytes": 15086,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001499
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0009",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015240000000000002,
+          "request_bytes": 15097,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001524
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0010",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014900000000000002,
+          "request_bytes": 15091,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000149
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0011",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014725,
+          "request_bytes": 15067,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014725
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0012",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014680000000000002,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001468
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0013",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014725,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014725
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0014",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001484,
+          "request_bytes": 15089,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001484
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0015",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014885,
+          "request_bytes": 15077,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014885
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0016",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001519,
+          "request_bytes": 15068,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001519
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0017",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015120000000000002,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001512
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0018",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014525,
+          "request_bytes": 15088,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014525
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0019",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015235000000000002,
+          "request_bytes": 15068,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015235
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0020",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015055,
+          "request_bytes": 15072,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015055
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0021",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015655,
+          "request_bytes": 15076,
+          "response_bytes": 474,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015655
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0022",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014900000000000002,
+          "request_bytes": 15087,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000149
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0023",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014920000000000002,
+          "request_bytes": 15093,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001492
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0024",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015240000000000002,
+          "request_bytes": 15095,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001524
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0025",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015305,
+          "request_bytes": 15093,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015305
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0026",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001474,
+          "request_bytes": 15078,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001474
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0027",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.000145,
+          "request_bytes": 15088,
+          "response_bytes": 467,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000145
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0028",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001474,
+          "request_bytes": 15080,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001474
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0029",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015040000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001504
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0030",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015445000000000001,
+          "request_bytes": 15092,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015445
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0031",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001518,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001518
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        }
+      ],
+      "network_latency_note": "The provider exposed no server-timing header, so the network component cannot be separated from processing. e2e latency here is the sum of both."
+    },
+    {
+      "concurrency": 8,
+      "section_wall_s": 3.98297829227522,
+      "api_cost_total": 0.0047833500000000004,
+      "api_cost_per_request": 0.00014947968750000001,
+      "rate_limit_encountered": false,
+      "rate_limit_429_count": 0,
+      "prompt_cache": {
+        "reported_by_provider": true,
+        "cached_tokens_total": 0,
+        "cached_tokens_mean": 0.0,
+        "requests_with_any_cache_hit": 0,
+        "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+      },
+      "provider_reported_cost_usd_total": 0.00478335,
+      "rate_limit_headers_last": {},
+      "server_processing_ms_mean": null,
+      "network_latency_estimated_ms_mean": null,
+      "request_bytes_mean": 15084.71875,
+      "response_bytes_mean": 470.8125,
+      "status_counts": {
+        "200": 32
+      },
+      "error_counts": {},
+      "per_request": [
+        {
+          "request_id": "shared_prefix-0000",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014645,
+          "request_bytes": 15088,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014645
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0001",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014790000000000002,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001479
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0002",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001506,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001506
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0003",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014685000000000002,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014685
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0004",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015125000000000002,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015125
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0005",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014790000000000002,
+          "request_bytes": 15098,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001479
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0006",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015235000000000002,
+          "request_bytes": 15085,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015235
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0007",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015130000000000002,
+          "request_bytes": 15077,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001513
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0008",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015350000000000002,
+          "request_bytes": 15086,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001535
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0009",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014680000000000002,
+          "request_bytes": 15097,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001468
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0010",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015140000000000002,
+          "request_bytes": 15091,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001514
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0011",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015185,
+          "request_bytes": 15067,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015185
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0012",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001466,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001466
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0013",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014865,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014865
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0014",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001506,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001506
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0015",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014665000000000001,
+          "request_bytes": 15077,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014665
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0016",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001463,
+          "request_bytes": 15068,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001463
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0017",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001538,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001538
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0018",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015125000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015125
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0019",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015195,
+          "request_bytes": 15068,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015195
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0020",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014695000000000002,
+          "request_bytes": 15072,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014695
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0021",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015035,
+          "request_bytes": 15076,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015035
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0022",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014780000000000001,
+          "request_bytes": 15087,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001478
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0023",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001466,
+          "request_bytes": 15093,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001466
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0024",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001476,
+          "request_bytes": 15095,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001476
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0025",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015245000000000002,
+          "request_bytes": 15093,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015245
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0026",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014920000000000002,
+          "request_bytes": 15078,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001492
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0027",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001516,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001516
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0028",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014600000000000003,
+          "request_bytes": 15080,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000146
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0029",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015020000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001502
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0030",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015065,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015065
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0031",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015000000000000001,
+          "request_bytes": 15089,
+          "response_bytes": 466,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        }
+      ],
+      "network_latency_note": "The provider exposed no server-timing header, so the network component cannot be separated from processing. e2e latency here is the sum of both."
+    },
+    {
+      "concurrency": 32,
+      "section_wall_s": 2.4539792090654373,
+      "api_cost_total": 0.004777750000000001,
+      "api_cost_per_request": 0.00014930468750000002,
+      "rate_limit_encountered": false,
+      "rate_limit_429_count": 0,
+      "prompt_cache": {
+        "reported_by_provider": true,
+        "cached_tokens_total": 0,
+        "cached_tokens_mean": 0.0,
+        "requests_with_any_cache_hit": 0,
+        "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+      },
+      "provider_reported_cost_usd_total": 0.00477775,
+      "rate_limit_headers_last": {},
+      "server_processing_ms_mean": null,
+      "network_latency_estimated_ms_mean": null,
+      "request_bytes_mean": 15084.71875,
+      "response_bytes_mean": 470.8125,
+      "status_counts": {
+        "200": 32
+      },
+      "error_counts": {},
+      "per_request": [
+        {
+          "request_id": "shared_prefix-0000",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014905000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014905
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0001",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014890000000000001,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001489
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0002",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001498,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001498
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0003",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015385000000000003,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015385
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0004",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014805000000000002,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014805
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0005",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001455,
+          "request_bytes": 15098,
+          "response_bytes": 467,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001455
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0006",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015075,
+          "request_bytes": 15085,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015075
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0007",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001487,
+          "request_bytes": 15077,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001487
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0008",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001533,
+          "request_bytes": 15086,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001533
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0009",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001588,
+          "request_bytes": 15097,
+          "response_bytes": 471,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001588
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0010",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015240000000000002,
+          "request_bytes": 15091,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001524
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0011",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015025,
+          "request_bytes": 15067,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015025
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0012",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014680000000000002,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001468
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0013",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014925000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014925
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0014",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001476,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001476
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0015",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014505,
+          "request_bytes": 15077,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014505
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0016",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001465,
+          "request_bytes": 15068,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001465
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0017",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001466,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001466
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0018",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014505,
+          "request_bytes": 15088,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014505
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0019",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014815,
+          "request_bytes": 15068,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014815
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0020",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015415,
+          "request_bytes": 15072,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015415
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0021",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014815,
+          "request_bytes": 15076,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014815
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0022",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014680000000000002,
+          "request_bytes": 15087,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001468
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0023",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001438,
+          "request_bytes": 15093,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001438
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0024",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001508,
+          "request_bytes": 15095,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001508
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0025",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015465000000000002,
+          "request_bytes": 15093,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015465
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0026",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014900000000000002,
+          "request_bytes": 15078,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000149
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0027",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001462,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001462
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0028",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014700000000000002,
+          "request_bytes": 15080,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000147
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0029",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001488,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001488
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0030",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015165000000000003,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015165
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0031",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015240000000000002,
+          "request_bytes": 15089,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001524
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        }
+      ],
+      "network_latency_note": "The provider exposed no server-timing header, so the network component cannot be separated from processing. e2e latency here is the sum of both."
+    },
+    {
+      "concurrency": 64,
+      "section_wall_s": 1.5364509588107467,
+      "api_cost_total": 0.00474835,
+      "api_cost_per_request": 0.0001483859375,
+      "rate_limit_encountered": false,
+      "rate_limit_429_count": 0,
+      "prompt_cache": {
+        "reported_by_provider": true,
+        "cached_tokens_total": 0,
+        "cached_tokens_mean": 0.0,
+        "requests_with_any_cache_hit": 0,
+        "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+      },
+      "provider_reported_cost_usd_total": 0.00474835,
+      "rate_limit_headers_last": {},
+      "server_processing_ms_mean": null,
+      "network_latency_estimated_ms_mean": null,
+      "request_bytes_mean": 15084.71875,
+      "response_bytes_mean": 470.5625,
+      "status_counts": {
+        "200": 32
+      },
+      "error_counts": {},
+      "per_request": [
+        {
+          "request_id": "shared_prefix-0000",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014645,
+          "request_bytes": 15088,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014645
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0001",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001475,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001475
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0002",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014600000000000003,
+          "request_bytes": 15088,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000146
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0003",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015005000000000002,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015005
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0004",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014885,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014885
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0005",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001431,
+          "request_bytes": 15098,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001431
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0006",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014775,
+          "request_bytes": 15085,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014775
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0007",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001529,
+          "request_bytes": 15077,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001529
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0008",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014670000000000002,
+          "request_bytes": 15086,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001467
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0009",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001474,
+          "request_bytes": 15097,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001474
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0010",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001488,
+          "request_bytes": 15091,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001488
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0011",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015125000000000002,
+          "request_bytes": 15067,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015125
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0012",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014340000000000002,
+          "request_bytes": 15089,
+          "response_bytes": 467,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001434
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0013",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015025000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015025
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0014",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014600000000000003,
+          "request_bytes": 15089,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000146
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0015",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014605,
+          "request_bytes": 15077,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014605
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0016",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001505,
+          "request_bytes": 15068,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001505
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0017",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.000153,
+          "request_bytes": 15076,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000153
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0018",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015125000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015125
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0019",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015315,
+          "request_bytes": 15068,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015315
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0020",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015175,
+          "request_bytes": 15072,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015175
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0021",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014615,
+          "request_bytes": 15076,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014615
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0022",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.000145,
+          "request_bytes": 15087,
+          "response_bytes": 467,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000145
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0023",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001476,
+          "request_bytes": 15093,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001476
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0024",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001488,
+          "request_bytes": 15095,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001488
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0025",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014705000000000002,
+          "request_bytes": 15093,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014705
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0026",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014700000000000002,
+          "request_bytes": 15078,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000147
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0027",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014580000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001458
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0028",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001484,
+          "request_bytes": 15080,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001484
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0029",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015120000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001512
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0030",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014825,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014825
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0031",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.000151,
+          "request_bytes": 15089,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000151
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        }
+      ],
+      "network_latency_note": "The provider exposed no server-timing header, so the network component cannot be separated from processing. e2e latency here is the sum of both."
+    },
+    {
+      "concurrency": 128,
+      "section_wall_s": 1.328630750067532,
+      "api_cost_total": 0.00474175,
+      "api_cost_per_request": 0.0001481796875,
+      "rate_limit_encountered": false,
+      "rate_limit_429_count": 0,
+      "prompt_cache": {
+        "reported_by_provider": true,
+        "cached_tokens_total": 0,
+        "cached_tokens_mean": 0.0,
+        "requests_with_any_cache_hit": 0,
+        "note": "cached_tokens is what the PROVIDER says it reused. Zero across the level means no prompt-cache benefit was granted on this run \u2014 not that the fixture lacks a shared prefix (it is 99.4% shared by construction)."
+      },
+      "provider_reported_cost_usd_total": 0.00474175,
+      "rate_limit_headers_last": {},
+      "server_processing_ms_mean": null,
+      "network_latency_estimated_ms_mean": null,
+      "request_bytes_mean": 15084.71875,
+      "response_bytes_mean": 470.59375,
+      "status_counts": {
+        "200": 32
+      },
+      "error_counts": {},
+      "per_request": [
+        {
+          "request_id": "shared_prefix-0000",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014745,
+          "request_bytes": 15088,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014745
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0001",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001487,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001487
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0002",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014800000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000148
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0003",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014945,
+          "request_bytes": 15092,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014945
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0004",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014345000000000002,
+          "request_bytes": 15092,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014345
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0005",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014670000000000002,
+          "request_bytes": 15098,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001467
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0006",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014475000000000002,
+          "request_bytes": 15085,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014475
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0007",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001495,
+          "request_bytes": 15077,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001495
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0008",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014670000000000002,
+          "request_bytes": 15086,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001467
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0009",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001466,
+          "request_bytes": 15097,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001466
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0010",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001508,
+          "request_bytes": 15091,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001508
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0011",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014965,
+          "request_bytes": 15067,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014965
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0012",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001466,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001466
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0013",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015805000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 474,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015805
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0014",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001452,
+          "request_bytes": 15089,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001452
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0015",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014845,
+          "request_bytes": 15077,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014845
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0016",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001477,
+          "request_bytes": 15068,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001477
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0017",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015140000000000002,
+          "request_bytes": 15076,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001514
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0018",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015105,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015105
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0019",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014715,
+          "request_bytes": 15068,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014715
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0020",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014335000000000001,
+          "request_bytes": 15072,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014335
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0021",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015135000000000002,
+          "request_bytes": 15076,
+          "response_bytes": 472,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00015135
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0022",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014700000000000002,
+          "request_bytes": 15087,
+          "response_bytes": 468,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.000147
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0023",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001444,
+          "request_bytes": 15093,
+          "response_bytes": 467,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001444
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0024",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001506,
+          "request_bytes": 15095,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001506
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0025",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014885,
+          "request_bytes": 15093,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014885
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0026",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015020000000000002,
+          "request_bytes": 15078,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001502
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0027",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014560000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001456
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0028",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001474,
+          "request_bytes": 15080,
+          "response_bytes": 469,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001474
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0029",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001498,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001498
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0030",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014725,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.00014725
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0031",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.0001486,
+          "request_bytes": 15089,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0,
+              "provider_reported_cost_usd": 0.0001486
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        }
+      ],
+      "network_latency_note": "The provider exposed no server-timing header, so the network component cannot be separated from processing. e2e latency here is the sum of both."
+    }
+  ],
+  "api": {
+    "model": "nvidia/nemotron-3-nano-30b-a3b",
+    "base_url": "https://openrouter.ai/api/v1/chat/completions",
+    "price_input_per_m": 0.05,
+    "price_output_per_m": 0.2,
+    "stream": true,
+    "cost_total_usd": 0.02383335
+  }
+}

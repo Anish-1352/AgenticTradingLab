@@ -1,0 +1,180 @@
+{
+  "run_id": "armA_smoke",
+  "levels": [
+    {
+      "run_id": "armA_smoke",
+      "concurrency": 1,
+      "requested": 4,
+      "completed": 4,
+      "errored": 0,
+      "wall_time": 3.0867852503433824,
+      "input_tokens_total": 10832,
+      "output_tokens_total": 284,
+      "total_tokens": 11116,
+      "input_tok_per_s": 3509.1524422682205,
+      "output_tok_per_s": 92.00510465326575,
+      "total_tok_per_s": 3601.157546921486,
+      "completed_requests_per_s": 1.2958465444121936,
+      "ttft_p50": 0.530696312431246,
+      "ttft_p95": 0.6500619608908892,
+      "ttft_p99": 0.6577530260384082,
+      "e2e_p50": 0.8249074171762913,
+      "e2e_p95": 0.9114915045443922,
+      "e2e_p99": 0.9121743344981224,
+      "itl_mean": 0.002949710596231339,
+      "itl_p95": 0.006938500562682748,
+      "resources": {},
+      "notes": {
+        "itl_sample_count": 276,
+        "total_tok_per_s_warning": "Sum of prefill and decode tokens over wall time. Reported only for comparison with the v1 figure; it conflates two different hardware regimes. Use input_tok_per_s / output_tok_per_s.",
+        "api_cost_total": 0.0005984,
+        "api_cost_per_request": 0.0001496,
+        "rate_limit_encountered": false,
+        "rate_limit_429_count": 0,
+        "server_processing_ms_mean": null,
+        "network_latency_estimated_ms_mean": null,
+        "context_tokens_fixture": 2620,
+        "prompt_tokens_actual_mean": 2708.0
+      }
+    }
+  ],
+  "arm": "A",
+  "levels_detail": [
+    {
+      "concurrency": 1,
+      "section_wall_s": 3.087294750381261,
+      "api_cost_total": 0.0005984,
+      "api_cost_per_request": 0.0001496,
+      "rate_limit_encountered": false,
+      "rate_limit_429_count": 0,
+      "rate_limit_headers_last": {},
+      "server_processing_ms_mean": null,
+      "network_latency_estimated_ms_mean": null,
+      "request_bytes_mean": 15086.0,
+      "response_bytes_mean": 471.5,
+      "status_counts": {
+        "200": 4
+      },
+      "error_counts": {},
+      "per_request": [
+        {
+          "request_id": "shared_prefix-0000",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014825,
+          "request_bytes": 15088,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0001",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00014590000000000002,
+          "request_bytes": 15076,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0002",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015260000000000002,
+          "request_bytes": 15088,
+          "response_bytes": 470,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        },
+        {
+          "request_id": "shared_prefix-0003",
+          "attempts": 1,
+          "rate_limited": 0,
+          "headers": {},
+          "status": 200,
+          "cost_usd": 0.00015165000000000003,
+          "request_bytes": 15092,
+          "response_bytes": 473,
+          "cache": {
+            "available": true,
+            "fields": {
+              "cached_tokens": 0
+            },
+            "usage_keys_seen": [
+              "completion_tokens",
+              "completion_tokens_details",
+              "cost",
+              "cost_details",
+              "is_byok",
+              "prompt_tokens",
+              "prompt_tokens_details",
+              "total_tokens"
+            ]
+          },
+          "server_processing_ms": null
+        }
+      ],
+      "network_latency_note": "The provider exposed no server-timing header, so the network component cannot be separated from processing. e2e latency here is the sum of both."
+    }
+  ],
+  "api": {
+    "model": "nvidia/nemotron-3-nano-30b-a3b",
+    "base_url": "https://openrouter.ai/api/v1/chat/completions",
+    "price_input_per_m": 0.05,
+    "price_output_per_m": 0.2,
+    "stream": true,
+    "cost_total_usd": 0.0005984
+  }
+}

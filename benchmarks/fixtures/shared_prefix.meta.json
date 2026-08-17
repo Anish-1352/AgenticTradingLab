@@ -1,0 +1,17 @@
+{
+  "name": "shared_prefix",
+  "sha256": "a69c2be743189489d0ab5b4a2f7fe09c163fdf3cd034429a904840e810135968",
+  "tokenizer_name": "Qwen/Qwen2.5-7B-Instruct",
+  "tokenizer_is_stub": false,
+  "seed": 20260820,
+  "context_tokens": 2620,
+  "n_requests": 105,
+  "token_count_min": 2620,
+  "token_count_max": 2620,
+  "token_counts_all_equal": true,
+  "common_prefix_tokens": 2603,
+  "common_prefix_fraction": 0.9935114503816794,
+  "design": "identical system prompt + identical market context, per-ticker tail only",
+  "intended_prefix_tokens": 2596,
+  "tail_tokens": 24
+}

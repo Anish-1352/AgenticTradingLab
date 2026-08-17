@@ -202,6 +202,41 @@ def parse_usage(payload: Dict[str, Any]) -> Tuple[int, int]:
     )
 
 
+def parse_cache_usage(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Prompt-cache fields the provider reports, if any.
+
+    Whether OpenRouter exposes prompt caching for this model is itself the
+    question — arm C measured a LOCAL prefix cache, and the hosted analogue has
+    never been measured on any arm. So this records what came back rather than
+    assuming a shape: ``cached_tokens`` under ``prompt_tokens_details`` is the
+    OpenAI-compatible spelling, ``cache_read_input_tokens`` the Anthropic one,
+    and ``cache_discount`` is OpenRouter's own.
+
+    ``available`` false means the provider said nothing about caching — which is
+    evidence of absence only in the weak sense that it is not being reported,
+    not that no cache exists.
+    """
+    usage = payload.get("usage") or {}
+    details = usage.get("prompt_tokens_details") or {}
+    found: Dict[str, Any] = {}
+    for key, value in (
+        ("cached_tokens", details.get("cached_tokens")),
+        ("cache_read_input_tokens", usage.get("cache_read_input_tokens")),
+        ("cache_creation_input_tokens", usage.get("cache_creation_input_tokens")),
+        ("cache_discount", usage.get("cache_discount")),
+        # OpenRouter reports the amount it ACTUALLY billed. That beats any
+        # price-table multiplication, which can only ever be a reconstruction.
+        ("provider_reported_cost_usd", usage.get("cost")),
+    ):
+        if value is not None:
+            found[key] = value
+    return {
+        "available": bool(found),
+        "fields": found,
+        "usage_keys_seen": sorted(usage.keys()),
+    }
+
+
 # --------------------------------------------------------------------------
 # one request
 # --------------------------------------------------------------------------
@@ -300,6 +335,7 @@ async def run_one(
     max_retries: int = 4,
     price_in: float = DEFAULT_PRICE_INPUT_PER_M,
     price_out: float = DEFAULT_PRICE_OUTPUT_PER_M,
+    reasoning: Optional[Dict[str, Any]] = None,
 ) -> Tuple[RequestRecord, Dict[str, Any]]:
     rec = RequestRecord(request_id=request_id)
     meta: Dict[str, Any] = {
@@ -322,6 +358,13 @@ async def run_one(
         body["min_tokens"] = max_tokens
     if stream:
         body["stream_options"] = {"include_usage": True}
+    # Reasoning is a cost and comparability variable, not a detail. OpenRouter
+    # enables extended thinking by default for Nemotron, and thinking tokens are
+    # billed as output — which would break comparison against the seed DB's
+    # measured 860 output tokens/call for this model. Sent explicitly so the
+    # setting is recorded rather than inherited from a provider default.
+    if reasoning is not None:
+        body["reasoning"] = reasoning
 
     hdrs = {
         "Authorization": f"Bearer {api_key}",
@@ -350,6 +393,7 @@ async def run_one(
                 rec.output_tokens = c_tok or len(rec.per_token_timestamps)
                 rec.t_done = time.perf_counter()
                 meta["cost_usd"] = request_cost(p_tok, c_tok, price_in, price_out)
+                meta["cache"] = parse_cache_usage(payload)
                 meta["response_bytes"] = len(json.dumps(payload).encode("utf-8"))
                 meta["server_processing_ms"] = server_processing_ms(meta["headers"])
                 if meta["server_processing_ms"] is not None and rec.e2e:
@@ -419,6 +463,7 @@ async def run_level(
     price_in: float,
     price_out: float,
     client: Any = None,
+    reasoning: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[RequestRecord], Dict[str, Any]]:
     import httpx  # noqa: PLC0415
 
@@ -438,6 +483,7 @@ async def run_level(
                 client, url, text, rid, model, max_tokens, temperature,
                 ignore_eos, api_key, sem, stream=stream, timeout=timeout,
                 max_retries=max_retries, price_in=price_in, price_out=price_out,
+                reasoning=reasoning,
             )
             for rid, text in prompts
         ])
@@ -451,6 +497,11 @@ async def run_level(
 
     rate_limited = sum(m["rate_limited"] for m in metas)
     cost = sum(m["cost_usd"] for m in metas)
+    _cache = [m.get("cache") or {} for m in metas]
+    cached_tok = [c["fields"].get("cached_tokens") for c in _cache
+                  if c.get("fields", {}).get("cached_tokens") is not None]
+    provider_cost = [c["fields"].get("provider_reported_cost_usd") for c in _cache
+                     if c.get("fields", {}).get("provider_reported_cost_usd") is not None]
     net = [m["network_latency_estimated_ms"] for m in metas
            if m.get("network_latency_estimated_ms") is not None]
     srv = [m["server_processing_ms"] for m in metas
@@ -468,6 +519,21 @@ async def run_level(
         "api_cost_per_request": (cost / len(records)) if records else None,
         "rate_limit_encountered": rate_limited > 0,
         "rate_limit_429_count": rate_limited,
+        "prompt_cache": {
+            "reported_by_provider": bool(cached_tok),
+            "cached_tokens_total": sum(cached_tok) if cached_tok else None,
+            "cached_tokens_mean": (sum(cached_tok) / len(cached_tok))
+            if cached_tok else None,
+            "requests_with_any_cache_hit": sum(1 for c in cached_tok if c),
+            "note": (
+                "cached_tokens is what the PROVIDER says it reused. Zero across "
+                "the level means no prompt-cache benefit was granted on this "
+                "run — not that the fixture lacks a shared prefix (it is 99.4% "
+                "shared by construction)."
+            ),
+        },
+        "provider_reported_cost_usd_total": (
+            sum(provider_cost) if provider_cost else None),
         "rate_limit_headers_last": last_headers,
         "server_processing_ms_mean": (sum(srv) / len(srv)) if srv else None,
         "network_latency_estimated_ms_mean": (sum(net) / len(net)) if net else None,
@@ -504,6 +570,23 @@ def _count(values) -> Dict[str, int]:
 # --------------------------------------------------------------------------
 
 
+def resolve_reasoning(cli_value: Optional[str]) -> Tuple[Optional[Dict[str, Any]], str]:
+    """The reasoning payload to send, and a label for the manifest.
+
+    Defaults to OFF. Thinking tokens are billed as output, so a provider default
+    of "on" would inflate the output-token figure and break comparison against
+    the seed DB's measured 860 output tokens/call for this model. Off-by-default
+    makes that an explicit choice rather than an inherited one.
+    """
+    raw = cli_value or os.environ.get("OPENROUTER_REASONING_EFFORT") or "none"
+    effort = str(raw).strip().lower()
+    if effort in ("auto", "default"):
+        return None, "auto (provider default, nothing sent)"
+    if effort in ("none", "off", "false", "0", "disabled"):
+        return {"enabled": False, "effort": "none", "exclude": True}, "none"
+    return {"enabled": True, "effort": effort}, effort
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Arm A: hosted API benchmark.")
     # Shared with arms B and C.
@@ -525,6 +608,14 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--api-key-env", default="OPENROUTER_API_KEY")
     ap.add_argument("--price-input-per-m", type=float, default=DEFAULT_PRICE_INPUT_PER_M)
     ap.add_argument("--price-output-per-m", type=float, default=DEFAULT_PRICE_OUTPUT_PER_M)
+    ap.add_argument("--reasoning", default=None,
+                    choices=["none", "auto", "low", "medium", "high"],
+                    help="Extended-thinking setting sent with every request. "
+                         "Defaults to $OPENROUTER_REASONING_EFFORT, else "
+                         "'none'. Thinking tokens bill as OUTPUT, so leaving "
+                         "this to the provider default silently changes both "
+                         "cost and the output-token figure. 'auto' sends "
+                         "nothing and inherits the provider default.")
     ap.add_argument("--no-stream", action="store_true",
                     help="disable SSE streaming. TTFT and ITL become "
                          "unavailable — e2e collapses to a single instant.")
@@ -602,6 +693,9 @@ async def _amain(args: argparse.Namespace) -> int:
     print(f"pricing            ${args.price_input_per_m}/M in, "
           f"${args.price_output_per_m}/M out")
     print(f"streaming          {not args.no_stream}")
+    reasoning_payload, reasoning_label = resolve_reasoning(args.reasoning)
+    print(f"reasoning          {reasoning_label}  "
+          f"(thinking tokens bill as OUTPUT)")
 
     est = estimate_cost(len(levels), n_requests, meta["token_count_min"],
                         max_tokens, args.price_input_per_m, args.price_output_per_m)
@@ -645,7 +739,7 @@ async def _amain(args: argparse.Namespace) -> int:
         prompts = prompts_all[:n_requests]
         print(f"\n[level] concurrency={concurrency}  requests={len(prompts)}")
         records, info = await run_level(
-            prompts, concurrency,
+            prompts, concurrency, reasoning=reasoning_payload,
             url=args.base_url, model=args.model, api_key=api_key,
             max_tokens=max_tokens, temperature=temperature,
             ignore_eos=ignore_eos, stream=not args.no_stream,
@@ -661,6 +755,9 @@ async def _amain(args: argparse.Namespace) -> int:
             "api_cost_per_request": info["api_cost_per_request"],
             "rate_limit_encountered": info["rate_limit_encountered"],
             "rate_limit_429_count": info["rate_limit_429_count"],
+            "prompt_cache": info["prompt_cache"],
+            "provider_reported_cost_usd_total":
+                info["provider_reported_cost_usd_total"],
             "server_processing_ms_mean": info["server_processing_ms_mean"],
             "network_latency_estimated_ms_mean":
                 info["network_latency_estimated_ms_mean"],
@@ -712,6 +809,8 @@ async def _amain(args: argparse.Namespace) -> int:
             "requests_per_level": n_requests,
             # Hash only. The key itself never touches the manifest.
             "openrouter_api_key_sha256": api_key_hash(api_key),
+            "reasoning": reasoning_label,
+            "reasoning_payload": reasoning_payload,
             "openrouter_tier": _detect_tier(level_infos),
             "api_base_url": args.base_url,
             "api_model": args.model,

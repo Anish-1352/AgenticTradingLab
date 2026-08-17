@@ -17,10 +17,14 @@ enforced by a test rather than by care.
 
 DELIBERATELY EXCLUDED
 ---------------------
-Crossover agent counts, prefix-cache lever estimates, and every Arm A figure.
-No hosted-API run has ever been executed, the cache ablation was never run, and
-the crossover rests on both. They are model output, not measurement, and this
-report is for measurements.
+Crossover agent counts and prefix-cache lever estimates. The cache ablation was
+never run and the crossover rests on a -dirty self-hosted run, so both are model
+output rather than measurement.
+
+Arm A is no longer excluded: it has now been run against the paid API and its
+cost and latency figures are measured. Its THROUGHPUT is still not comparable
+with arms B/C, because the provider ignored ``min_tokens`` and returned far
+shorter completions than the 256 the local arms forced.
 """
 
 from __future__ import annotations
@@ -39,6 +43,7 @@ from analysis.cost_model_lib import (  # noqa: E402
     DERIVED, MEASURED, NOT_MEASURED, UNMEASURED_INPUTS,
     calls_to_reach_budget, cost_per_call, load_measured,
     measured_calls_per_backtest, verify_code_findings,
+    backtest_threshold_table, load_arm_a, load_measured_calls_per_decision,
 )
 from analysis.tier_check import check_report, format_violations  # noqa: E402
 
@@ -57,15 +62,21 @@ CALENDAR_DAYS = 30
 SCENARIO_USERS = 100
 SCENARIO_AGENTS = 1000
 
+# Highest concurrency the rate-limit probe reached without a single 429.
+RATE_PROBE_MAX = 256
+
 EXCLUDED = [
     ("crossover agent counts",
-     "rests on an Arm A cost per request that has never been measured"),
+     "the self-hosted side is a -dirty run, and the crossover is a lower "
+     "bound that omits engineering and on-call cost entirely"),
     ("prefix-cache benefit estimates",
      f"the ablation was never run; vLLM reported stats_source: null "
      f"[{NOT_MEASURED}], so no hit rate was observed even with caching "
      f"enabled"),
-    ("every Arm A figure",
-     "no hosted-API run has ever been executed"),
+    ("throughput comparison of arm A against arms B/C",
+     f"the provider ignored min_tokens, so arm A produced far fewer output "
+     f"tokens per request than the 256 arms B/C forced [{MEASURED}] — the "
+     f"tok/s figures measure different work"),
     ("attribution of the speedup across batching / caching / engine",
      "never decomposed; the arms differ in more than one variable"),
 ]
@@ -86,6 +97,8 @@ def build_report(measured: Dict[str, Any]) -> str:
     cpb = measured_calls_per_backtest(measured)
     budget_rows = calls_to_reach_budget(measured, BUDGET)
     cheapest, dearest = budget_rows[0], budget_rows[-1]
+    arm_a = load_arm_a()
+    depths = load_measured_calls_per_decision()
 
     A("# ATL cost and serving: what has been measured")
     A("")
@@ -198,27 +211,44 @@ def build_report(measured: Dict[str, Any]) -> str:
       f"calls/month {_t(DERIVED)}; `B` is {_t(NOT_MEASURED)}.")
     A("")
     bt_denom = SCENARIO_USERS * cpb["value"] * CALENDAR_DAYS
-    A("| Model | Backtests/user/day needed for $50K | Tier |")
-    A("|---|---:|---|")
-    for r in budget_rows:
-        A(f"| `{r['slug']}` | {r['calls_for_budget'] / bt_denom:,.2f} | "
+    A(f"Pipeline depth divides every threshold, because a decision costs one "
+      f"call per configured step — measured, not assumed (section three):")
+    A("")
+    A("| Model | 1 call/decision | 3 calls | 5 calls | Tier |")
+    A("|---|---:|---:|---:|---|")
+    thresholds = backtest_threshold_table(
+        measured, BUDGET, n_users=SCENARIO_USERS,
+        calendar_days=CALENDAR_DAYS, calls_per_backtest=cpb["value"],
+        calls_per_decision_options=(1, 3, 5))
+    for row in thresholds:
+        t = row["thresholds"]
+        A(f"| `{row['slug']}` | {t[1]:,.2f} | {t[3]:,.2f} | {t[5]:,.2f} | "
           f"{DERIVED} |")
     A("")
+    A(f"The one-call column is what the earlier version of this report showed. "
+      f"It was derived at the seed runs' single-call rate {_t(MEASURED)}, "
+      f"which is right for those runs and wrong for any pipeline. On "
+      f"`{dearest['slug']}` a three-step pipeline moves the threshold to "
+      f"{thresholds[-1]['thresholds'][3]:,.2f} backtests/user/day "
+      f"{_t(DERIVED)} — under one.")
+    A("")
+    _lo, _hi = thresholds[0]["thresholds"], thresholds[-1]["thresholds"]
     A(f"**This is the finding worth acting on.** On the platform's default "
-      f"model, reaching $50K would take "
-      f"{cheapest['calls_for_budget'] / bt_denom:,.0f} backtests per user per "
-      f"day {_t(DERIVED)} — implausible. On the most expensive measured "
-      f"model it takes "
-      f"{dearest['calls_for_budget'] / bt_denom:,.2f} {_t(DERIVED)} — which a "
-      f"single engaged user could exceed before lunch. Backtest volume is "
+      f"model, reaching $50K needs {_lo[1]:,.0f} backtests per user per day "
+      f"at one call per decision, or {_lo[3]:,.0f} at three {_t(DERIVED)} — "
+      f"implausible either way. On the most expensive measured model it takes "
+      f"{_hi[1]:,.2f} at one call and {_hi[3]:,.2f} at three "
+      f"{_t(DERIVED)} — **less than one backtest per user per day**, which a "
+      f"single engaged user would exceed without trying. Backtest volume is "
       f"unbounded by design: a backtest replays a whole window on demand, "
       f"where live trading is rate-limited by the bar interval.")
     A("")
     A("### So the conditional")
     A("")
     A(f"> $50K/month becomes a real problem **only if** production runs a "
-      f"frontier model **and** backtest volume reaches roughly single-digit "
-      f"runs per user per day {_t(DERIVED)}. At the platform's current "
+      f"frontier model **and** backtest volume reaches roughly one run per "
+      f"user per day at a three-step pipeline, or single digits at one call "
+      f"per decision {_t(DERIVED)}. At the platform's current "
       f"default model and call pattern, the same load costs on the order of "
       f"{BUDGET * (cheapest['cost_per_call'] / dearest['cost_per_call']):,.0f} "
       f"dollars/month {_t(DERIVED)} — a "
@@ -273,8 +303,89 @@ def build_report(measured: Dict[str, Any]) -> str:
       "drifted price cannot reach this document.")
     A("")
 
-    # ---- 3. serving ------------------------------------------------------
-    A("## 3. Measured serving results")
+
+    # ---- 3. arm A ---------------------------------------------------------
+    A("## 3. Calls per decision, and Arm A — both now measured")
+    A("")
+    A("### Pipeline depth sets calls per decision, exactly")
+    A("")
+    if depths.get("available"):
+        A(f"Measured against the real API, not a stub. Each run replayed the "
+          f"same window; `observed` is `llm_calls / bars` and `configured` is "
+          f"the step count in `metadata.initial_pipeline`:")
+        A("")
+        A("| Configured steps | Observed calls/decision | Agrees | Runs | Tier |")
+        A("|---:|---:|---|---:|---|")
+        for d in depths["depths_measured"]:
+            r = depths["by_depth"][d]
+            A(f"| {d} | {r['observed_calls_per_decision']:.3f} | "
+              f"{'yes' if r['agrees_with_configured'] else 'NO'} | "
+              f"{r['n_runs']} | {MEASURED} |")
+        A("")
+        A(f"Both derivations agree at both depths {_t(MEASURED)}, so **no "
+          f"retry inflation was observed**. This closes a lever that had been "
+          f"open since the seed data: all seven seed runs used the "
+          f"single-call path, so a multi-step pipeline had never been run "
+          f"anywhere. Depth multiplies cost linearly — a five-step pipeline "
+          f"costs five times a single-call one for the same decisions "
+          f"{_t(DERIVED)}.")
+        A("")
+        A("What is still unmeasured is which depth **production** runs. That "
+          "is the third question in `QUESTIONS_FOR_ADVISOR.md`.")
+    else:
+        A(f"Unavailable: {depths.get('reason')} {_t(NOT_MEASURED)}")
+    A("")
+
+    A("### Arm A — hosted API, measured for the first time")
+    A("")
+    if arm_a.get("available"):
+        A(f"Every previous Arm A figure was modelled from an assumed price. "
+          f"These come from the provider's billed `usage`. Model "
+          f"`{arm_a['model']}`, fixture `{str(arm_a['fixture_sha256'])[:16]}...` "
+          f"— the same fixture arms B and C ran {_t(MEASURED)} — with "
+          f"reasoning `{arm_a['reasoning']}`, since thinking tokens bill as "
+          f"output.")
+        A("")
+        A("| Concurrency | req/s | e2e p50 ms | e2e p95 ms | e2e p99 ms | "
+          "$/request | 429s | errors | Tier |")
+        A("|---:|---:|---:|---:|---:|---:|---:|---:|---|")
+        for lv in arm_a["levels"]:
+            A(f"| {lv['concurrency']} | {lv['requests_per_s']:.3f} | "
+              f"{lv['e2e_p50'] * 1000:,.0f} | {lv['e2e_p95'] * 1000:,.0f} | "
+              f"{lv['e2e_p99'] * 1000:,.0f} | {lv['cost_per_request']:.6f} | "
+              f"{lv['rate_limit_429_count']} | {lv['errored']} | {MEASURED} |")
+        A("")
+        A(f"Cost per request is flat at "
+          f"${arm_a['cost_per_request_min']:.6f}-"
+          f"${arm_a['cost_per_request_max']:.6f} across every level "
+          f"{_t(MEASURED)} — the API prices tokens, not concurrency. The "
+          f"provider's own reported cost matched the figure computed from the "
+          f"price table exactly {_t(MEASURED)}.")
+        A("")
+        A(f"Throughput rises monotonically from "
+          f"{arm_a['levels'][0]['requests_per_s']:.3f} to "
+          f"{arm_a['levels'][-1]['requests_per_s']:.3f} req/s {_t(MEASURED)}, "
+          f"with no inversion — the opposite of arm B's behaviour, and "
+          f"unsurprising, since the provider is batching behind the endpoint.")
+        A("")
+        A(f"**Prompt caching: none granted.** The provider reported "
+          f"`cached_tokens` totalling {arm_a['cached_tokens_total']} across "
+          f"all levels {_t(MEASURED)}, against a fixture that is 99.4% shared "
+          f"prefix by construction {_t(MEASURED)}. So the hosted analogue of "
+          f"arm C's prefix cache did not fire here. That is worth a follow-up "
+          f"— it is a measured absence on this model and endpoint, not a "
+          f"statement about OpenRouter generally.")
+        A("")
+        A("**Throughput here is NOT comparable to arms B/C.** The provider "
+          "ignored `min_tokens`, so completions ran far shorter than the 256 "
+          f"tokens the local arms forced {_t(MEASURED)}. Cost and latency per "
+          f"request stand on their own; tokens/second does not cross arms.")
+    else:
+        A(f"Unavailable: {arm_a.get('reason')} {_t(NOT_MEASURED)}")
+    A("")
+
+    # ---- 4. serving ------------------------------------------------------
+    A("## 4. Self-hosted serving results (arms B and C)")
     A("")
     arm_b = serving["arms"].get("armB_shared", {})
     arm_c = serving["arms"].get("armC_shared", {})
@@ -354,7 +465,7 @@ def build_report(measured: Dict[str, Any]) -> str:
         A("")
 
     # ---- 4. code findings -----------------------------------------------
-    A("## 4. Code findings")
+    A("## 5. Code findings")
     A("")
     A(f"Static reading of `dashboard/backend`; nothing executed. Every "
       f"citation below is re-read from the file at generation time and this "
@@ -380,7 +491,7 @@ def build_report(measured: Dict[str, Any]) -> str:
     A("")
 
     # ---- 5. not measured -------------------------------------------------
-    A("## 5. What is NOT measured")
+    A("## 6. What is NOT measured")
     A("")
     A("Every item here has been kept out of the findings above. Each is "
       "listed with what would resolve it.")
@@ -397,12 +508,14 @@ def build_report(measured: Dict[str, Any]) -> str:
     A("| Item | Tier | What it would take |")
     A("|---|---|---|")
     for item, need in [
-        ("Calls per decision for multi-step pipelines in production",
-         "All seed runs used the single-call path. A production run with "
-         "metadata.initial_pipeline populated, or the Render DB."),
-        ("Retry inflation",
-         "Observed calls exceeding configured steps in a real run. The stub "
-         "probe cannot produce it — it always parses."),
+        ("Which pipeline DEPTH production runs",
+         "The depth->calls relationship is now measured (3->3.000, 5->5.000). "
+         "What depth production actually configures is not. Render DB: "
+         "metadata.initial_pipeline step counts."),
+        ("Retry inflation under failure",
+         "Not observed in 77 real API calls across two depths — but those runs "
+         "had zero parse failures and zero 429s, so the retry path never "
+         "engaged. A run under provider errors would be needed to see it."),
         ("Real cross-agent prompt overlap",
          "Tokenising real production prompts. The shared-prefix fixture is a "
          "deliberate upper bound and the low-overlap fixture is CONSTRUCTED, "
@@ -417,8 +530,14 @@ def build_report(measured: Dict[str, Any]) -> str:
          "ncu and nsys were never run. Kernel residency is not occupancy."),
         ("Saturation point",
          "Neither arm was pushed to out-of-memory, so no ceiling was found."),
-        ("Every Arm A number",
-         "No hosted-API run has ever been executed."),
+        ("Arm A throughput comparable with arms B/C",
+         "The provider ignored min_tokens, so completions were far shorter "
+         "than the forced 256. Cost and latency are measured; tokens/second "
+         "does not cross arms."),
+        ("Whether prompt caching would help on a provider that grants it",
+         "OpenRouter granted zero cached tokens for this model. A provider "
+         "with explicit cache control, against the same shared-prefix "
+         "fixture, would answer it."),
         ("Decision latency's effect on trading P&L",
          "The engine cannot express it — see finding on execution.py. A "
          "harness-side replay with shifted fills, plus real market data."),
@@ -432,7 +551,7 @@ def build_report(measured: Dict[str, Any]) -> str:
     A("")
 
     # ---- 6. caveats ------------------------------------------------------
-    A("## 6. Caveats")
+    A("## 7. Caveats")
     A("")
     A("### Serving results are provisional")
     A("")
@@ -451,6 +570,19 @@ def build_report(measured: Dict[str, Any]) -> str:
       "figure in section three as provisional pending a clean-tree re-run.** "
       "The cost figures in section two are unaffected — they come from the "
       "committed database, not from these runs.")
+    A("")
+    A("### The rate-limit ceiling was not found")
+    A("")
+    A(f"A probe escalated concurrency to {RATE_PROBE_MAX} and saw zero 429s "
+      f"at every level {_t(MEASURED)}; the full Arm A sweep also returned "
+      f"zero 429s and zero errors across all requests {_t(MEASURED)}.")
+    A("")
+    A("**This is a property of THIS ACCOUNT TIER, not of the API.** Rate "
+      "limits are per-key and per-plan and providers change them without "
+      "notice. The result says what this credential could do on this date — "
+      "nothing about the provider's capacity, the model's capacity, or what a "
+      "funded or contracted account would allow. Any claim that hosted "
+      "serving is blocked by rate limits must carry that qualifier.")
     A("")
     A("### Scope of the serving measurement")
     A("")
@@ -482,7 +614,7 @@ def build_report(measured: Dict[str, Any]) -> str:
     A("")
 
     # ---- 7. questions ----------------------------------------------------
-    A("## 7. Questions only you can answer")
+    A("## 8. Questions only you can answer")
     A("")
     A("Set out in full in `QUESTIONS_FOR_ADVISOR.md`. In brief:")
     A("")

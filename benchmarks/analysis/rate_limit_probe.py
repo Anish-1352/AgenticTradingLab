@@ -125,7 +125,38 @@ def summarise_probe(levels: Sequence[Dict[str, Any]],
             "wall. Either the limit is above the range probed, or the account "
             "tier has no request-rate cap that this workload reached."
         ),
+        # The single most misquotable number in this file. A ceiling found here
+        # belongs to one API key on one plan at one moment; it is not a property
+        # of the provider, the model, or hosted APIs in general. Attached to the
+        # result rather than left to the reader's memory.
+        "scope_qualifier": (
+            "THIS RESULT IS A PROPERTY OF THIS ACCOUNT TIER, NOT OF THE API. "
+            "Rate limits are per-key and per-plan, and providers change them "
+            "without notice. A ceiling found here says what this credential "
+            "could do on this date — nothing about what a funded or "
+            "contracted account can do. Any claim that hosted serving is "
+            "'blocked by rate limits' must carry this qualifier or it is "
+            "simply false."
+        ),
+        "not_a_ceiling_on": [
+            "the provider's capacity",
+            "the model's capacity",
+            "what a higher tier or a negotiated contract would allow",
+        ],
     }
+
+
+def _wrap_qualifier(text: str, width: int = 74) -> List[str]:
+    out, line = [], ""
+    for word in text.split():
+        if len(line) + len(word) + 1 > width:
+            out.append(line)
+            line = word
+        else:
+            line = f"{line} {word}".strip()
+    if line:
+        out.append(line)
+    return out
 
 
 def format_report(result: Dict[str, Any]) -> str:
@@ -146,6 +177,12 @@ def format_report(result: Dict[str, Any]) -> str:
           f"{_fmt(parsed.get('reset')):>8}")
     A("")
     A(f"  {result['verdict']}")
+    A("")
+    A("  " + "!" * 76)
+    for chunk in _wrap_qualifier(result["scope_qualifier"]):
+        A(f"  {chunk}")
+    A("  Not a ceiling on: " + "; ".join(result["not_a_ceiling_on"]) + ".")
+    A("  " + "!" * 76)
     if result.get("max_clean_concurrency") is not None:
         A(f"  Highest concurrency with zero 429s: {result['max_clean_concurrency']}")
     for lv in result["levels"]:

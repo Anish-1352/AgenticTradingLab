@@ -1,0 +1,54 @@
+{
+  "run_id": "armA_smoke",
+  "utc_timestamp": "2026-08-17T03:22:17Z",
+  "arm": "A",
+  "concurrency": 1,
+  "upstream_sha": "c8aa7012efcc3bacb8c16d96642f84daf3856fd5",
+  "upstream_ref": "origin/main",
+  "branch_sha": "a465d00a1694c1d81d2e13c7666209a8638791b0-dirty",
+  "gpu_name": null,
+  "gpu_uuid": null,
+  "total_vram_mb": null,
+  "driver_version": null,
+  "cuda_version": null,
+  "pip_freeze_sha256": "f87e5ca4d4af2a2ddb8cae76cb7fc4dd7032eb3bc3dd107187c4e0134add842c",
+  "config_sha256": "64d3450c17044adea3e48a0199a9e73e4d66fe34a911091cbcef54d46bc6b154",
+  "fixture_sha256": "a69c2be743189489d0ab5b4a2f7fe09c163fdf3cd034429a904840e810135968",
+  "max_new_tokens": 256,
+  "profiling_layer": 1,
+  "profiled_window_fraction": null,
+  "trace_url": null,
+  "trace_sha256": null,
+  "torchvision_shim": null,
+  "fixture_name": "shared_prefix",
+  "context_tokens": 2620,
+  "model": "nvidia/nemotron-3-nano-30b-a3b",
+  "manifest_complete": false,
+  "collection_errors": [
+    "nvml: No module named 'pynvml'",
+    "torch_cuda_version: No module named 'torch'"
+  ],
+  "extra": {
+    "config_sha256_recomputed": "3e9e3df8ef167f1cb6660d00ff34331242cddc871064aeeae5bef41bfa2fd3fa",
+    "concurrency_sweep": [
+      1
+    ],
+    "requests_per_level": 4,
+    "openrouter_api_key_sha256": "37860a0cf270aa44de34fd093c4b9aa751222bef7a14cc2000babb7976d4316b",
+    "reasoning": "none",
+    "reasoning_payload": {
+      "enabled": false,
+      "effort": "none",
+      "exclude": true
+    },
+    "openrouter_tier": "unknown",
+    "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+    "api_model": "nvidia/nemotron-3-nano-30b-a3b",
+    "price_input_per_m": 0.05,
+    "price_output_per_m": 0.2,
+    "pricing_captured_utc": "2026-08-17T03:22:17Z",
+    "api_cost_total_usd": 0.0005984,
+    "context_tokens_fixture_qwen": 2620,
+    "tokeniser_caveat": "The fixture is Qwen-tokenised; the provider bills on its own tokenisation of the same TEXT. Token counts and therefore cost are not comparable to arms B/C on a per-token basis."
+  }
+}

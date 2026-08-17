@@ -1,0 +1,162 @@
+{
+  "levels": [
+    {
+      "concurrency": 8,
+      "sent": 8,
+      "completed": 8,
+      "rate_limited": 0,
+      "rate_limited_fraction": 0.0,
+      "completed_per_s": 10.315896387409346,
+      "wall_s": 0.775502166710794,
+      "cost_usd": 0.0011344,
+      "status_counts": {
+        "200": 8
+      },
+      "rate_limit_parsed": {
+        "raw": {},
+        "limit_requests": null,
+        "remaining_requests": null,
+        "limit_tokens": null,
+        "remaining_tokens": null,
+        "reset": null,
+        "retry_after_s": null,
+        "any_rate_limit_header": false
+      },
+      "exhaustion_projection": null
+    },
+    {
+      "concurrency": 16,
+      "sent": 8,
+      "completed": 8,
+      "rate_limited": 0,
+      "rate_limited_fraction": 0.0,
+      "completed_per_s": 13.561960679078561,
+      "wall_s": 0.5898852082900703,
+      "cost_usd": 0.0011344,
+      "status_counts": {
+        "200": 8
+      },
+      "rate_limit_parsed": {
+        "raw": {},
+        "limit_requests": null,
+        "remaining_requests": null,
+        "limit_tokens": null,
+        "remaining_tokens": null,
+        "reset": null,
+        "retry_after_s": null,
+        "any_rate_limit_header": false
+      },
+      "exhaustion_projection": null
+    },
+    {
+      "concurrency": 32,
+      "sent": 8,
+      "completed": 8,
+      "rate_limited": 0,
+      "rate_limited_fraction": 0.0,
+      "completed_per_s": 7.707420535514598,
+      "wall_s": 1.0379607500508428,
+      "cost_usd": 0.0011344,
+      "status_counts": {
+        "200": 8
+      },
+      "rate_limit_parsed": {
+        "raw": {},
+        "limit_requests": null,
+        "remaining_requests": null,
+        "limit_tokens": null,
+        "remaining_tokens": null,
+        "reset": null,
+        "retry_after_s": null,
+        "any_rate_limit_header": false
+      },
+      "exhaustion_projection": null
+    },
+    {
+      "concurrency": 64,
+      "sent": 8,
+      "completed": 8,
+      "rate_limited": 0,
+      "rate_limited_fraction": 0.0,
+      "completed_per_s": 6.6722901570574535,
+      "wall_s": 1.1989886248484254,
+      "cost_usd": 0.0011344,
+      "status_counts": {
+        "200": 8
+      },
+      "rate_limit_parsed": {
+        "raw": {},
+        "limit_requests": null,
+        "remaining_requests": null,
+        "limit_tokens": null,
+        "remaining_tokens": null,
+        "reset": null,
+        "retry_after_s": null,
+        "any_rate_limit_header": false
+      },
+      "exhaustion_projection": null
+    },
+    {
+      "concurrency": 128,
+      "sent": 8,
+      "completed": 8,
+      "rate_limited": 0,
+      "rate_limited_fraction": 0.0,
+      "completed_per_s": 11.774006778670795,
+      "wall_s": 0.6794628328643739,
+      "cost_usd": 0.0011344,
+      "status_counts": {
+        "200": 8
+      },
+      "rate_limit_parsed": {
+        "raw": {},
+        "limit_requests": null,
+        "remaining_requests": null,
+        "limit_tokens": null,
+        "remaining_tokens": null,
+        "reset": null,
+        "retry_after_s": null,
+        "any_rate_limit_header": false
+      },
+      "exhaustion_projection": null
+    },
+    {
+      "concurrency": 256,
+      "sent": 8,
+      "completed": 8,
+      "rate_limited": 0,
+      "rate_limited_fraction": 0.0,
+      "completed_per_s": 5.933795162354386,
+      "wall_s": 1.348209667019546,
+      "cost_usd": 0.0011344,
+      "status_counts": {
+        "200": 8
+      },
+      "rate_limit_parsed": {
+        "raw": {},
+        "limit_requests": null,
+        "remaining_requests": null,
+        "limit_tokens": null,
+        "remaining_tokens": null,
+        "reset": null,
+        "retry_after_s": null,
+        "any_rate_limit_header": false
+      },
+      "exhaustion_projection": null
+    }
+  ],
+  "threshold": 0.1,
+  "binding_concurrency": null,
+  "max_clean_concurrency": 256,
+  "verdict": "No level exceeded the threshold \u2014 the ladder did not find the wall. Either the limit is above the range probed, or the account tier has no request-rate cap that this workload reached.",
+  "scope_qualifier": "THIS RESULT IS A PROPERTY OF THIS ACCOUNT TIER, NOT OF THE API. Rate limits are per-key and per-plan, and providers change them without notice. A ceiling found here says what this credential could do on this date \u2014 nothing about what a funded or contracted account can do. Any claim that hosted serving is 'blocked by rate limits' must carry this qualifier or it is simply false.",
+  "not_a_ceiling_on": [
+    "the provider's capacity",
+    "the model's capacity",
+    "what a higher tier or a negotiated contract would allow"
+  ],
+  "model": "nvidia/nemotron-3-nano-30b-a3b",
+  "api_key_sha256": "37860a0cf270aa44de34fd093c4b9aa751222bef7a14cc2000babb7976d4316b",
+  "utc": "2026-08-17T03:30:01Z",
+  "total_cost_usd": 0.006806400000000001
+}

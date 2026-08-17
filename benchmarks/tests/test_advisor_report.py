@@ -96,19 +96,54 @@ def test_report_names_all_three_tiers(report_text):
 
 # ---- the report's content contract -----------------------------------------
 
-def test_report_excludes_arm_a_and_crossover(report_text):
-    """These are model output, not measurement, and are barred from the report."""
-    lowered = report_text.lower()
-    assert "crossover_agents" not in lowered
-    # Arm A and the cache/crossover may only appear as NAMED EXCLUSIONS.
-    for banned in ("arm a", "crossover", "prefix-cache"):
-        for line in report_text.splitlines():
-            if banned in line.lower():
-                assert any(m in line.lower() for m in (
-                    "never", "not measured", "excluded", "no hosted-api",
-                    "rests on", "ablation")), (
-                    f"{banned!r} appears as a claim rather than an exclusion: "
-                    f"{line}")
+def test_report_still_excludes_modelled_crossover(report_text):
+    """The crossover remains model output, not measurement."""
+    assert "crossover_agents" not in report_text.lower()
+    for line in report_text.splitlines():
+        if "crossover" in line.lower():
+            assert any(m in line.lower() for m in (
+                "never", "not measured", "excluded", "lower bound",
+                "dirty", "omits")), (
+                f"crossover appears as a claim rather than an exclusion: {line}")
+
+
+def test_arm_a_is_now_measured_not_excluded(report_text):
+    """Arm A moved tiers once it was actually run — the report must say so."""
+    assert "Arm A — hosted API, measured for the first time" in report_text
+    # Its cost/latency rows carry MEASURED, and it is gone from the
+    # never-executed list.
+    assert "no hosted-API run has ever been executed" not in report_text
+    assert "Every Arm A number" not in report_text
+
+
+def test_arm_a_throughput_is_still_flagged_incomparable(report_text):
+    """min_tokens was ignored, so tok/s does not cross arms."""
+    assert "min_tokens" in report_text
+    assert "NOT comparable to arms B/C" in report_text
+
+
+def test_prefix_cache_benefit_is_still_unmeasured(report_text):
+    """A measured ZERO on the hosted side is not a measured benefit."""
+    assert "cached_tokens" in report_text
+    for line in report_text.splitlines():
+        if "prefix-cache benefit" in line.lower():
+            assert any(m in line.lower() for m in
+                       ("never", "not measured", "ablation"))
+
+
+def test_calls_per_decision_is_measured_at_both_depths(report_text):
+    assert "| 3 | 3.000 | yes |" in report_text
+    assert "| 5 | 5.000 | yes |" in report_text
+    assert "no retry inflation was observed" in report_text
+
+
+def test_thresholds_shown_at_one_three_and_five_calls(report_text):
+    assert "| Model | 1 call/decision | 3 calls | 5 calls | Tier |" in report_text
+
+
+def test_rate_limit_ceiling_carries_the_account_tier_qualifier(report_text):
+    assert "property of THIS ACCOUNT TIER" in report_text
+    assert "not of the api" in report_text.lower()
 
 
 def test_report_states_the_answer_as_a_conditional(report_text):

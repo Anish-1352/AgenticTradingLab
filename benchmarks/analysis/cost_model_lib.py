@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import statistics
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -47,7 +48,8 @@ DERIVED = "DERIVED"
 NOT_MEASURED = "NOT MEASURED"
 TIERS = (MEASURED, DERIVED, NOT_MEASURED)
 
-__all__ = ["Fig", "MissingInput", "MEASURED", "DERIVED", "NOT_MEASURED", "TIERS",
+__all__ = ["Fig", "MissingInput", "load_arm_a",
+           "load_measured_calls_per_decision", "backtest_threshold_table", "MEASURED", "DERIVED", "NOT_MEASURED", "TIERS",
            "PRICE_BY_DB_MODEL", "UNMEASURED_INPUTS", "CODE_FINDINGS",
            "load_measured", "require_inputs", "cost_per_call",
            "monthly_breakdown", "per_model_comparison", "sensitivity",
@@ -120,10 +122,11 @@ UNMEASURED_INPUTS: Dict[str, str] = {
         "leaderboard backtest was ~161 calls, and backtesting is what the "
         "platform is for. Render DB: agent_runs grouped by day and user."),
     "calls_per_decision": (
-        "LLM calls per decision. All 7 seed runs used the SINGLE-CALL path "
-        "(6 at exactly 1.000, Nemotron 0.994). A multi-step pipeline issues "
-        "one call per step — verified 3->3 and 5->5 against the real runner "
-        "with a stub client — but no production run has ever been recorded. "
+        "LLM calls per decision — equivalently, YOUR pipeline depth. The "
+        "relationship is now MEASURED against real API runs: a 3-step pipeline "
+        "issued exactly 3.000 calls/decision and a 5-step exactly 5.000, with "
+        "no retry inflation at either depth. What remains unmeasured is which "
+        "depth PRODUCTION runs — all 7 seed runs used the single-call path. "
         "Render DB: metadata.initial_pipeline step counts across real runs."),
     "model_mix": (
         "Fraction of production calls by model, as {db_model: fraction}. "
@@ -137,9 +140,10 @@ UNMEASURED_INPUTS: Dict[str, str] = {
         "Calendar days per month for backtest volume (~30). Also a "
         "convention, not a measurement."),
     "infrastructure_usd_per_month": (
-        "Hosting, GPU, and database spend. NOT measurable from this repo: no "
-        "Arm A hosted-API run has ever been executed, and no self-hosted "
-        "deployment exists to price. Render/AWS billing console."),
+        "Hosting, database, and any GPU spend — everything that is NOT "
+        "per-token LLM cost. Arm A now measures the per-request API price, but "
+        "that is the token bill, not the platform's fixed running cost, and no "
+        "self-hosted deployment exists to price. Render/AWS billing console."),
 }
 
 # Findings from reading dashboard/backend. Each is checked to exist at the cited
@@ -416,6 +420,138 @@ def _load_trace(results_dir: str) -> Dict[str, Any]:
         "gpu_busy_us": t.get("gpu_busy_us"),
         "caveats": t.get("caveats", []),
     }
+
+
+def load_arm_a(results_dir: str = DEFAULT_RESULTS,
+               run_id: str = "armA_nemotron") -> Dict[str, Any]:
+    """Arm A's measured hosted-API sweep — the first one ever run.
+
+    Every Arm A figure before this was modelled from an assumed
+    $0.0001822/request, which is why ``ADVISOR_REPORT.md`` excluded them. These
+    come from the provider's own billed ``usage``.
+    """
+    s_path = os.path.join(results_dir, f"{run_id}_summary.json")
+    m_path = os.path.join(results_dir, f"{run_id}_manifest.json")
+    if not os.path.exists(s_path):
+        return {"available": False, "reason": f"{s_path} not found"}
+    with open(s_path) as fh:
+        summary = json.load(fh)
+    manifest = {}
+    if os.path.exists(m_path):
+        with open(m_path) as fh:
+            manifest = json.load(fh)
+
+    levels = []
+    for lv in summary.get("levels", []):
+        n = lv.get("notes") or {}
+        pc = n.get("prompt_cache") or {}
+        levels.append({
+            "concurrency": lv["concurrency"],
+            "completed": lv.get("completed"),
+            "errored": lv.get("errored"),
+            "requests_per_s": lv.get("completed_requests_per_s"),
+            "e2e_p50": lv.get("e2e_p50"),
+            "e2e_p95": lv.get("e2e_p95"),
+            "e2e_p99": lv.get("e2e_p99"),
+            "ttft_p50": lv.get("ttft_p50"),
+            "output_tok_per_s": lv.get("output_tok_per_s"),
+            "cost_per_request": n.get("api_cost_per_request"),
+            "cost_total": n.get("api_cost_total"),
+            "provider_reported_cost_usd_total": n.get(
+                "provider_reported_cost_usd_total"),
+            "rate_limit_429_count": n.get("rate_limit_429_count"),
+            "cached_tokens_total": pc.get("cached_tokens_total"),
+            "prompt_tokens_actual_mean": n.get("prompt_tokens_actual_mean"),
+            "output_tokens_total": lv.get("output_tokens_total"),
+        })
+    costs = [lv["cost_per_request"] for lv in levels if lv["cost_per_request"]]
+    cached = [lv["cached_tokens_total"] for lv in levels
+              if lv["cached_tokens_total"] is not None]
+    return {
+        "available": True,
+        "run_id": summary.get("run_id"),
+        "model": manifest.get("model"),
+        "levels": levels,
+        "cost_per_request_mean": statistics.fmean(costs) if costs else None,
+        "cost_per_request_min": min(costs) if costs else None,
+        "cost_per_request_max": max(costs) if costs else None,
+        "total_429s": sum(lv["rate_limit_429_count"] or 0 for lv in levels),
+        "total_errors": sum(lv["errored"] or 0 for lv in levels),
+        "cached_tokens_total": sum(cached) if cached else None,
+        "cache_reported_by_provider": bool(cached),
+        "manifest": manifest,
+        "fixture_sha256": manifest.get("fixture_sha256"),
+        "branch_sha": manifest.get("branch_sha"),
+        "reasoning": (manifest.get("extra") or {}).get("reasoning"),
+    }
+
+
+def load_measured_calls_per_decision(results_dir: str = DEFAULT_RESULTS
+                                     ) -> Dict[str, Any]:
+    """Calls per decision, measured per pipeline depth.
+
+    Read from the committed extract artifact rather than the local database,
+    which is gitignored — a report that only regenerates on the machine that
+    ran the backtest is not reproducible.
+    """
+    path = os.path.join(results_dir, "atl_local_pipeline.json")
+    if not os.path.exists(path):
+        return {"available": False, "reason": f"{path} not found"}
+    with open(path) as fh:
+        data = json.load(fh)
+    runs = (data.get("local_extract") or {}).get("runs") or []
+    by_depth: Dict[int, Dict[str, Any]] = {}
+    for r in runs:
+        depth = r.get("pipeline_calls_per_decision")
+        observed = r.get("observed_calls_per_decision")
+        if not depth or observed is None:
+            continue
+        rec = by_depth.setdefault(int(depth), {
+            "configured_steps": int(depth), "runs": [], "observed": [],
+        })
+        rec["runs"].append(r.get("run_id"))
+        rec["observed"].append(observed)
+    for depth, rec in by_depth.items():
+        rec["observed_calls_per_decision"] = statistics.fmean(rec["observed"])
+        rec["agrees_with_configured"] = all(
+            abs(o - depth) < 1e-6 for o in rec["observed"])
+        rec["n_runs"] = len(rec["runs"])
+    return {
+        "available": bool(by_depth),
+        "by_depth": by_depth,
+        "depths_measured": sorted(by_depth),
+        "all_agree": all(r["agrees_with_configured"] for r in by_depth.values()),
+        "note": (
+            "Observed = llm_calls / bars; configured = steps in "
+            "metadata.initial_pipeline. Agreement at every depth means no "
+            "retry inflation was observed."
+        ),
+    }
+
+
+def backtest_threshold_table(
+    measured: Dict[str, Any], budget_usd: float, *,
+    n_users: int, calendar_days: int, calls_per_backtest: float,
+    calls_per_decision_options: Sequence[float] = (1, 3, 5),
+) -> List[Dict[str, Any]]:
+    """Backtests/user/day needed to reach a budget, at each pipeline depth.
+
+    The earlier thresholds were derived at ONE call per decision, which the
+    seed runs measured but which is *not* what a multi-step pipeline does. A
+    3-step pipeline divides every threshold by three: the same dollar budget is
+    reached by a third as much user activity.
+    """
+    rows: List[Dict[str, Any]] = []
+    for name, m in measured["models"].items():
+        cpc = cost_per_call(m)
+        row: Dict[str, Any] = {"db_model": name, "slug": m["slug"],
+                               "cost_per_call": cpc, "thresholds": {}}
+        for depth in calls_per_decision_options:
+            denom = n_users * calls_per_backtest * calendar_days * depth * cpc
+            row["thresholds"][depth] = (budget_usd / denom) if denom else None
+        rows.append(row)
+    rows.sort(key=lambda r: r["cost_per_call"])
+    return rows
 
 
 def cost_per_call(model: Dict[str, Any]) -> float:
