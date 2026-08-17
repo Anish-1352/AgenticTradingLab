@@ -494,10 +494,15 @@ def three_way_comparison(
         "columns": cols,
         "deltas": deltas,
         "note": (
-            "Columns are independent measurements, not revisions. Output "
-            "tokens are comparable only within a column AND within a model; "
-            "input tokens and calls per decision are comparable across all "
-            "three."
+            "Columns are independent measurements, not revisions. CALLS PER "
+            "DECISION is the one figure comparable across all three: it is a "
+            "property of pipeline depth, not of the prompt. TOKEN COUNTS ARE "
+            "NOT COMPARABLE ACROSS COLUMNS unless the prompt text and the "
+            "ticker universe match — a local run over 2 symbols with a short "
+            "benchmark prompt will show far fewer input tokens than a "
+            "production run over 30 symbols, and that difference is the "
+            "workload, not a change in the platform. Output tokens are "
+            "additionally model-specific."
         ),
     }
 

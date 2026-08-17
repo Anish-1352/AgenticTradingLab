@@ -260,3 +260,5 @@ credentials/*
 local_atl.db
 local_atl.db-shm
 local_atl.db-wal
+
+.DS_Store
