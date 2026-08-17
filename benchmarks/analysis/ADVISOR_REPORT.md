@@ -2,11 +2,6 @@
 
 Prepared for Dr. Liu, in answer to: *100 users, 1000 agents — would $50K/month be a real problem?* Those three figures are the question as posed [NOT MEASURED], not measurements of the platform.
 
-
-```bash
-cd benchmarks && python -m analysis.make_advisor_report
-```
-
 ## How to read this
 
 Every number carries one of three tags. A number without one is a bug, and a test enforces it.
@@ -365,5 +360,7 @@ Set out in full in `QUESTIONS_FOR_ADVISOR.md`. In brief:
 A companion notebook, `cost_model.ipynb`, takes these inputs and produces the monthly figure. It refuses to compute while any of them is blank rather than substituting a default.
 
 ---
+
+**This file is generated.** Edits made by hand are overwritten the next time it is rebuilt — change `analysis/make_advisor_report.py` instead, then regenerate with `cd benchmarks && python -m analysis.make_advisor_report`.
 
 Sources: `../dashboard/storage/data/backtest.db` (17 runs, 7 with LLM usage) [MEASURED]; `results/armB_shared_*`, `results/armC_shared_*`, `results/armB_L3_trace.json` [MEASURED].

@@ -107,12 +107,6 @@ def build_report(measured: Dict[str, Any]) -> str:
       f"Those three figures are the question as posed {_t(NOT_MEASURED)}, not "
       f"measurements of the platform.")
     A("")
-    A("**Generated file — do not edit by hand.** Regenerate with:")
-    A("")
-    A("```bash")
-    A("cd benchmarks && python -m analysis.make_advisor_report")
-    A("```")
-    A("")
     A("## How to read this")
     A("")
     A("Every number carries one of three tags. A number without one is a bug, "
@@ -634,6 +628,10 @@ def build_report(measured: Dict[str, Any]) -> str:
       "is blank rather than substituting a default.")
     A("")
     A("---")
+    A("")
+    A("**This file is generated.** Edits made by hand are overwritten the next "
+      "time it is rebuilt — change `analysis/make_advisor_report.py` instead, "
+      "then regenerate with `cd benchmarks && python -m analysis.make_advisor_report`.")
     A("")
     A(f"Sources: `{os.path.relpath(measured['db_path'], _BENCH_ROOT)}` "
       f"({measured['total_runs']} runs, {measured['runs_with_llm']} with LLM "
