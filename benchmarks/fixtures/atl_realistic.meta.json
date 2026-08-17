@@ -1,0 +1,23 @@
+{
+  "name": "atl_realistic",
+  "sha256": "626e7494a669c01feba48d4f06a3922940d04d1b3b7ba23769204fdd5cfaaaa4",
+  "tokenizer_name": "Qwen/Qwen2.5-7B-Instruct",
+  "tokenizer_is_stub": false,
+  "seed": 20260820,
+  "context_tokens": 2620,
+  "n_requests": 105,
+  "token_count_min": 2620,
+  "token_count_max": 2620,
+  "token_counts_all_equal": true,
+  "common_prefix_tokens": 268,
+  "common_prefix_fraction": 0.10229007633587786,
+  "design": "static frame + per-agent configured prompt + per-decision market payload, in the order pipeline_runner assembles them",
+  "static_tokens": 262,
+  "per_agent_tokens": 524,
+  "per_decision_tokens": 1834,
+  "expected_cross_agent_prefix_tokens": 262,
+  "expected_same_agent_prefix_tokens": 786,
+  "derived_from": {
+    "warning": "NOT derived from a measurement \u2014 default proportions were used. Pass derived_from with the audit/extract outputs, or treat this fixture as another guess."
+  }
+}
