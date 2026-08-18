@@ -1,0 +1,165 @@
+# Heterogeneous serving sweep: N models at fixed TOTAL offered load.
+#
+# THE INDEPENDENT VARIABLE IS FRAGMENTATION, NOT LOAD.
+#
+# Total concurrency is pinned at 32 across every N, so per-model concurrency
+# falls 32 -> 16 -> 8 -> ~4.6 as N rises. Holding total load fixed is what
+# separates "smaller batches are less efficient" from "more requests are
+# slower". Sweeping N at fixed PER-MODEL concurrency would answer a different
+# and much less interesting question.
+#
+# The measured 9.28 req/s at C=32 came from all 32 requests batching on one
+# engine. With N engines there are N schedulers, N KV pools and no shared
+# batch — the requests cannot coalesce. How much that costs is the measurement.
+
+meta:
+  fixture: atl_realistic
+  fixture_sha256: 626e7494a669c01feba48d4f06a3922940d04d1b3b7ba23769204fdd5cfaaaa4
+  fixture_note: >-
+    NOT shared_prefix. Its 99.4% overlap is a deliberate upper bound, and
+    prefix caching cannot span engines anyway, so shared_prefix would flatter
+    the multi-model result by exactly the mechanism the multi-model case
+    cannot use.
+  total_concurrency: 32
+  n_requests_per_level: 32
+  seed: 1234
+
+output_length:
+  default_max_new_tokens: 860
+  control_max_new_tokens: 256
+  rationale: >-
+    860 is production Nemotron's measured mean output. The earlier runs used
+    256, and decode dominates: the Layer-3 trace measured 0.55s prefill against
+    31.08s decode, so ~98% of GPU time is decode and throughput scales roughly
+    inversely with output length. Every agents-per-card figure derived from the
+    256-token runs is therefore roughly 3.4x optimistic (860/256). 256 stays
+    available as a control so the two can be compared directly rather than
+    argued about.
+  tier: MEASURED   # 860 from the seed DB; the prefill/decode split from armB_L3_trace
+
+# ---------------------------------------------------------------- runs -----
+# Ordered highest-information-first, because the compute-unit budget will not
+# cover all of them (see gpu_session_plan).
+
+runs:
+  - id: n1_none_validation
+    n_models: 1
+    models: [Qwen/Qwen2.5-7B-Instruct]
+    quantization: none
+    max_new_tokens: 256
+    total_concurrency: 32
+    must_reproduce: armC_shared
+    blocking: true
+    note: >-
+      VALIDATION GATE. Same model, same fixture family, same concurrency and
+      the same 256-token output as armC_shared. If this does not reproduce the
+      existing arm C result within noise, the multi-model runner is wrong and
+      every later run in this sweep is uninterpretable. STOP and fix rather
+      than continuing — a sweep that cannot be tied back to a known result is
+      not a measurement, it is a set of numbers.
+      Caveat: armC_shared ran shared_prefix, this runs atl_realistic, so
+      throughput is expected to DIFFER. What must reproduce is the mechanism —
+      engine construction, batching behaviour, and the shape of the
+      concurrency response. Run the shared_prefix control below if the
+      difference needs attributing.
+
+  - id: n1_none_sharedprefix_control
+    n_models: 1
+    models: [Qwen/Qwen2.5-7B-Instruct]
+    quantization: none
+    max_new_tokens: 256
+    fixture_override: shared_prefix
+    total_concurrency: 32
+    must_reproduce: armC_shared
+    blocking: false
+    note: >-
+      Exact-match control: identical to armC_shared in every variable. Only
+      needed if n1_none_validation diverges and the cause has to be split
+      between "the runner differs" and "the fixture differs".
+
+  - id: n4_none
+    n_models: 4
+    quantization: none
+    max_new_tokens: 860
+    total_concurrency: 32
+    note: >-
+      Four unquantized engines. Weights alone are ~29 GB for the first four
+      roster entries, which fits, but each engine needs its own KV pool from a
+      gpu_memory_utilization budget that must now be split four ways.
+
+  - id: n4_awq
+    n_models: 4
+    quantization: awq
+    max_new_tokens: 860
+    total_concurrency: 32
+    note: crossed with n4_none to size the quantization effect at fixed N
+
+  - id: n1_awq
+    n_models: 1
+    models: [Qwen/Qwen2.5-7B-Instruct]
+    quantization: awq
+    max_new_tokens: 860
+    total_concurrency: 32
+    note: crossed with n1_none to size the quantization effect at N=1
+
+  - id: n2_awq
+    n_models: 2
+    quantization: awq
+    max_new_tokens: 860
+    total_concurrency: 32
+
+  - id: n7_awq
+    n_models: 7
+    quantization: awq
+    max_new_tokens: 860
+    total_concurrency: 32
+    note: >-
+      The full heterogeneous case, and the one the whole exercise is for.
+      ~4.6 requests per engine on average. Expect this to be where
+      fragmentation bites hardest.
+
+  - id: n1_none_860_control
+    n_models: 1
+    models: [Qwen/Qwen2.5-7B-Instruct]
+    quantization: none
+    max_new_tokens: 860
+    total_concurrency: 32
+    note: >-
+      Isolates the output-length effect at N=1, so the 860-token multi-model
+      runs can be compared against a 256-token single-model baseline without
+      conflating length with fragmentation.
+
+# ------------------------------------------------------------ crossings ----
+crossings:
+  quantization:
+    at_n: [1, 4]
+    levels: [none, awq]
+    measures: [vram_gb, completed_requests_per_s, e2e_p50]
+  fragmentation:
+    at_n: [1, 2, 4, 7]
+    fixed: total_concurrency=32
+    measures: [completed_requests_per_s, per_model_requests_per_s, e2e_p50, vram_gb]
+
+# -------------------------------------------------------------- expected ---
+# Hypotheses, recorded BEFORE the runs so the result can contradict them.
+# None of these are predictions to be defended; they are what the sweep tests.
+hypotheses:
+  - id: vram_forces_quantization
+    claim: >-
+      Seven models unquantized do not fit one 80GB A100 — 77.2 GB of weights
+      leaves ~3 GB for seven KV pools. Quantization is the enabling condition,
+      not an optimization.
+    falsified_if: n7 runs to completion with quantization=none
+  - id: fragmentation_reduces_throughput
+    claim: >-
+      Aggregate completed_requests_per_s falls monotonically as N rises at
+      fixed total concurrency, because N schedulers cannot coalesce a batch
+      that one scheduler could.
+    falsified_if: aggregate throughput is flat or rises with N
+  - id: no_cross_model_cache_sharing
+    claim: >-
+      Prefix caching cannot span engines, so any cache benefit is bounded by
+      within-model overlap only. On atl_realistic that is ~10.2%.
+    falsified_if: not directly testable on this build — vLLM 0.26 reported
+      stats_source null, so hit rate is unobservable. Treated as a structural
+      fact about separate engines rather than a measured one.

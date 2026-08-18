@@ -369,3 +369,101 @@ FIXTURE_GAP = {
         "throughput-derived figure carries the upper-bound caveat."
     ),
 }
+
+
+# ==========================================================================
+# Heterogeneous multi-model serving (Phase 13)
+# ==========================================================================
+
+# Per-GPU monthly cost, on-demand cloud. SOURCES, stated rather than implied:
+# these are the order-of-magnitude rates Colab/GCP/Lambda advertise for
+# on-demand single cards, converted to a 730-hour month. They are NOT quotes,
+# they vary by provider/region/commitment by more than 2x, and a reserved or
+# spot card is materially cheaper. Every card-count figure below is a division
+# by one of these, so the whole table moves linearly with them.
+GPU_MONTHLY_USD: Dict[str, Dict[str, Any]] = {
+    "A100-80GB": {"usd_per_month": 1440.0, "vram_gb": 80.0,
+                  "source": "~$1.97/hr on-demand x 730h"},
+    "L4-24GB": {"usd_per_month": 430.0, "vram_gb": 24.0,
+                "source": "~$0.59/hr on-demand x 730h"},
+    "A10G-24GB": {"usd_per_month": 730.0, "vram_gb": 24.0,
+                  "source": "~$1.00/hr on-demand x 730h"},
+    "T4-16GB": {"usd_per_month": 260.0, "vram_gb": 16.0,
+                "source": "~$0.35/hr on-demand x 730h"},
+}
+
+
+def hosted_baseline_monthly(measured: Optional[Dict[str, Any]] = None, *,
+                            agents: int = DEFAULT_AGENTS,
+                            cadence_key: str = "nof1_equity",
+                            calls_per_decision: int = 1) -> Dict[str, Any]:
+    """Hosted-API cost for a fleet split evenly across the seven measured models.
+
+    Even split is an assumption — production mix is unmeasured — but it is the
+    one split that needs no further input, and the per-model column shows how
+    lopsided the total is regardless.
+    """
+    measured = measured or load_measured()
+    cad = CADENCES[cadence_key]
+    per_model_agents = agents / len(measured["models"])
+    rows = []
+    for name, m in measured["models"].items():
+        cpc = cost_per_call(m)
+        calls_month = (per_model_agents * cad.decisions_per_day
+                       * calls_per_decision * cad.days_per_month)
+        rows.append({"db_model": name, "slug": m["slug"], "cost_per_call": cpc,
+                     "calls_per_month": calls_month,
+                     "monthly_usd": calls_month * cpc,
+                     "self_hostable": not any(
+                         v in m["slug"] for v in ("openai/", "google/", "anthropic/"))})
+    rows.sort(key=lambda r: -r["monthly_usd"])
+    total = sum(r["monthly_usd"] for r in rows)
+    unhostable = sum(r["monthly_usd"] for r in rows if not r["self_hostable"])
+    return {
+        "rows": rows, "total_monthly_usd": total,
+        "agents": agents, "cadence": cadence_key,
+        "calls_per_day": agents * cad.decisions_per_day * calls_per_decision,
+        "not_self_hostable_usd": unhostable,
+        "not_self_hostable_share": (unhostable / total) if total else None,
+        "note": (
+            "Even split across the seven measured models [NOT MEASURED — the "
+            "production mix is unknown]. The not-self-hostable share is the "
+            "part no amount of GPU purchasing can address."
+        ),
+    }
+
+
+def self_hosted_cards(*, n_models: int, models_per_card: Optional[float],
+                      card: str = "A100-80GB") -> Dict[str, Any]:
+    """Cards needed, given a MEASURED models-per-card figure.
+
+    ``models_per_card`` is deliberately required rather than defaulted: it is
+    the output of the sweep, and inventing it would make this function produce
+    a confident number from nothing. None in, None out.
+    """
+    spec = GPU_MONTHLY_USD.get(card)
+    if spec is None:
+        raise KeyError(f"unknown card {card!r}; known: {sorted(GPU_MONTHLY_USD)}")
+    if not models_per_card:
+        return {
+            "available": False,
+            "card": card,
+            "reason": (
+                "models_per_card is not measured. It is the primary output of "
+                "the heterogeneous sweep, and every figure here divides by it. "
+                "Run the sweep."
+            ),
+        }
+    cards = math.ceil(n_models / models_per_card)
+    return {
+        "available": True, "card": card, "n_models": n_models,
+        "models_per_card": models_per_card, "cards_required": cards,
+        "monthly_usd": cards * spec["usd_per_month"],
+        "card_usd_per_month": spec["usd_per_month"],
+        "card_source": spec["source"],
+        "excludes": (
+            "engineering, on-call, failover and idle capacity. A self-hosted "
+            "figure without those is a lower bound on cost, so the saving "
+            "shown is an upper bound."
+        ),
+    }

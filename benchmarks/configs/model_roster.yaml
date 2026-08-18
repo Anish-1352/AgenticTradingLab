@@ -1,0 +1,127 @@
+# Open-weight roster for the heterogeneous serving sweep.
+#
+# THIS IS A SUBSTITUTION, NOT A REPRODUCTION.
+#
+# Four of the seven models ATL actually serves CANNOT be self-hosted at all:
+# GPT-5.5, Gemini 3.1 Pro, Claude Sonnet 4.6 and Claude Haiku 4.5 have no public
+# weights. No quantization, no card, and no budget changes that. Any
+# self-hosting figure derived from this roster therefore answers "what would it
+# cost to serve SEVEN OPEN MODELS of comparable size", not "what would it cost
+# to serve ATL's current fleet". Those are different questions and the second
+# one has no self-hosted answer.
+#
+# That limitation is the headline, not a footnote: the ~$72k/month that GPT-5.5
+# and Gemini account for is exactly the spend self-hosting cannot touch.
+#
+# Selection constraints:
+#   - ungated on HuggingFace (no license click-through), so a Colab session
+#     with no HF token can pull them
+#   - spans the size range, because the fragmentation question is about how
+#     many engines fit, and engine size is the variable
+#   - includes Qwen2.5-7B-Instruct, which is the model arms B and C already
+#     measured — it anchors the N=1 validation run
+#
+# VRAM estimates are ARITHMETIC, not measurements: params x bytes-per-weight,
+# plus a nominal overhead. Real footprint depends on the kernel, the KV pool and
+# activation peaks. They are here to size the sweep, and the sweep replaces them.
+
+meta:
+  purpose: heterogeneous multi-model serving sweep
+  card_target: A100-80GB
+  vram_note: >-
+    FP16 = params x 2 bytes. 4-bit (AWQ) = params x 0.5 bytes plus ~15% for
+    scales, zero-points and non-quantized layers. Neither figure includes the
+    KV cache, which vLLM allocates separately from whatever gpu_memory_
+    utilization leaves after weights.
+  tier: DERIVED   # arithmetic on published parameter counts
+
+models:
+  - id: Qwen/Qwen2.5-0.5B-Instruct
+    params_b: 0.49
+    fp16_gb: 0.98
+    awq_4bit_gb: 0.28
+    substitutes_for: null
+    note: >-
+      Size-range floor. Substitutes for nothing in particular — it is here so
+      the sweep can distinguish "engines do not fit" from "small batches are
+      slow", which a uniform-size roster would confound.
+
+  - id: Qwen/Qwen2.5-1.5B-Instruct
+    params_b: 1.54
+    fp16_gb: 3.08
+    awq_4bit_gb: 0.89
+    substitutes_for: null
+
+  - id: Qwen/Qwen2.5-3B-Instruct
+    params_b: 3.09
+    fp16_gb: 6.18
+    awq_4bit_gb: 1.78
+    substitutes_for: anthropic/claude-haiku-4-5
+    note: cheapest hosted tier; substitution is on cost class, not capability
+
+  - id: microsoft/Phi-3.5-mini-instruct
+    params_b: 3.82
+    fp16_gb: 7.64
+    awq_4bit_gb: 2.20
+    substitutes_for: nvidia/nemotron-3-nano-30b-a3b
+    note: >-
+      Nemotron-3-nano is a 30B-A3B MoE — ~3B active parameters. A 3.8B dense
+      model matches active-parameter count, NOT total capacity or memory
+      profile. An MoE's weights all sit in VRAM even when inactive.
+
+  - id: Qwen/Qwen2.5-7B-Instruct
+    params_b: 7.62
+    fp16_gb: 15.24
+    awq_4bit_gb: 4.39
+    substitutes_for: qwen/qwen3.7-plus
+    anchor: true
+    note: >-
+      THE ANCHOR. Arms B and C already measured this exact model, so the N=1
+      unquantized run must reproduce armC_shared. If it does not, the runner is
+      wrong and nothing downstream is interpretable.
+
+  - id: mistralai/Mistral-7B-Instruct-v0.3
+    params_b: 7.25
+    fp16_gb: 14.50
+    awq_4bit_gb: 4.18
+    substitutes_for: deepseek/deepseek-v4-pro
+
+  - id: Qwen/Qwen2.5-14B-Instruct
+    params_b: 14.77
+    fp16_gb: 29.54
+    awq_4bit_gb: 8.51
+    substitutes_for: openai/gpt-5.5
+    note: >-
+      Size-range ceiling. Substitutes on "largest in the fleet" only — GPT-5.5's
+      weights are not public and its capability is not claimed to be matched.
+
+# Cannot be self-hosted at any price. Listed explicitly so the gap is visible
+# in the config a reader consults, not only in the report.
+not_self_hostable:
+  - id: openai/gpt-5.5
+    reason: weights not public
+    hosted_cost_per_call_usd: 0.086262
+  - id: google/gemini-3.1-pro
+    reason: weights not public
+    hosted_cost_per_call_usd: 0.069954
+  - id: anthropic/claude-sonnet-4-6
+    reason: weights not public
+    hosted_cost_per_call_usd: 0.030690
+  - id: anthropic/claude-haiku-4-5
+    reason: weights not public
+    hosted_cost_per_call_usd: 0.010719
+
+totals:
+  all_seven_fp16_gb: 77.16
+  all_seven_awq_4bit_gb: 22.23
+  uniform_7b_fp16_gb: 106.68   # 7 x 7.62B x 2 bytes — the naive framing
+  fits_a100_80gb_fp16: false   # 77.16 GB of weights leaves ~3 GB for KV: no
+  fits_a100_80gb_awq: true
+  fits_l4_24gb_awq: true
+  fits_l4_24gb_fp16: false
+  tier: DERIVED
+  note: >-
+    "Fits" here means weights alone. vLLM needs a KV pool on top, and with N
+    engines each pool is separate — no sharing. The FP16 row is the real
+    finding: quantization is what makes the heterogeneous case possible at all,
+    not a tuning step applied afterwards.
