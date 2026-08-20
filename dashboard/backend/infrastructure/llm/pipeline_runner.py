@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import copy
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from dashboard.backend.infrastructure.llm.backtest_harness import (
     DEFAULT_MAX_OUTPUT_TOKENS,
@@ -23,6 +23,7 @@ from dashboard.backend.infrastructure.llm.backtest_harness import (
     extract_token_usage,
     parse_llm_response,
 )
+from dashboard.backend.infrastructure.llm.step_routing import RoutingConfig
 
 POST_TRADE_PRESET_KEY = "post_trade_analysis"
 
@@ -432,11 +433,23 @@ def run_pipeline_decision(
     pipeline: List[Dict[str, Any]],
     market_snapshot: Dict[str, Any],
     model: Optional[str] = None,
+    routing: Optional["RoutingConfig"] = None,
+    client_for_integration: Optional[Callable[[Optional[str]], Any]] = None,
 ) -> Tuple[Optional[Dict[str, Any]], Tuple[int, int], int, List[Dict[str, Any]]]:
     """Execute decision pipeline steps sequentially.
 
     Post-trade steps are ignored here. Returns
     ``(decision_dict_or_none, (input_tokens, output_tokens), llm_calls, step_outputs)``.
+
+    ``routing`` is opt-in per-step model selection (see ``step_routing``). When
+    it is ``None`` or disabled, every step uses ``model`` exactly as before —
+    the same single ``client.messages.create(model=model or LLM_MODEL_NAME)``
+    call this function has always made.
+
+    ``client_for_integration`` is only consulted when a route names an
+    integration different from the one the caller's client already speaks. It
+    is a callable rather than a provider import so this module keeps no
+    dependency on provider construction and stays unit-testable without keys.
     """
     decision_steps, _post_trade_steps = split_pipeline(pipeline)
     if not decision_steps:
@@ -463,8 +476,20 @@ def run_pipeline_decision(
         label = step.get("label") or f"Step {index + 1}"
         print(f"\n🔗 Pipeline step {index + 1}/{len(decision_steps)}: {label}")
 
-        response = client.messages.create(
-            model=model or LLM_MODEL_NAME,
+        default_model = model or LLM_MODEL_NAME
+        step_client = client
+        step_model = default_model
+        if routing is not None and routing.enabled:
+            route = routing.resolve(step, index, default_model)
+            step_model = route.model
+            if route.routed:
+                print(f"   ↳ routed to {step_model} "
+                      f"(matched on {route.matched_by})")
+            if route.integration and client_for_integration is not None:
+                step_client = client_for_integration(route.integration) or client
+
+        response = step_client.messages.create(
+            model=step_model,
             max_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
             system=PIPELINE_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
@@ -476,7 +501,8 @@ def run_pipeline_decision(
 
         parsed = parse_llm_response(extract_response_text(response))
         if parsed is None:
-            print(f"   ❌ Pipeline step {index + 1} returned unparseable JSON")
+            print(f"   ❌ Pipeline step {index + 1} returned unparseable JSON "
+                  f"(model={step_model})")
             return None, (total_in, total_out), llm_calls, prior_outputs
 
         prior_outputs.append(
@@ -492,7 +518,8 @@ def run_pipeline_decision(
 
     decision = pipeline_output_to_decision(last_parsed or {})
     if decision is None:
-        print("   ❌ Final pipeline output could not be converted to trading actions")
+        print(f"   ❌ Final pipeline output could not be converted to trading "
+              f"actions (model={step_model})")
         return None, (total_in, total_out), llm_calls, prior_outputs
 
     return decision, (total_in, total_out), llm_calls, prior_outputs

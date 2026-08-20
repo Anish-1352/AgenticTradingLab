@@ -1,0 +1,57 @@
+{
+  "note": [
+    "EXAMPLE per-step model routing. Switched OFF, and nothing loads this file",
+    "automatically — it is a shape reference and a starting point to copy.",
+    "",
+    "With enabled=false every step uses the agent's own configured model, which",
+    "is exactly the behaviour before routing existed. Turning it on is a",
+    "one-word diff, which is the point: the table can be written and reviewed",
+    "before it changes any run.",
+    "",
+    "BEFORE ENABLING THIS: run dashboard/scripts/measure_step_reliability.py.",
+    "pipeline_runner aborts the WHOLE decision when any step returns",
+    "unparseable JSON and there is no retry, so a cheap model that fails to",
+    "parse does not degrade the decision — it removes it. Cost savings",
+    "projected without a measured parse rate are not results.",
+    "",
+    "KEYS: a bare label ('Risk Assessment') routes every step with that label,",
+    "which is how the same table works across the 3-step and 5-step pipelines.",
+    "Prefixes address the other identifiers the pipeline already carries:",
+    "  id:<step id>       one exact step in one pipeline (most specific)",
+    "  preset:<presetKey> a preset role",
+    "  label:<text>       a label, when it would otherwise read as a number",
+    "  step:<n>           1-based position (weakest: step 3 differs by pipeline)",
+    "Resolution order is id > presetKey > label > step, first match wins, so a",
+    "specific id can except one step from a broad label rule.",
+    "",
+    "A route is either a model id string, or an object with an integration when",
+    "the cheap model lives behind a different provider. A self-hosted engine is",
+    "an OpenRouter-compatible base_url (set OPENROUTER_BASE_URL), not a new",
+    "provider type."
+  ],
+
+  "step_routing": {
+    "enabled": false,
+
+    "steps": {
+      "Information Gathering": "nvidia/nemotron-3-nano-30b-a3b",
+      "Information to Signal": {
+        "model": "nvidia/nemotron-3-nano-30b-a3b",
+        "integration": "openrouter",
+        "note": "mechanical: turns facts into a signal object"
+      },
+      "Signal to Execution": {
+        "model": "anthropic/claude-sonnet-4-6",
+        "note": "THE decision step. Keep it expensive: it is the only step whose output becomes trades, and it carries a second gate (pipeline_output_to_decision) beyond valid JSON."
+      }
+    },
+
+    "_fallback_is_commented_out_on_purpose": [
+      "A fallback catches every unmapped step, which means the agent's own",
+      "configured model is never used. That is a much larger change than it",
+      "looks and is easy to enable by accident, so it is left out of the",
+      "example rather than shown switched off.",
+      "To use one: \"fallback\": \"nvidia/nemotron-3-nano-30b-a3b\""
+    ]
+  }
+}
