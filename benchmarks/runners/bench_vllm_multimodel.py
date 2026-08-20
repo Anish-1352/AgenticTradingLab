@@ -4,14 +4,14 @@
     python benchmarks/runners/bench_vllm_multimodel.py --dry-run --n-models 4
     python benchmarks/runners/bench_vllm_multimodel.py --n-models 4 --quantization awq
 
-WHAT vLLM 0.26 ACTUALLY PROVIDES — READ THIS BEFORE CHANGING THE DESIGN
-------------------------------------------------------------------------
+WHAT vLLM 0.27.1 ACTUALLY PROVIDES — READ THIS BEFORE CHANGING THE DESIGN
+--------------------------------------------------------------------------
 ``AsyncEngineArgs`` takes ``model`` — **singular**. There is no parameter for a
 model list and no first-class "serve N models from one engine" API. That is not
 an oversight in this runner; it is the shape of the library. Three consequences
 drive everything below:
 
-1. **N models means N engines.** Each is a separate ``AsyncLLMEngine`` with its
+1. **N models means N engines.** Each is a separate ``AsyncLLM`` with its
    own scheduler, its own KV pool and its own CUDA memory claim.
 2. **They do not share a batch.** vLLM's throughput comes from continuous
    batching *within* one scheduler. Two engines are two schedulers competing for
@@ -23,14 +23,52 @@ drive everything below:
    budget by N and records the per-engine value, because getting this wrong
    looks like "multi-model does not work" rather than "the config was wrong".
 
-**This was NOT verified against an installed vLLM.** There is no GPU and no
-vllm package in the environment this was written in, so the above comes from
-the API surface the existing arm C runner already uses
-(``bench_vllm_optimized.py`` builds ``AsyncEngineArgs(model=...)``) plus the
-documented semantics of ``gpu_memory_utilization``. The first action in a real
-session is ``--dry-run`` followed by the N=1 validation run; if
-``AsyncEngineArgs`` in the installed build accepts something better, prefer it
-and delete this note.
+VERIFIED AGAINST 0.27.1, AND INFERRED — THE DIFFERENCE, EXPLICITLY
+-------------------------------------------------------------------
+The 0.26-era version of this file said "NOT verified against an installed
+vLLM" and left it there. The API claims below were then checked by reading
+vLLM's source at the ``v0.27.1`` tag. Nothing here was checked by running it —
+there is still no GPU in this environment — so the two categories are kept
+apart rather than blended into a confident-sounding whole.
+
+**VERIFIED — read from vLLM v0.27.1 source:**
+
+* ``AsyncEngineArgs.model`` is still ``str``, singular (``engine/arg_utils.py``).
+  N models therefore still means N engines; the premise of this runner holds.
+* ``engine/async_llm_engine.py`` is now four lines: ``AsyncLLMEngine = AsyncLLM``.
+  **The V0 engine is gone.** The old V0/V1 try/except still runs, but on 0.27.1
+  both branches reach the same class, so it is a version probe, not a fallback.
+  This runner tries ``vllm.v1.engine.async_llm.AsyncLLM`` first and records
+  which path answered in ``engine_api``.
+* ``AsyncLLM.from_engine_args(engine_args, start_engine_loop=True,
+  usage_context=..., stat_loggers=...)`` — the one positional argument this
+  runner passes is correct.
+* ``AsyncLLM.generate(prompt, sampling_params, request_id, *, ...)`` returns
+  ``AsyncGenerator[RequestOutput, None]``. The three positional arguments used
+  here are still positional; everything added since is keyword-only.
+* Every ``AsyncEngineArgs`` keyword this runner sends exists at that tag:
+  ``model``, ``dtype``, ``seed``, ``max_model_len``, ``enable_prefix_caching``,
+  ``gpu_memory_utilization``, ``max_num_seqs``, ``disable_log_stats``,
+  ``quantization``. ``enable_log_requests`` is NEW in 0.27.1 (it replaced
+  ``disable_log_requests``); this runner sets neither.
+* ``kernel_warmup()`` still imports ``minimax_m3_msa_warmup`` unconditionally at
+  the top of its body and calls it. **The torchvision shim is still required**
+  — that 0.26-era workaround carries forward unchanged.
+
+**INFERRED — not verifiable without the card, and the first real run tests it:**
+
+* That ``gpu_memory_utilization`` divided by N actually lets N engines coexist.
+  The division is arithmetic; whether the resulting claim succeeds against real
+  allocator behaviour, fragmentation and per-context overhead is not.
+* That N ``AsyncLLM`` instances coexist in one process at all. Nothing in the
+  source forbids it; nothing confirms it either.
+* Whether ``stats_source`` resolves on 0.27.1. It was ``null`` on 0.26. The
+  probe runs either way and records which attribute answered.
+* Every throughput, TTFT and ITL number this produces. Obviously — but stated,
+  because the point of the list above is that reading source is not running it.
+
+The first action in a real session remains ``--dry-run``, then the N=1
+validation run.
 
 THE ALTERNATIVE, NAMED RATHER THAN SILENTLY WORKED AROUND
 -----------------------------------------------------------
@@ -52,7 +90,9 @@ WHAT IS NOT OBSERVABLE HERE
 ---------------------------
 KV-cache usage and prefix-cache hit rate. vLLM 0.26 reported
 ``stats_source: null`` on this build in arm C, and nothing about running N
-engines changes that. Absence is recorded as absence — ``None``, never ``0`` —
+engines changes that. 0.27.1 may differ — ``AsyncLLM`` carries a
+``logger_manager`` — so the probe runs and records the result rather than
+assuming the 0.26 outcome carries. Absence is recorded as absence — ``None``, never ``0`` —
 because "the engine did not report it" and "the cache returned nothing" are
 different facts and only the second one is a result.
 """
@@ -83,6 +123,7 @@ from common.metrics import (  # noqa: E402
     summarize,
     write_results,
 )
+from common.monitor import ResourceMonitor  # noqa: E402
 
 ARM = "C-multi"
 
@@ -214,6 +255,15 @@ class EngineConfig:
     params_b: Optional[float] = None
     weights_gb_estimate: Optional[float] = None
 
+    @property
+    def short_name(self) -> str:
+        """Last path segment, for request ids and per-model report keys.
+
+        Roster ids are ``org/model``; the bare model name is unique across the
+        roster and survives being used as a filename.
+        """
+        return self.model_id.rsplit("/", 1)[-1]
+
 
 @dataclass
 class MultiModelPlan:
@@ -321,8 +371,22 @@ def build_engine(model_id: str, *, gpu_memory_utilization: float,
                  quantization: Optional[str], dtype: str = "auto",
                  enable_prefix_caching: bool = True,
                  max_model_len: Optional[int] = None,
+                 max_num_seqs: Optional[int] = None,
                  seed: int = 1234) -> Tuple[Any, str]:
-    """One AsyncLLMEngine. ``model`` is singular — see the module docstring."""
+    """One engine for one model. ``model`` is singular — see the docstring.
+
+    VERIFIED against vLLM 0.27.1 source: ``vllm/engine/async_llm_engine.py`` is
+    now four lines — ``AsyncLLMEngine = AsyncLLM`` — so the V0 engine is gone
+    and both import paths land on the same class. The two-branch form is kept
+    because it costs nothing and still works on 0.26, but on 0.27.1 the second
+    branch is unreachable rather than a fallback, and ``engine_api`` records
+    which one answered so a run can be attributed to a version after the fact.
+
+    Every keyword below was checked against ``AsyncEngineArgs`` in
+    ``vllm/engine/arg_utils.py`` at the v0.27.1 tag. ``max_num_seqs`` is
+    ``int | None`` there, so passing None is the documented default rather than
+    a value; it is omitted anyway.
+    """
     from vllm import AsyncEngineArgs  # noqa: PLC0415
 
     kwargs: Dict[str, Any] = dict(
@@ -337,24 +401,78 @@ def build_engine(model_id: str, *, gpu_memory_utilization: float,
         kwargs["quantization"] = quantization
     if max_model_len is not None:
         kwargs["max_model_len"] = max_model_len
+    if max_num_seqs is not None:
+        kwargs["max_num_seqs"] = max_num_seqs
 
     args = AsyncEngineArgs(**kwargs)
     errors: List[str] = []
     try:
+        from vllm.v1.engine.async_llm import AsyncLLM  # noqa: PLC0415
+
+        return (AsyncLLM.from_engine_args(args),
+                "vllm.v1.engine.async_llm.AsyncLLM")
+    except ImportError as exc:
+        errors.append(f"vllm.v1.AsyncLLM: {type(exc).__name__}: {exc}")
+    try:
         from vllm import AsyncLLMEngine  # noqa: PLC0415
 
         return AsyncLLMEngine.from_engine_args(args), "vllm.AsyncLLMEngine"
-    except Exception as exc:  # noqa: BLE001
+    except ImportError as exc:
         errors.append(f"vllm.AsyncLLMEngine: {type(exc).__name__}: {exc}")
-    try:
-        from vllm.v1.engine.async_llm import AsyncLLM  # noqa: PLC0415
-
-        return AsyncLLM.from_engine_args(args), "vllm.v1.engine.async_llm.AsyncLLM"
-    except Exception as exc:  # noqa: BLE001
-        errors.append(f"vllm.v1.AsyncLLM: {type(exc).__name__}: {exc}")
     raise SystemExit(
-        f"could not construct an engine for {model_id}. Attempts:\n  "
+        f"could not import an engine class for {model_id}. Attempts:\n  "
         + "\n  ".join(errors)
+    )
+
+
+def shutdown_engine(engine: Any) -> None:
+    """Release a card before the next engine is built.
+
+    Best-effort by design: this runs in a ``finally`` during teardown, and an
+    engine that cannot be shut down cleanly must not mask the run's own result.
+    Failures are swallowed here and the caller reports what it measured.
+    """
+    for attr in ("shutdown", "close", "stop"):
+        fn = getattr(engine, attr, None)
+        if callable(fn):
+            try:
+                fn()
+                return
+            except Exception:  # noqa: BLE001, S110
+                continue
+
+
+def make_prompt(token_ids: Sequence[int]):
+    """Feed token IDs, not text — the fixture's exactness lives in the ids.
+
+    Identical to arm C's helper so the two runners submit byte-identical
+    prompts; a divergence here would make the throughput comparison invalid.
+    """
+    try:
+        from vllm import TokensPrompt  # noqa: PLC0415
+
+        return TokensPrompt(prompt_token_ids=list(token_ids))
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from vllm.inputs import TokensPrompt  # noqa: PLC0415
+
+        return TokensPrompt(prompt_token_ids=list(token_ids))
+    except Exception:  # noqa: BLE001
+        pass
+    return {"prompt_token_ids": list(token_ids)}
+
+
+def make_sampling_params(max_new_tokens: int, seed: int = 1234):
+    """Fixed output length, EOS ignored — the token count is the independent
+    variable and a model that stops early would confound the comparison."""
+    from vllm import SamplingParams  # noqa: PLC0415
+
+    return SamplingParams(
+        max_tokens=max_new_tokens,
+        temperature=0.0,
+        ignore_eos=True,
+        seed=seed,
     )
 
 
@@ -389,6 +507,256 @@ def read_kv_stats(engine: Any) -> Dict[str, Any]:
             "reporting nothing was reused."
         ),
     }
+
+
+# --------------------------------------------------------------------------
+# capability probe
+#
+# This exists because its predecessor did not. The runner used to end with an
+# unconditional line claiming "no GPU, no vllm" — printed whether or not either
+# was true, so a healthy A100 with a working vLLM install was told its hardware
+# was missing. Everything below is an ACTUAL probe: each entry records what was
+# executed and what came back, and nothing is asserted about a thing that was
+# not checked.
+# --------------------------------------------------------------------------
+
+
+def probe_capabilities() -> Dict[str, Any]:
+    """Check, one at a time, what this machine can actually do.
+
+    Returns a dict per capability with ``available`` and the evidence for it.
+    An import error and a missing device are reported as different things,
+    because they need different fixes.
+    """
+    caps: Dict[str, Any] = {}
+
+    # --- torch + CUDA ---
+    try:
+        import torch  # noqa: PLC0415
+
+        cuda = bool(torch.cuda.is_available())
+        caps["torch"] = {
+            "available": True,
+            "version": getattr(torch, "__version__", "unknown"),
+            "cuda_available": cuda,
+            "device_count": torch.cuda.device_count() if cuda else 0,
+            "device_name": torch.cuda.get_device_name(0) if cuda else None,
+            "probe": "import torch; torch.cuda.is_available()",
+        }
+    except Exception as exc:  # noqa: BLE001
+        caps["torch"] = {
+            "available": False, "cuda_available": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "probe": "import torch",
+        }
+
+    # --- vllm ---
+    try:
+        import vllm  # noqa: PLC0415
+
+        caps["vllm"] = {
+            "available": True,
+            "version": getattr(vllm, "__version__", "unknown"),
+            "probe": "import vllm",
+        }
+    except Exception as exc:  # noqa: BLE001
+        caps["vllm"] = {
+            "available": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "probe": "import vllm",
+        }
+
+    # --- the engine class this runner actually calls ---
+    if caps["vllm"]["available"]:
+        try:
+            from vllm.v1.engine.async_llm import AsyncLLM  # noqa: PLC0415
+
+            caps["engine_class"] = {
+                "available": True,
+                "path": "vllm.v1.engine.async_llm.AsyncLLM",
+                "has_from_engine_args": hasattr(AsyncLLM, "from_engine_args"),
+                "has_generate": hasattr(AsyncLLM, "generate"),
+                "probe": "from vllm.v1.engine.async_llm import AsyncLLM",
+            }
+        except Exception as exc:  # noqa: BLE001
+            caps["engine_class"] = {
+                "available": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "probe": "from vllm.v1.engine.async_llm import AsyncLLM",
+            }
+    else:
+        caps["engine_class"] = {
+            "available": False,
+            "error": "not probed: vllm did not import",
+            "probe": None,
+        }
+
+    caps["can_run"] = bool(
+        caps["vllm"]["available"]
+        and caps["engine_class"].get("available")
+        and caps["torch"].get("cuda_available")
+    )
+    return caps
+
+
+def format_capabilities(caps: Dict[str, Any]) -> str:
+    """One line per capability, each naming the probe that produced it."""
+    lines = ["Capability probe (each line is a check that was executed):"]
+
+    t = caps["torch"]
+    if not t["available"]:
+        lines.append(f"  torch          MISSING   {t.get('error')}")
+    elif not t["cuda_available"]:
+        lines.append(f"  torch          {t['version']} present, but "
+                     f"torch.cuda.is_available() is False — no usable device")
+    else:
+        lines.append(f"  torch          {t['version']}, cuda True, "
+                     f"{t['device_count']}x {t['device_name']}")
+
+    v = caps["vllm"]
+    lines.append(f"  vllm           {v['version']}" if v["available"]
+                 else f"  vllm           MISSING   {v.get('error')}")
+
+    e = caps["engine_class"]
+    lines.append(f"  engine class   {e['path']}" if e.get("available")
+                 else f"  engine class   UNAVAILABLE   {e.get('error')}")
+
+    lines.append(f"  -> can run:    {caps['can_run']}")
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# execution
+# --------------------------------------------------------------------------
+
+
+async def run_one(engine: Any, token_ids: Sequence[int], request_id: str,
+                  sampling_params: Any, sem: "asyncio.Semaphore") -> RequestRecord:
+    """One request against one engine, with a timestamp per output token.
+
+    Deliberately identical in shape to arm C's ``_run_one``: the clock starts
+    AFTER the semaphore, so TTFT excludes client-side queue wait in both
+    runners. Changing that here would make the arms incomparable, which is the
+    only thing this benchmark exists to do.
+    """
+    rec = RequestRecord(request_id=request_id, prompt_tokens=len(token_ids))
+    async with sem:
+        rec.t_submit = time.perf_counter()
+        prev = 0
+        try:
+            async for out in engine.generate(
+                make_prompt(token_ids), sampling_params, request_id
+            ):
+                now = time.perf_counter()
+                completion = out.outputs[0] if getattr(out, "outputs", None) else None
+                cur = len(getattr(completion, "token_ids", ()) or ()) if completion else 0
+                if cur > prev:
+                    if rec.t_first_token is None:
+                        rec.t_first_token = now
+                    # Cumulative token_ids, and one step can surface several
+                    # tokens. One timestamp per NEW token, so ITL counts gaps
+                    # between tokens rather than between engine steps.
+                    for _ in range(cur - prev):
+                        rec.per_token_timestamps.append(now)
+                    prev = cur
+            rec.t_done = time.perf_counter()
+            rec.output_tokens = prev
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            rec.t_done = time.perf_counter()
+            msg = str(exc)
+            rec.error = ("CUDA_OOM" if "out of memory" in msg.lower()
+                         else f"{type(exc).__name__}: {msg}")
+    return rec
+
+
+async def run_model(engine: Any, cfg: "EngineConfig", prompts: Sequence[Sequence[int]],
+                    sampling_params: Any) -> Dict[str, Any]:
+    """Every request for one model, capped at that model's share of the load.
+
+    The semaphore is the split: ``cfg.concurrency`` is total/N, so all N models
+    together offer the same load one model offered at N=1. Without that, adding
+    models would raise offered load and throughput and the experiment would
+    measure nothing.
+    """
+    sem = asyncio.Semaphore(cfg.concurrency)
+    t0 = time.perf_counter()
+    records = await asyncio.gather(*[
+        run_one(engine, ids, f"{cfg.short_name}-{i}", sampling_params, sem)
+        for i, ids in enumerate(prompts)
+    ])
+    return {
+        "model": cfg.model_id,
+        "short_name": cfg.short_name,
+        "concurrency": cfg.concurrency,
+        "records": list(records),
+        "wall_seconds": time.perf_counter() - t0,
+    }
+
+
+async def run_all(engines: Sequence[Tuple[Any, "EngineConfig"]],
+                  prompts: Sequence[Sequence[int]],
+                  max_new_tokens: int, seed: int,
+                  sampling_params: Any = None) -> Dict[str, Any]:
+    """All N models in flight at once — the point of the whole exercise.
+
+    They are gathered rather than run in sequence because sequential execution
+    would measure N independent single-model runs, not contention for one
+    card's memory and scheduler.
+    """
+    # Built once and shared: every engine must receive identical sampling
+    # settings or the per-model comparison is confounded. Injectable so the
+    # request loop can be tested without a vLLM install.
+    if sampling_params is None:
+        sampling_params = make_sampling_params(max_new_tokens, seed=seed)
+    t0 = time.perf_counter()
+    per_model = await asyncio.gather(*[
+        run_model(engine, cfg, prompts, sampling_params) for engine, cfg in engines
+    ])
+    return {"per_model": list(per_model), "wall_seconds": time.perf_counter() - t0}
+
+
+def aggregate(per_model: Sequence[Dict[str, Any]], wall_seconds: float,
+              run_id: str) -> Dict[str, Any]:
+    """Per-model summaries plus one over every request on the card.
+
+    The aggregate uses the WALL time of the whole run, not the sum of per-model
+    walls: the models overlap, so summing would divide by roughly N times too
+    much and understate card throughput by that factor.
+    """
+    all_records: List[RequestRecord] = []
+    per_model_out = []
+    for entry in per_model:
+        recs = entry["records"]
+        all_records.extend(recs)
+        summary = summarize(f"{run_id}::{entry['short_name']}",
+                            entry["concurrency"], recs, requested=len(recs))
+        per_model_out.append({
+            "model": entry["model"],
+            "short_name": entry["short_name"],
+            "concurrency": entry["concurrency"],
+            "wall_seconds": entry["wall_seconds"],
+            "summary": summary,
+        })
+    total_conc = sum(e["concurrency"] for e in per_model)
+    agg = summarize(f"{run_id}::aggregate", total_conc, all_records,
+                    requested=len(all_records))
+    # summarize() derives duration from the records it was given. Across models
+    # those spans overlap, so the aggregate rate is recomputed against the run's
+    # true wall clock.
+    ok = [r for r in all_records if r.ok]
+    agg_rates = {
+        "wall_seconds": wall_seconds,
+        "completed_requests_per_s": (len(ok) / wall_seconds) if wall_seconds else None,
+        "output_tokens_per_s": (sum(r.output_tokens for r in ok) / wall_seconds)
+        if wall_seconds else None,
+        "total_output_tokens": sum(r.output_tokens for r in ok),
+        "completed": len(ok),
+        "failed": len(all_records) - len(ok),
+    }
+    return {"per_model": per_model_out, "aggregate": agg,
+            "aggregate_rates": agg_rates, "all_records": all_records}
 
 
 # --------------------------------------------------------------------------
@@ -496,6 +864,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         card_vram_gb=args.card_vram_gb,
     )
 
+    fixture = None
     fixture_sha = None
     try:
         fixture, _how = resolve_fixture(
@@ -525,9 +894,176 @@ def main(argv: Optional[List[str]] = None) -> int:
               file=sys.stderr)
         return 1
 
-    print("\nEngine construction is not exercised in this environment "
-          "(no GPU, no vllm). Run this on the target card.", file=sys.stderr)
-    return 3
+    # ---- what this machine can actually do, checked rather than assumed ----
+    caps = probe_capabilities()
+    print()
+    print(format_capabilities(caps))
+    if not caps["can_run"]:
+        missing = []
+        if not caps["vllm"]["available"]:
+            missing.append("vllm does not import")
+        elif not caps["engine_class"].get("available"):
+            missing.append("vllm imports but AsyncLLM does not")
+        if not caps["torch"]["available"]:
+            missing.append("torch does not import")
+        elif not caps["torch"]["cuda_available"]:
+            missing.append("torch.cuda.is_available() is False")
+        print("\nCannot run here: " + "; ".join(missing)
+              + ".\nEach line above is a check that was executed; nothing "
+                "else about this machine was inspected.", file=sys.stderr)
+        return 3
+
+    if fixture is None:
+        print("\nCannot run: the fixture did not resolve, so there are no "
+              "prompts to send. See the warning above.", file=sys.stderr)
+        return 1
+
+    run_id = args.run_id or make_run_id(ARM, args.total_concurrency)
+
+    # The fixture is used AS RESOLVED — its sha256 is the provenance and
+    # slicing it would break that. A stored fixture holds whatever count it was
+    # built at, which need not be --n-requests, so the count actually sent is
+    # recorded and a mismatch is stated rather than silently reconciled.
+    prompts = [list(r["prompt_token_ids"]) for r in fixture.requests]
+    n_sent = len(prompts)
+    if n_sent != args.n_requests:
+        print(f"\n  note: fixture {args.fixture!r} holds {n_sent} requests; "
+              f"--n-requests {args.n_requests} does not resize it. Sending "
+              f"{n_sent} per model ({n_sent * len(plan.engines)} total).")
+
+    engines: List[Tuple[Any, EngineConfig]] = []
+    engine_api = None
+    monitor = ResourceMonitor(device_index=0)
+    result: Optional[Dict[str, Any]] = None
+    kv_stats: Dict[str, Any] = {}
+    try:
+        # Sequential construction on purpose: an OOM at engine k names k, which
+        # is the number the sweep is looking for. Building concurrently would
+        # report a failure without saying which model exhausted the card.
+        for cfg in plan.engines:
+            print(f"  building engine {cfg.short_name} "
+                  f"@ gpu_memory_utilization={cfg.gpu_memory_utilization:.4f} ...",
+                  flush=True)
+            engine, engine_api = build_engine(
+                cfg.model_id,
+                gpu_memory_utilization=cfg.gpu_memory_utilization,
+                quantization=None if args.quantization == "none" else args.quantization,
+                max_model_len=args.max_model_len,
+                seed=args.seed,
+            )
+            engines.append((engine, cfg))
+
+        print(f"  {len(engines)} engines up via {engine_api}; "
+              f"offering {args.total_concurrency} total concurrency "
+              f"split {[c.concurrency for c in plan.engines]}", flush=True)
+
+        monitor.start()
+        try:
+            run = asyncio.run(run_all(engines, prompts, args.max_new_tokens,
+                                      args.seed))
+        finally:
+            monitor.stop()
+
+        result = aggregate(run["per_model"], run["wall_seconds"], run_id)
+        kv_stats = {cfg.short_name: read_kv_stats(engine)
+                    for engine, cfg in engines}
+    finally:
+        for engine, _cfg in engines:
+            shutdown_engine(engine)
+
+    mon_summary = monitor.summary()
+    for entry in result["per_model"]:
+        attach_resources(entry["summary"], mon_summary)
+    attach_resources(result["aggregate"], mon_summary)
+
+    # ---- report ----
+    print("\nPer model:")
+    for entry in result["per_model"]:
+        print(f"\n  {entry['short_name']}  (concurrency {entry['concurrency']})")
+        for line in console_lines(entry["summary"]):
+            print(f"    {line}")
+    print("\nAggregate (all models, one card):")
+    for line in console_lines(result["aggregate"]):
+        print(f"  {line}")
+    ar = result["aggregate_rates"]
+    # The `requests/s` printed by console_lines above is derived from the span
+    # of the records themselves. This line divides by the run's wall clock
+    # instead, which is the card-level rate and the figure the sweep compares
+    # across N. They differ slightly; this is the one to quote.
+    print(f"  card rate (wall clock): {ar['wall_seconds']:.2f}s wall  "
+          f"completed {ar['completed']}/{ar['completed'] + ar['failed']}  "
+          f"{ar['completed_requests_per_s']:.3f} req/s  "
+          f"{ar['output_tokens_per_s']:.1f} output tok/s")
+
+    # stats_source was null on 0.26. Recorded per engine either way, so a build
+    # that does report is distinguishable from one that reports nothing.
+    sources = {k: v.get("source") for k, v in kv_stats.items()}
+    print(f"  stats_source: {sources}")
+
+    config_resolved = {
+        "models": [c.model_id for c in plan.engines],
+        "n_models": len(plan.engines),
+        "quantization": args.quantization,
+        "total_concurrency": args.total_concurrency,
+        "per_model_concurrency": [c.concurrency for c in plan.engines],
+        "gpu_memory_utilization_total": args.gpu_memory_utilization,
+        "gpu_memory_utilization_per_engine":
+            plan.engines[0].gpu_memory_utilization if plan.engines else None,
+        "max_new_tokens": args.max_new_tokens,
+        "n_requests_requested": args.n_requests,
+        "n_requests_per_model": n_sent,
+        "n_requests_total": n_sent * len(plan.engines),
+        "fixture": args.fixture,
+        "seed": args.seed,
+        "isolation": args.isolation,
+    }
+    manifest = build_manifest(
+        arm=ARM,
+        concurrency=args.total_concurrency,
+        config_resolved=config_resolved,
+        fixture_sha256=fixture_sha,
+        fixture_name=args.fixture,
+        max_new_tokens=args.max_new_tokens,
+        run_id=run_id,
+        out_dir=args.out_dir,
+        context_tokens=args.context_tokens,
+        # N models, so there is no single `model`. The list lives in
+        # config_resolved and is hashed there; leaving this None is honest,
+        # whereas naming one of the N would misattribute the run.
+        model=None,
+        extra={
+            "engine_api": engine_api,
+            "capabilities": caps,
+            "kv_stats": kv_stats,
+            "stats_source": sources,
+            "aggregate_rates": ar,
+            "plan_warnings": plan.warnings,
+            "vram_estimate": plan.vram,
+        },
+    )
+
+    paths = write_results(
+        args.out_dir, run_id, result["all_records"],
+        [e["summary"] for e in result["per_model"]] + [result["aggregate"]],
+        extra={"manifest": manifest.to_dict(),
+               "per_model": [
+                   {"model": e["model"], "short_name": e["short_name"],
+                    "concurrency": e["concurrency"],
+                    "wall_seconds": e["wall_seconds"]}
+                   for e in result["per_model"]],
+               "aggregate_rates": ar,
+               "kv_stats": kv_stats,
+               "capabilities": caps},
+    )
+    for label, path in paths.items():
+        print(f"  {label}: {path}")
+    print(f"  manifest: {args.out_dir}/{run_id}_manifest.json")
+    # Same convention as arm C: an incomplete manifest is announced rather than
+    # left to be discovered when the run is analysed.
+    if not manifest.manifest_complete:
+        print(f"  manifest INCOMPLETE: {manifest.collection_errors}",
+              file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover

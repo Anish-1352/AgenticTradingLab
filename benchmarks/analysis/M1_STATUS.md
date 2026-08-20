@@ -125,6 +125,48 @@ config from the fixture build, **no weights** [MEASURED] — and it is this Mac'
 cache, not Colab's. Check `HF_HOME` inside the session before trusting any of
 the above; a warm cache removes most of the cost.
 
+### The runner now has an execution path
+
+Until now `bench_vllm_multimodel.py` stopped after printing the plan and exited
+`3` with a line reading "no GPU, no vllm" — **printed unconditionally**, so a
+healthy card with a working install was told its hardware was missing. That
+line is gone. The runner constructs the engines, splits the load, records a
+timestamp per output token and writes per-model and aggregate metrics
+[MEASURED, against a mocked vLLM].
+
+The replacement is an actual probe: `torch`, `torch.cuda.is_available()`,
+`import vllm`, and the `AsyncLLM` class, each reported with the check that
+produced it. When `vllm` does not import, the engine-class line reads
+`not probed` rather than claiming a failure it never tested.
+
+### Verified against vLLM 0.27.1, and inferred
+
+**The target is vLLM 0.27.1, not the 0.26 the earlier runner assumed** [MEASURED].
+Each row below was checked by reading vLLM's source at the `v0.27.1` tag
+[MEASURED]:
+
+| Claim | Status |
+|---|---|
+| `AsyncEngineArgs.model` is still singular — N models means N engines | verified |
+| `AsyncLLMEngine` is now just `AsyncLLM`; the V0 engine is gone | verified [MEASURED] |
+| `AsyncLLM.from_engine_args(engine_args, …)` signature | verified |
+| `generate(prompt, sampling_params, request_id, *, …)` positional args | verified [MEASURED] |
+| every `AsyncEngineArgs` kwarg the runner sends exists | verified |
+| `enable_log_requests` is new; it replaced `disable_log_requests` | verified |
+| the MiniMax warmup import is still unconditional — **shim still required** | verified |
+
+Reading source is not running it. These remain **inferred** [NOT MEASURED]:
+
+- that `gpu_memory_utilization / N` actually lets N engines coexist — the
+  division is arithmetic, the allocator's response to it is not;
+- that N `AsyncLLM` instances coexist in one process at all;
+- whether `stats_source` resolves on this build. It was null under the earlier
+  vLLM [MEASURED]; whether the current one differs is untested here
+  [NOT MEASURED].
+
+The first real run tests exactly those three and nothing else is unknown about
+the API, which is the point of separating the lists.
+
 ### One thing to check before running
 
 `--n-models 1` selects the **smallest** roster entry (`Qwen2.5-0.5B`), not the
