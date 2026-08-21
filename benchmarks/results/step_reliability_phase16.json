@@ -1,0 +1,973 @@
+{
+ "_provenance": {
+  "source": "dashboard/docs/step_reliability_first_run.json on branch feature/per-step-model-routing",
+  "sha256_of_source": "6de76afc082b706c50f34aeb0a0763505025da1a2eb772818151d401c2f81219",
+  "measured_via": "dashboard/scripts/measure_step_reliability.py --integration openrouter --attempts 15",
+  "actual_spend_usd": 0.0349,
+  "calls": 90,
+  "caveat_step3": "step 3 shows 0/15 for both models. That is the empty-orders defect (Phase 17) against a content-free reference context, NOT a model-quality result. Step-3 rates are NOT usable for a routing projection."
+ },
+ "pipeline_source": "pipeline-analyst",
+ "mode": "isolated",
+ "attempts": 15,
+ "integration": "openrouter",
+ "steps": [
+  {
+   "index": 0,
+   "label": "Information Gathering",
+   "id": "sub_gather",
+   "presetKey": "info_gather"
+  },
+  {
+   "index": 1,
+   "label": "Information to Signal",
+   "id": "sub_signal",
+   "presetKey": "info_to_signal"
+  },
+  {
+   "index": 2,
+   "label": "Signal to Execution",
+   "id": "sub_exec",
+   "presetKey": "signal_to_execution"
+  }
+ ],
+ "cost_ceiling": {
+  "rows": [
+   {
+    "model": "nvidia/nemotron-3-nano-30b-a3b",
+    "input_price_per_mtok": 0.05,
+    "output_price_per_mtok": 0.2,
+    "calls": 45,
+    "max_cost_usd": 0.018885,
+    "price_provenance": "known",
+    "priced": true
+   },
+   {
+    "model": "deepseek/deepseek-v4-pro",
+    "input_price_per_mtok": 0.435,
+    "output_price_per_mtok": 0.87,
+    "calls": 45,
+    "max_cost_usd": 0.0859995,
+    "price_provenance": "known",
+    "priced": true
+   }
+  ],
+  "total_max_cost_usd": 0.1048845,
+  "total_calls": 90,
+  "assumption": "output tokens assumed at the 2000 max_tokens cap \u2014 the true value is what this run measures"
+ },
+ "results": [
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "step_id": "sub_gather",
+   "is_last": false,
+   "n_attempts": 15,
+   "n_passed": 15,
+   "parse_rate": 1.0,
+   "categories": {
+    "ok": 15
+   },
+   "mean_output_tokens": 1458.2666666666667,
+   "mean_input_tokens": 933.0,
+   "attempts": [
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1492,
+     "latency_s": 7.315310750156641,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1444,
+     "latency_s": 4.966104958206415,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1600,
+     "latency_s": 6.025921792257577,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1772,
+     "latency_s": 9.286393832881004,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1303,
+     "latency_s": 5.544070291798562,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1545,
+     "latency_s": 6.735327042173594,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1834,
+     "latency_s": 5.408355167135596,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1208,
+     "latency_s": 5.284764917101711,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1183,
+     "latency_s": 3.9764090408571064,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1202,
+     "latency_s": 4.1376430420205,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1758,
+     "latency_s": 5.054783333092928,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1413,
+     "latency_s": 4.216815291903913,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1523,
+     "latency_s": 7.3403532090596855,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1512,
+     "latency_s": 5.40512604219839,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 933,
+     "output_tokens": 1085,
+     "latency_s": 3.271674749907106,
+     "error": null
+    }
+   ]
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "step_id": "sub_signal",
+   "is_last": false,
+   "n_attempts": 15,
+   "n_passed": 15,
+   "parse_rate": 1.0,
+   "categories": {
+    "ok": 15
+   },
+   "mean_output_tokens": 327.4,
+   "mean_input_tokens": 252.0,
+   "attempts": [
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 343,
+     "latency_s": 1.706547959242016,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 374,
+     "latency_s": 1.8957251249812543,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 201,
+     "latency_s": 0.7504272921942174,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 289,
+     "latency_s": 1.3835404580458999,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 400,
+     "latency_s": 1.5790843330323696,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 267,
+     "latency_s": 1.1309275827370584,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 169,
+     "latency_s": 0.6129047088325024,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 320,
+     "latency_s": 1.6774168750271201,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 372,
+     "latency_s": 1.233101500198245,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 305,
+     "latency_s": 1.867438250221312,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 315,
+     "latency_s": 1.1411839579232037,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 390,
+     "latency_s": 3.2678944999352098,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 286,
+     "latency_s": 1.038249374832958,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 572,
+     "latency_s": 2.31512983283028,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 252,
+     "output_tokens": 308,
+     "latency_s": 1.4089249591343105,
+     "error": null
+    }
+   ]
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 2,
+   "step_label": "Signal to Execution",
+   "step_id": "sub_exec",
+   "is_last": true,
+   "n_attempts": 15,
+   "n_passed": 0,
+   "parse_rate": 0.0,
+   "categories": {
+    "wrong_schema": 15
+   },
+   "mean_output_tokens": null,
+   "mean_input_tokens": 358.0,
+   "attempts": [
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 237,
+     "latency_s": 0.8460455001331866,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 386,
+     "latency_s": 2.038621374871582,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 272,
+     "latency_s": 1.4338472918607295,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 335,
+     "latency_s": 1.3742599170655012,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 231,
+     "latency_s": 1.0483978749252856,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 239,
+     "latency_s": 0.8549545002169907,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 225,
+     "latency_s": 1.0234628329053521,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 477,
+     "latency_s": 1.9677535411901772,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 257,
+     "latency_s": 0.8967006248421967,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 141,
+     "latency_s": 0.6005281247198582,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 243,
+     "latency_s": 1.0576157909817994,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 177,
+     "latency_s": 1.0550175001844764,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 210,
+     "latency_s": 1.2025845409370959,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 242,
+     "latency_s": 0.9575000838376582,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 358,
+     "output_tokens": 288,
+     "latency_s": 1.2863794579170644,
+     "error": null
+    }
+   ]
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "step_id": "sub_gather",
+   "is_last": false,
+   "n_attempts": 15,
+   "n_passed": 15,
+   "parse_rate": 1.0,
+   "categories": {
+    "ok": 15
+   },
+   "mean_output_tokens": 1196.9333333333334,
+   "mean_input_tokens": 209.86666666666667,
+   "attempts": [
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 898,
+     "output_tokens": 1806,
+     "latency_s": 26.848415124695748,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 819,
+     "output_tokens": 1021,
+     "latency_s": 17.972200041636825,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 819,
+     "output_tokens": 826,
+     "latency_s": 20.092343291733414,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 886,
+     "latency_s": 14.359902957919985,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1091,
+     "latency_s": 17.92474312474951,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 916,
+     "latency_s": 12.191873459145427,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1835,
+     "latency_s": 24.957964458037168,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1584,
+     "latency_s": 22.31259191595018,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1266,
+     "latency_s": 20.153681833762676,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 789,
+     "latency_s": 13.458689124789089,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1067,
+     "latency_s": 21.121763584204018,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1010,
+     "latency_s": 18.07842441694811,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1056,
+     "latency_s": 31.981840916443616,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1738,
+     "latency_s": 22.90195483295247,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 51,
+     "output_tokens": 1063,
+     "latency_s": 22.45588441612199,
+     "error": null
+    }
+   ]
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "step_id": "sub_signal",
+   "is_last": false,
+   "n_attempts": 15,
+   "n_passed": 15,
+   "parse_rate": 1.0,
+   "categories": {
+    "ok": 15
+   },
+   "mean_output_tokens": 387.6,
+   "mean_input_tokens": 138.06666666666666,
+   "attempts": [
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 239,
+     "output_tokens": 344,
+     "latency_s": 7.3427455839701,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 318,
+     "output_tokens": 133,
+     "latency_s": 4.191557166166604,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 239,
+     "output_tokens": 256,
+     "latency_s": 4.815927624702454,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 239,
+     "output_tokens": 369,
+     "latency_s": 4.9158757496625185,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 239,
+     "output_tokens": 350,
+     "latency_s": 13.921725667081773,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 239,
+     "output_tokens": 332,
+     "latency_s": 11.030229375232011,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 255,
+     "latency_s": 6.08626816701144,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 1059,
+     "latency_s": 19.164491542149335,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 174,
+     "latency_s": 4.579523833002895,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 575,
+     "latency_s": 11.288377082906663,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 240,
+     "latency_s": 5.636466083116829,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 153,
+     "latency_s": 4.372213166207075,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 723,
+     "latency_s": 14.1326639582403,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 630,
+     "latency_s": 12.254073624964803,
+     "error": null
+    },
+    {
+     "ok": true,
+     "category": "ok",
+     "detail": null,
+     "input_tokens": 62,
+     "output_tokens": 221,
+     "latency_s": 5.244691917207092,
+     "error": null
+    }
+   ]
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 2,
+   "step_label": "Signal to Execution",
+   "step_id": "sub_exec",
+   "is_last": true,
+   "n_attempts": 15,
+   "n_passed": 0,
+   "parse_rate": 0.0,
+   "categories": {
+    "wrong_schema": 15
+   },
+   "mean_output_tokens": null,
+   "mean_input_tokens": 153.46666666666667,
+   "attempts": [
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 341,
+     "output_tokens": 432,
+     "latency_s": 10.239002666901797,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 420,
+     "output_tokens": 207,
+     "latency_s": 7.580577708315104,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 559,
+     "latency_s": 12.595563124865294,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 355,
+     "latency_s": 9.72797695780173,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 420,
+     "output_tokens": 227,
+     "latency_s": 7.997805625200272,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 188,
+     "latency_s": 7.2030953341163695,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 341,
+     "output_tokens": 325,
+     "latency_s": 9.665733667090535,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 420,
+     "output_tokens": 205,
+     "latency_s": 6.640923500061035,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 242,
+     "latency_s": 8.092410958837718,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 162,
+     "latency_s": 6.794772707857192,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 246,
+     "latency_s": 7.475068416912109,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 264,
+     "latency_s": 8.398840500041842,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 198,
+     "latency_s": 6.531328999903053,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 206,
+     "latency_s": 7.005868167150766,
+     "error": null
+    },
+    {
+     "ok": false,
+     "category": "wrong_schema",
+     "detail": "orders",
+     "input_tokens": 36,
+     "output_tokens": 400,
+     "latency_s": 8.931114125065506,
+     "error": null
+    }
+   ]
+  }
+ ]
+}

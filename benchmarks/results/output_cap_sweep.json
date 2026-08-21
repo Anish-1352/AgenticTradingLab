@@ -1,0 +1,276 @@
+{
+ "template": "pipeline-analyst",
+ "caps": [
+  2000,
+  1000,
+  500,
+  250
+ ],
+ "attempts": 12,
+ "integration": "openrouter",
+ "steps": [
+  1,
+  2
+ ],
+ "cost_ceiling": {
+  "rows": [
+   {
+    "model": "nvidia/nemotron-3-nano-30b-a3b",
+    "priced": true,
+    "max_cost_usd": 0.019999199999999998
+   },
+   {
+    "model": "deepseek/deepseek-v4-pro",
+    "priced": true,
+    "max_cost_usd": 0.09569304000000001
+   }
+  ],
+  "total_max_cost_usd": 0.11569224,
+  "calls": 192,
+  "assumption": "every call assumed to emit its full cap \u2014 pessimistic"
+ },
+ "rows": [
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 2000,
+   "attempts": 12,
+   "n_ok": 11,
+   "parse_rate": 0.9166666666666666,
+   "mean_output_tokens": 1327.0,
+   "mean_input_tokens": 933.0,
+   "categories": {
+    "ok": 11,
+    "truncated": 1
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 1000,
+   "attempts": 12,
+   "n_ok": 4,
+   "parse_rate": 0.3333333333333333,
+   "mean_output_tokens": 993.75,
+   "mean_input_tokens": 933.0,
+   "categories": {
+    "ok": 4,
+    "malformed_json": 5,
+    "empty": 2,
+    "truncated": 1
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 500,
+   "attempts": 12,
+   "n_ok": 1,
+   "parse_rate": 0.08333333333333333,
+   "mean_output_tokens": 500.0,
+   "mean_input_tokens": 933.0,
+   "categories": {
+    "empty": 8,
+    "no_json": 1,
+    "truncated": 2,
+    "ok": 1
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 250,
+   "attempts": 12,
+   "n_ok": 0,
+   "parse_rate": 0.0,
+   "mean_output_tokens": 250.0,
+   "mean_input_tokens": 933.0,
+   "categories": {
+    "empty": 7,
+    "no_json": 2,
+    "truncated": 1,
+    "malformed_json": 2
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 2000,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 339.1666666666667,
+   "mean_input_tokens": 246.0,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 1000,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 292.4166666666667,
+   "mean_input_tokens": 246.0,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 500,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 344.0,
+   "mean_input_tokens": 246.0,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 250,
+   "attempts": 12,
+   "n_ok": 2,
+   "parse_rate": 0.16666666666666666,
+   "mean_output_tokens": 243.91666666666666,
+   "mean_input_tokens": 246.0,
+   "categories": {
+    "empty": 3,
+    "truncated": 6,
+    "ok": 2,
+    "malformed_json": 1
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 2000,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 1217.6666666666667,
+   "mean_input_tokens": 185.66666666666666,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 1000,
+   "attempts": 12,
+   "n_ok": 2,
+   "parse_rate": 0.16666666666666666,
+   "mean_output_tokens": 971.4166666666666,
+   "mean_input_tokens": 193.16666666666666,
+   "categories": {
+    "empty": 4,
+    "ok": 2,
+    "malformed_json": 4,
+    "truncated": 2
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 500,
+   "attempts": 12,
+   "n_ok": 0,
+   "parse_rate": 0.0,
+   "mean_output_tokens": 500.0,
+   "mean_input_tokens": 138.75,
+   "categories": {
+    "empty": 12
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 0,
+   "step_label": "Information Gathering",
+   "max_tokens": 250,
+   "attempts": 12,
+   "n_ok": 0,
+   "parse_rate": 0.0,
+   "mean_output_tokens": 250.0,
+   "mean_input_tokens": 155.16666666666666,
+   "categories": {
+    "empty": 12
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 2000,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 352.1666666666667,
+   "mean_input_tokens": 56.25,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 1000,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 334.5,
+   "mean_input_tokens": 71.33333333333333,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 500,
+   "attempts": 12,
+   "n_ok": 12,
+   "parse_rate": 1.0,
+   "mean_output_tokens": 363.0,
+   "mean_input_tokens": 233.0,
+   "categories": {
+    "ok": 12
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "step_index": 1,
+   "step_label": "Information to Signal",
+   "max_tokens": 250,
+   "attempts": 12,
+   "n_ok": 1,
+   "parse_rate": 0.08333333333333333,
+   "mean_output_tokens": 247.91666666666666,
+   "mean_input_tokens": 233.0,
+   "categories": {
+    "empty": 9,
+    "ok": 1,
+    "truncated": 2
+   }
+  }
+ ]
+}
