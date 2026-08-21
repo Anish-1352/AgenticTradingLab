@@ -1,0 +1,619 @@
+{
+ "template": "pipeline-analyst",
+ "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+ "attempts_per_regime": 4,
+ "max_tokens": 2000,
+ "integration": "openrouter",
+ "regimes": [
+  "strong_uptrend",
+  "sharp_selloff",
+  "flat_range",
+  "mixed_high_vol"
+ ],
+ "contexts": [
+  {
+   "regime": "strong_uptrend",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "prior_outputs": [
+    {
+     "step": 1,
+     "label": "Information Gathering",
+     "presetKey": "info_gather",
+     "id": "sub_gather",
+     "output": {
+      "timestamp": "2026-04-16T14:00:00",
+      "symbols": [
+       "AAPL",
+       "NVDA",
+       "MSFT"
+      ],
+      "facts": [
+       {
+        "source": "portfolio",
+        "summary": "Cash balance of $8,200 and total equity of $9,299.40 indicate strong liquidity.",
+        "impact": "neutral"
+       },
+       {
+        "source": "top_signals",
+        "summary": "AAPL price $219.88 is above SMA20 $203.1 with RSI 68.4 and momentum +8.3%, signalling continued bullish momentum.",
+        "impact": "bullish"
+       },
+       {
+        "source": "top_signals",
+        "summary": "NVDA price $128.72 is well above SMA20 $109.4 with RSI 71.2, momentum +12.6% and volume ratio 2.1, indicating strong upward momentum.",
+        "impact": "bullish"
+       },
+       {
+        "source": "top_signals",
+        "summary": "MSFT price $431.05 is above SMA20 $404.8 with RSI 64.8 and momentum +6.1%, suggesting moderate bullish continuation.",
+        "impact": "bullish"
+       },
+       {
+        "source": "market_regime",
+        "summary": "Regime classification is strong_uptrend, reinforcing bullish bias across the portfolio.",
+        "impact": "bullish"
+       }
+      ],
+      "confidence": 0.95
+     }
+    },
+    {
+     "step": 2,
+     "label": "Information to Signal",
+     "presetKey": "info_to_signal",
+     "id": "sub_signal",
+     "output": {
+      "signals": [
+       {
+        "symbol": "AAPL",
+        "direction": "long",
+        "strength": 0.8,
+        "horizon": "1d",
+        "rationale": "AAPL is trading above its SMA20 with RSI 68.4 and positive momentum of +8.3%, indicating sustained upward pressure. The bullish signal from the top_signals output reinforces a moderate-to-strong bullish bias, supporting a long position over a daily horizon."
+       },
+       {
+        "symbol": "NVDA",
+        "direction": "long",
+        "strength": 0.92,
+        "horizon": "1d",
+        "rationale": "NVDA shows a strong upward trend, being well above SMA20 with RSI 71.2, momentum +12.6% and a high volume ratio of 2.1. These factors combine to produce a high-confidence bullish signal, justifying a long stance with strong strength on a daily horizon."
+       },
+       {
+        "symbol": "MSFT",
+        "direction": "long",
+        "strength": 0.7,
+        "horizon": "1d",
+        "rationale": "MSFT is above its SMA20 with RSI 64.8 and momentum +6.1%, reflecting a moderate bullish continuation. The overall portfolio indicates strong liquidity and a bullish market regime, supporting a long position but with slightly lower strength compared to AAPL and NVDA."
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "regime": "sharp_selloff",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "prior_outputs": [
+    {
+     "step": 1,
+     "label": "Information Gathering",
+     "presetKey": "info_gather",
+     "id": "sub_gather",
+     "output": {
+      "timestamp": "2026-04-16T14:00:00",
+      "symbols": [
+       "JPM",
+       "XOM",
+       "SPY"
+      ],
+      "facts": [
+       {
+        "source": "top_signals",
+        "summary": "JPM price is below its 20\u2011day SMA, RSI is 24.1, momentum is -12.9% and volume ratio is 2.63 indicating strong downside pressure",
+        "impact": "bearish"
+       },
+       {
+        "source": "top_signals",
+        "summary": "XOM price is below its 20\u2011day SMA, RSI is 21.8, momentum is -14.2% and volume ratio is 2.41 showing pronounced bearish momentum",
+        "impact": "bearish"
+       },
+       {
+        "source": "current_holdings",
+        "summary": "JPM position is down 13.62% from average entry price",
+        "impact": "bearish"
+       },
+       {
+        "source": "current_holdings",
+        "summary": "XOM position is down 14.57% from average entry price",
+        "impact": "bearish"
+       },
+       {
+        "source": "portfolio",
+        "summary": "Overall regime is sharp_selloff with equity under pressure",
+        "impact": "bearish"
+       }
+      ],
+      "confidence": 0.94
+     }
+    },
+    {
+     "step": 2,
+     "label": "Information to Signal",
+     "presetKey": "info_to_signal",
+     "id": "sub_signal",
+     "output": {
+      "signals": [
+       {
+        "symbol": "JPM",
+        "direction": "short",
+        "strength": 0.92,
+        "horizon": "1d",
+        "rationale": "JPM price below 20-day SMA, RSI 24.1, momentum -12.9%, volume ratio 2.63; portfolio down 13.62% from entry; overall regime sharp_selloff with high confidence."
+       },
+       {
+        "symbol": "XOM",
+        "direction": "short",
+        "strength": 0.91,
+        "horizon": "1d",
+        "rationale": "XOM price below 20-day SMA, RSI 21.8, momentum -14.2%, volume ratio 2.41; portfolio down 14.57% from entry; overall regime sharp_selloff with high confidence."
+       },
+       {
+        "symbol": "SPY",
+        "direction": "short",
+        "strength": 0.88,
+        "horizon": "1d",
+        "rationale": "Overall regime sharp_selloff indicates bearish pressure across equities; confidence 0.94 suggests likely continuation."
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "regime": "flat_range",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "prior_outputs": [
+    {
+     "step": 1,
+     "label": "Information Gathering",
+     "presetKey": "info_gather",
+     "id": "sub_gather",
+     "output": {
+      "timestamp": "2026-04-16T14:00:00",
+      "symbols": [
+       "MSFT",
+       "AAPL",
+       "JPM"
+      ],
+      "facts": [
+       {
+        "source": "technical",
+        "summary": "MSFT price (400.22) > 20\u2011day SMA (399.8); RSI 50.4; momentum +0.2%; slight upward bias.",
+        "impact": "bullish"
+       },
+       {
+        "source": "technical",
+        "summary": "AAPL price (214.05) < 20\u2011day SMA (214.6); RSI 49.1; momentum -0.3%; modest downward pressure.",
+        "impact": "bearish"
+       },
+       {
+        "source": "technical",
+        "summary": "JPM price (219.9) > 20\u2011day SMA (219.1); RSI 51.2; momentum +0.4%; bullish momentum.",
+        "impact": "bullish"
+       },
+       {
+        "source": "portfolio",
+        "summary": "Portfolio holds $6,400 cash and $2,401 position value in MSFT, representing 27% of total equity.",
+        "impact": "neutral"
+       }
+      ],
+      "confidence": 0.92
+     }
+    },
+    {
+     "step": 2,
+     "label": "Information to Signal",
+     "presetKey": "info_to_signal",
+     "id": "sub_signal",
+     "output": {
+      "signals": [
+       {
+        "symbol": "MSFT",
+        "direction": "long",
+        "strength": 0.8,
+        "horizon": "1d",
+        "rationale": "MSFT price above 20\u2011day SMA with RSI 50.4 and positive momentum (+0.2%). Portfolio holds 27% of equity in MSFT, adding weight. Overall bullish signal with high confidence (0.92)."
+       },
+       {
+        "symbol": "AAPL",
+        "direction": "short",
+        "strength": 0.6,
+        "horizon": "1d",
+        "rationale": "AAPL price below 20\u2011day SMA with RSI 49.1 and slight negative momentum (-0.3%). Weak bearish bias but confidence remains high (0.92)."
+       },
+       {
+        "symbol": "JPM",
+        "direction": "long",
+        "strength": 0.8,
+        "horizon": "1d",
+        "rationale": "JPM price above 20\u2011day SMA with RSI 51.2 and positive momentum (+0.4%). Bullish momentum supported by overall market confidence (0.92)."
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "regime": "mixed_high_vol",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "prior_outputs": [
+    {
+     "step": 1,
+     "label": "Information Gathering",
+     "presetKey": "info_gather",
+     "id": "sub_gather",
+     "output": {
+      "timestamp": "2026-04-16T14:00:00",
+      "symbols": [
+       "NVDA",
+       "AAPL",
+       "XOM"
+      ],
+      "facts": [
+       {
+        "source": "Market Snapshot - Technical Indicators",
+        "summary": "NVDA price fell to $118.72, RSI 31.4 (oversold), momentum -14.1%, volume ratio 2.88, position down 15.92%.",
+        "impact": "neutral"
+       },
+       {
+        "source": "Market Snapshot - Technical Indicators",
+        "summary": "AAPL price at $226.44, RSI 69.8, momentum +9.4%, volume ratio 1.91, position up 12.6%.",
+        "impact": "bullish"
+       },
+       {
+        "source": "Market Snapshot - Technical Indicators",
+        "summary": "XOM price $111.3, RSI 47.2, momentum -1.1%, volume ratio 1.33, neutral momentum.",
+        "impact": "neutral"
+       }
+      ],
+      "confidence": 0.94
+     }
+    },
+    {
+     "step": 2,
+     "label": "Information to Signal",
+     "presetKey": "info_to_signal",
+     "id": "sub_signal",
+     "output": {
+      "signals": [
+       {
+        "symbol": "NVDA",
+        "direction": "short",
+        "strength": 0.58,
+        "horizon": "1h",
+        "rationale": "RSI 31.4 oversold but momentum -14.1% and volume ratio 2.88 indicate continued downward pressure; position down 15.92% suggests bearish bias."
+       },
+       {
+        "symbol": "AAPL",
+        "direction": "long",
+        "strength": 0.71,
+        "horizon": "1d",
+        "rationale": "RSI 69.8 bullish, momentum +9.4% and volume ratio 1.91 with position up 12.6% support upward continuation."
+       },
+       {
+        "symbol": "XOM",
+        "direction": "flat",
+        "strength": 0.25,
+        "horizon": "4h",
+        "rationale": "RSI 47.2, momentum -1.1% and neutral position indicate no clear directional bias."
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ],
+ "cost_ceiling": {
+  "rows": [
+   {
+    "model": "nvidia/nemotron-3-nano-30b-a3b (upstream)",
+    "calls": 8,
+    "max_cost_usd": 0.004200000000000001,
+    "priced": true
+   },
+   {
+    "model": "nvidia/nemotron-3-nano-30b-a3b",
+    "calls": 16,
+    "max_cost_usd": 0.008400000000000001,
+    "priced": true
+   },
+   {
+    "model": "deepseek/deepseek-v4-pro",
+    "calls": 16,
+    "max_cost_usd": 0.04524,
+    "priced": true
+   },
+   {
+    "model": "qwen/qwen3.7-plus",
+    "calls": 16,
+    "max_cost_usd": 0.06720000000000001,
+    "priced": true
+   }
+  ],
+  "total_max_cost_usd": 0.12504,
+  "total_calls": 56,
+  "assumption": "output assumed at the max_tokens cap \u2014 pessimistic"
+ },
+ "rows": [
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "regime": "strong_uptrend",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1500.0,
+   "mean_input_tokens": 1050.0,
+   "mean_orders_when_usable": 2.75,
+   "categories": {
+    "ok": 4
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "regime": "sharp_selloff",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 823.0,
+   "mean_input_tokens": 960.0,
+   "mean_orders_when_usable": 2.0,
+   "categories": {
+    "ok": 4
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "regime": "flat_range",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 1,
+   "parse_rate": 0.25,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1972.25,
+   "mean_input_tokens": 968.0,
+   "mean_orders_when_usable": 2.0,
+   "categories": {
+    "malformed_json": 1,
+    "empty_response": 2,
+    "ok": 1
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "regime": "mixed_high_vol",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 927.0,
+   "mean_input_tokens": 870.0,
+   "mean_orders_when_usable": 1.75,
+   "categories": {
+    "ok": 4
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "regime": "strong_uptrend",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1371.0,
+   "mean_input_tokens": 832.0,
+   "mean_orders_when_usable": 3.0,
+   "categories": {
+    "ok": 4
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "regime": "sharp_selloff",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 3,
+   "parse_rate": 0.75,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1773.5,
+   "mean_input_tokens": 560.0,
+   "mean_orders_when_usable": 2.0,
+   "categories": {
+    "ok": 3,
+    "malformed_json": 1
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "regime": "flat_range",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 2,
+   "parse_rate": 0.5,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1734.25,
+   "mean_input_tokens": 695.5,
+   "mean_orders_when_usable": 3.0,
+   "categories": {
+    "empty_response": 2,
+    "ok": 2
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "regime": "mixed_high_vol",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1554.0,
+   "mean_input_tokens": 106.0,
+   "mean_orders_when_usable": 2.75,
+   "categories": {
+    "ok": 4
+   }
+  },
+  {
+   "model": "anthropic/claude-haiku-4-5",
+   "regime": "strong_uptrend",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1023.25,
+   "mean_input_tokens": 1153.0,
+   "mean_orders_when_usable": 3.0,
+   "categories": {
+    "ok_prose_wrapped": 4
+   }
+  },
+  {
+   "model": "anthropic/claude-haiku-4-5",
+   "regime": "sharp_selloff",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1010.5,
+   "mean_input_tokens": 1030.0,
+   "mean_orders_when_usable": 3.0,
+   "categories": {
+    "ok_prose_wrapped": 4
+   }
+  },
+  {
+   "model": "anthropic/claude-haiku-4-5",
+   "regime": "flat_range",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1147.5,
+   "mean_input_tokens": 1041.0,
+   "mean_orders_when_usable": 3.0,
+   "categories": {
+    "ok_prose_wrapped": 4
+   }
+  },
+  {
+   "model": "anthropic/claude-haiku-4-5",
+   "regime": "mixed_high_vol",
+   "upstream_model": "nvidia/nemotron-3-nano-30b-a3b",
+   "attempts": 4,
+   "n_usable": 4,
+   "parse_rate": 1.0,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 929.75,
+   "mean_input_tokens": 941.0,
+   "mean_orders_when_usable": 3.0,
+   "categories": {
+    "ok_prose_wrapped": 4
+   }
+  }
+ ],
+ "summary": [
+  {
+   "model": "anthropic/claude-haiku-4-5",
+   "n_total": 16,
+   "n_usable": 16,
+   "parse_rate": 1.0,
+   "rule_of_three_bound": 0.1875,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1027.75,
+   "categories": {
+    "ok_prose_wrapped": 16
+   },
+   "by_regime": {
+    "strong_uptrend": 1.0,
+    "sharp_selloff": 1.0,
+    "flat_range": 1.0,
+    "mixed_high_vol": 1.0
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "n_total": 16,
+   "n_usable": 13,
+   "parse_rate": 0.8125,
+   "rule_of_three_bound": null,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1305.5625,
+   "categories": {
+    "ok": 13,
+    "malformed_json": 1,
+    "empty_response": 2
+   },
+   "by_regime": {
+    "strong_uptrend": 1.0,
+    "sharp_selloff": 1.0,
+    "flat_range": 0.25,
+    "mixed_high_vol": 1.0
+   }
+  },
+  {
+   "model": "deepseek/deepseek-v4-pro",
+   "n_total": 16,
+   "n_usable": 13,
+   "parse_rate": 0.8125,
+   "rule_of_three_bound": null,
+   "n_empty_orders": 0,
+   "empty_orders_rate": 0.0,
+   "mean_output_tokens": 1608.1875,
+   "categories": {
+    "ok": 13,
+    "malformed_json": 1,
+    "empty_response": 2
+   },
+   "by_regime": {
+    "strong_uptrend": 1.0,
+    "sharp_selloff": 0.75,
+    "flat_range": 0.5,
+    "mixed_high_vol": 1.0
+   }
+  }
+ ],
+ "_unmeasured": {
+  "qwen/qwen3.7-plus": {
+   "reason": "every call returned BadRequestError from the OpenRouter provider: \"max_completion_tokens [2000] must be greater than thinking_budget [2048]\". This is a gateway/parameter rejection, not a model result \u2014 the request never reached inference.",
+   "attempts_rejected": 16,
+   "note": "qwen3_7_plus runs on CommonStack on the leaderboard, not OpenRouter, and completed 161 calls there. The probe reached it through the wrong gateway; COMMONSTACK_API_KEY in this environment holds an OpenRouter key, so the right one was not available."
+  }
+ },
+ "_merged": {
+  "haiku_reused_contexts": true,
+  "note": "anthropic/claude-haiku-4-5 was measured in a second run against the IDENTICAL stored upstream contexts, so the comparison stays paired."
+ }
+}
