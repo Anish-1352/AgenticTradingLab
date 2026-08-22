@@ -219,11 +219,31 @@ def test_dropdown_is_the_only_platform_lever_above_2x(measured):
 
 # ---------------------------------------------------------- leaderboard -----
 
-def test_leaderboard_recurring_cost_is_zero_because_nothing_schedules_it(measured):
+def test_leaderboard_recurring_cost_is_zero_by_pause_not_by_absence(measured):
+    """Upstream now ships the scheduler with its cron commented out.
+
+    The $0 conclusion is unchanged; the reason is not. Earlier phases said no
+    scheduler existed, which was true of this branch and is no longer true of
+    upstream — and the difference matters, because a deliberate pause is one
+    uncomment away from a recurring bill.
+    """
     lb = ws.leaderboard_recurring(measured)
     assert lb["scheduled_today"] is False
     assert lb["recurring_cost_usd_per_month"].value == 0.0
-    assert "no cron or CI schedule" in lb["scheduled_evidence"]
+    ev = lb["scheduled_evidence"]
+    assert "daily-leaderboard.yml" in ev
+    assert "commented out" in ev
+    assert "deliberate pause" in lb["recurring_cost_usd_per_month"].source
+
+
+def test_the_paused_cron_counterfactual_is_priceable(measured):
+    """The number the pause is avoiding, at both cadences."""
+    hourly = ws.leaderboard_recurring(measured, bars_per_daily_window=7)
+    nof1 = ws.leaderboard_recurring(measured, bars_per_daily_window=156)
+    h = hourly["daily_window"]["cost_usd_per_month_if_scheduled"].value
+    n = nof1["daily_window"]["cost_usd_per_month_if_scheduled"].value
+    assert 0 < h < n
+    assert n / h == pytest.approx(156 / 7, rel=1e-6)
 
 
 def test_the_contest_deploy_is_a_measured_one_off(measured):
@@ -253,3 +273,42 @@ def test_report_renders(measured, all_models):
         ws.leaderboard_recurring(measured))
     assert "TWO WORKLOADS" in text
     assert "EXPERIMENT" in text and "PLATFORM" in text and "LEADERBOARD" in text
+
+
+# ------------------------------------------------------ who actually pays ---
+# Added after upstream landed the BYOK vault and the credits module, both of
+# which make explicit that not every user LLM call is an operator cost.
+
+def test_gross_cost_is_reported_as_an_upper_bound(measured):
+    r = ws.platform_cost(_plat(), measured)
+    assert "UPPER bound" in r["gross_cost_per_month_usd"].source
+
+
+def test_the_operator_share_is_refused_when_unknown(measured):
+    """token_cost.py: external agents run their own client, so the backend
+    pays for none of their calls. Nothing records the split."""
+    r = ws.platform_cost(_plat(), measured)
+    wp = r["who_pays"]
+    assert wp["platform_paid_fraction"] is None
+    assert wp["operator_cost_per_month_usd"] is None
+    assert "nothing records it" in wp["refused"]
+    assert "never sees the real token counts" in wp["note"]
+
+
+def test_supplying_the_share_scales_the_operator_bill(measured):
+    gross = ws.platform_cost(_plat(), measured)["gross_cost_per_month_usd"].value
+    half = ws.platform_cost(_plat(platform_paid_fraction=0.5), measured)
+    assert half["who_pays"]["operator_cost_per_month_usd"].value == pytest.approx(
+        gross * 0.5)
+    assert half["cost_per_month_usd"].value == pytest.approx(gross * 0.5)
+
+
+def test_an_out_of_range_share_is_rejected(measured):
+    with pytest.raises(ValueError, match="platform_paid_fraction"):
+        ws.platform_cost(_plat(platform_paid_fraction=1.5), measured)
+
+
+def test_the_who_pays_parameter_is_documented_as_a_lab_lever():
+    p = ws.PLATFORM_PARAMS["platform_paid_fraction"]
+    assert p.control == ws.LAB_CONTROLLED
+    assert "BYOK" in p.description

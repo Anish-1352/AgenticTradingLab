@@ -199,11 +199,28 @@ def build(measured: Optional[Dict[str, Any]] = None) -> str:
     lb = ws.leaderboard_recurring(measured)
     A("### LEADERBOARD — neither workload")
     A("")
-    A(f"**Recurring cost today is `$0`** [MEASURED], and that is a fact about "
-      f"the repository rather than an estimate: `refresh_daily_leaderboard.py` "
-      f"states in its own docstring that *\"nothing in this repo runs this "
-      f"script automatically yet — there is no cron or CI schedule wired up\"*, "
-      f"and redeploying LLM entries sits behind an explicit `--models` flag.")
+    A(f"**Recurring cost today is `$0`** [MEASURED] — but by deliberate pause, "
+      f"not by absence. Upstream ships "
+      f"`.github/workflows/daily-leaderboard.yml` with a weekday cron whose "
+      f"whole `schedule:` block is commented out, and `workflow_dispatch` "
+      f"defaults `deploy_models=false` [MEASURED]. Its own comment gives the "
+      f"reason: *\"left on schedule it would keep deploying every competition "
+      f"LLM nightly, billable, for a board nobody can open.\"* Earlier phases "
+      f"reported that no scheduler existed; that was true of this branch and "
+      f"is no longer true of upstream.")
+    A("")
+    A("**The pause is one uncomment from a recurring bill**, so the "
+      "counterfactual is worth pricing. A scheduled run always sets "
+      "`deploy_models=true`, deploying all seven models over a rolling "
+      "one-day window every weekday [MEASURED]:")
+    A("")
+    A("| cadence | per run | per month if re-enabled | Tier |")
+    A("|---|---:|---:|---|")
+    for label, bars in (("hourly (~7 bars/day)", 7), ("Nof1 (~156 bars/day)", 156)):
+        lbx = ws.leaderboard_recurring(measured, bars_per_daily_window=bars)
+        d = lbx["daily_window"]
+        A(f"| {label} | `${d['cost_usd_per_run'].value:,.2f}` | "
+          f"`${d['cost_usd_per_month_if_scheduled'].value:,.2f}` | DERIVED |")
     A("")
     A(f"What exists is a one-off: `${lb['contest_window']['cost_usd'].value:,.2f}` "
       f"per manual full deploy — 7 models over the 161-bar contest window "

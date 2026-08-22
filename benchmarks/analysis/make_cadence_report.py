@@ -62,7 +62,9 @@ BLOCKERS: List[Dict[str, str]] = [
         "id": "hourly_hardcoded",
         "ref": "origin/main",
         "file": "dashboard/backend/infrastructure/market_data/alpaca_bars.py",
-        "line": 114,
+        # Moved 114 -> 455 by upstream refactoring. The claim is unchanged and
+        # still verified against origin/main; only the line drifted.
+        "line": 455,
         "expect": "timeframe=self.TimeFrame.Hour",
         "blocker": (
             "The bar interval is hardcoded to one hour at the fetch site, and "
@@ -88,7 +90,8 @@ BLOCKERS: List[Dict[str, str]] = [
         "id": "fill_equals_decision_price",
         "ref": "origin/main",
         "file": "dashboard/backend/domain/trading/execution.py",
-        "line": 169,
+        # Moved 169 -> 526 by upstream refactoring; claim unchanged.
+        "line": 526,
         "expect": 'price = market_data[symbol]["close"]',
         "blocker": (
             "The fill price is the close of the same bar the decision was "

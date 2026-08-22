@@ -133,7 +133,7 @@ There is no scheduler. Paper trading is an explicit stub with no order submissio
 
 *Consequence:* Nothing in the codebase can fire a decision every 150 seconds. This is the primary blocker: every other item is downstream of having a clock. [DERIVED]
 
-### `dashboard/backend/infrastructure/market_data/alpaca_bars.py:114` [MEASURED]
+### `dashboard/backend/infrastructure/market_data/alpaca_bars.py:455` [MEASURED]
 
 ```python
 timeframe=self.TimeFrame.Hour,
@@ -153,7 +153,7 @@ if args.timeframe is not None and args.timeframe != market_profile.timeframe:
 
 *Consequence:* Passing --timeframe 1m fails rather than switching cadence. There is no configuration path to a sub-hourly run. [DERIVED]
 
-### `dashboard/backend/domain/trading/execution.py:169` [MEASURED]
+### `dashboard/backend/domain/trading/execution.py:526` [MEASURED]
 
 ```python
 price = market_data[symbol]["close"]

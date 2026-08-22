@@ -139,6 +139,17 @@ PLATFORM_PARAMS: Dict[str, Param] = {
         "pipeline_depth_distribution", USER_DETERMINED,
         "Users configure their own pipeline depth. Per-step routing reduces "
         "the cost of each step without changing the count, and is invisible."),
+    "platform_paid_fraction": Param(
+        "platform_paid_fraction", LAB_CONTROLLED,
+        "The share of user activity the PLATFORM actually pays for. Not every "
+        "user LLM call is an operator cost: token_cost.py states that external "
+        "agents run their own client, so 'the backend never sees the real "
+        "token counts' and pays for none of them; the credits module meters "
+        "only POST /backtest/run with decision_source='llm', explicitly "
+        "excluding the protocol surfaces for that reason. A BYOK vault is "
+        "merged upstream (credential storage only so far), which points the "
+        "same way. Pricing every user call as an operator cost overstates the "
+        "bill by whatever this fraction is not."),
     "live_trading_on": Param(
         "live_trading_on", USER_DETERMINED,
         "Whether a user's agent trades live, i.e. runs continuously at cadence "
@@ -427,6 +438,15 @@ def platform_cost(params: Dict[str, Any],
               "model_mix", "pipeline_depth_distribution", "live_trading_on"]
     _require(params, needed, PLATFORM_PARAMS)
 
+    # Who pays is a separate axis from how much it costs, and conflating them
+    # overstates the operator's bill. Server-side backtests are operator-paid;
+    # protocol/external agents run their own client and cost the operator
+    # nothing; BYOK (merged upstream as credential storage) points the same
+    # way. No telemetry records the split, so it is not defaulted.
+    platform_paid = params.get("platform_paid_fraction")
+    if platform_paid is not None and not 0.0 <= platform_paid <= 1.0:
+        raise ValueError("platform_paid_fraction must be in [0, 1]")
+
     per_call = _blended_cost_per_call(measured, params["model_mix"])
 
     depth_dist = params["pipeline_depth_distribution"]
@@ -464,10 +484,35 @@ def platform_cost(params: Dict[str, Any],
                           * mean_depth)
 
     total_calls_day = backtest_calls_day + live_calls_day
-    cost_day = total_calls_day * per_call
+    gross_cost_day = total_calls_day * per_call
+    cost_day = gross_cost_day
+    who_pays: Dict[str, Any] = {
+        "platform_paid_fraction": platform_paid,
+        "note": (
+            "gross cost assumes the operator pays for EVERY call. External "
+            "agents run their own LLM client (token_cost.py: 'the backend "
+            "never sees the real token counts'), and the credits module "
+            "meters only server-side llm backtests, so the operator's true "
+            "bill is a subset."),
+    }
+    if platform_paid is None:
+        who_pays["operator_cost_per_month_usd"] = None
+        who_pays["refused"] = (
+            "platform_paid_fraction is blank, so only the GROSS figure is "
+            "reported. What the operator actually pays needs the share of "
+            "activity that runs on the operator's own key, and nothing "
+            "records it.")
+    else:
+        cost_day = gross_cost_day * platform_paid
+        who_pays["operator_cost_per_month_usd"] = Fig(
+            cost_day * _DAYS, DERIVED, "gross x platform_paid_fraction")
 
     return {
         "workload": "platform",
+        "gross_cost_per_month_usd": Fig(
+            gross_cost_day * _DAYS, DERIVED,
+            "every call priced as operator-paid — an UPPER bound"),
+        "who_pays": who_pays,
         "params": {k: params.get(k) for k in needed},
         "blended_cost_per_call_usd": Fig(per_call, MEASURED, "load_measured()"),
         "mean_pipeline_depth": Fig(mean_depth, NOT_MEASURED,
@@ -542,10 +587,16 @@ def leaderboard_recurring(measured: Optional[Dict[str, Any]] = None,
     It runs whether or not any user is active, so it belongs in neither model.
 
     THE RECURRING FIGURE IS CURRENTLY ZERO, and that is a fact about the repo
-    rather than an estimate: ``refresh_daily_leaderboard.py`` states in its own
-    docstring that nothing runs it automatically — there is no cron or CI
-    schedule — and redeploying LLM entries requires an explicit ``--models``
-    flag. What exists is a one-off cost per manual deploy.
+    rather than an estimate — but the reason has changed. Upstream now ships
+    ``.github/workflows/daily-leaderboard.yml`` with a weekday cron that is
+    commented out on purpose, because the Daily board was replaced by the Live
+    board and nightly deploys would bill for curves nobody can open. So the
+    zero is a deliberate pause of working infrastructure, not its absence.
+
+    That makes the counterfactual worth pricing, and ``bars_per_daily_window``
+    now has a concrete meaning: the cron is ``30 22 * * 1-5`` (weekdays) and a
+    scheduled run always sets ``deploy_models=true``, so re-enabling it deploys
+    all seven models over a rolling one-day window every trading day.
     """
     measured = measured or load_measured()
     models = measured["models"]
@@ -557,13 +608,19 @@ def leaderboard_recurring(measured: Optional[Dict[str, Any]] = None,
     out: Dict[str, Any] = {
         "scheduled_today": False,
         "scheduled_evidence": (
-            "refresh_daily_leaderboard.py docstring: 'nothing in this repo "
-            "runs this script automatically yet — there is no cron or CI "
-            "schedule wired up'; LLM redeploy is behind an explicit --models "
-            "flag"),
+            "upstream now HAS the scheduler and has deliberately switched it "
+            "off: .github/workflows/daily-leaderboard.yml carries "
+            "cron '30 22 * * 1-5' with the whole schedule: block commented "
+            "out, and workflow_dispatch defaults deploy_models=false. Its own "
+            "comment gives the reason: 'left on schedule it would keep "
+            "deploying every competition LLM nightly, billable, for a board "
+            "nobody can open.' Earlier phases said no scheduler existed; that "
+            "was true of the branch and is no longer true of upstream."),
         "recurring_cost_usd_per_month": Fig(
             0.0, MEASURED,
-            "no scheduler exists; the board's LLM entries do not refresh"),
+            "the schedule block is commented out, so nothing fires. $0 by "
+            "deliberate pause, NOT by absence of infrastructure — the "
+            "difference matters because re-enabling it is one uncomment"),
         "contest_window": {
             "description": "one-off per manual deploy: 7 models over the "
                            "161-bar contest window",

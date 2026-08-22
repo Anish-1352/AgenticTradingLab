@@ -79,9 +79,13 @@ def test_fewer_models_is_shown_as_a_range(built):
     assert "raises the blended rate" in built
 
 
-def test_the_leaderboard_recurring_cost_is_zero_with_its_evidence(built):
+def test_the_leaderboard_recurring_cost_is_zero_by_pause_not_absence(built):
+    """Upstream now ships the scheduler with its cron commented out, so the
+    $0 stands but its reason changed — and the counterfactual is priceable."""
     assert "Recurring cost today is `$0`" in built
-    assert "no cron or CI schedule wired up" in built
+    assert "deliberate pause" in built
+    assert "daily-leaderboard.yml" in built
+    assert "per month if re-enabled" in built
 
 
 def test_the_daily_window_is_not_assumed_to_be_the_contest_window(built):

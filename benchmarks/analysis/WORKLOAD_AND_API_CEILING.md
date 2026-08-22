@@ -74,6 +74,7 @@ The ranking is not a to-do list. The largest term is the one that may not be tou
 | `backtests_per_user_per_day` | USER-DETERMINED |
 | `model_mix` | USER-DETERMINED |
 | `pipeline_depth_distribution` | USER-DETERMINED |
+| `platform_paid_fraction` | LAB-CONTROLLED |
 | `live_trading_on` | USER-DETERMINED |
 
 The lab's levers are narrower than the parameter list suggests:
@@ -99,7 +100,14 @@ Dropdown composition is the only platform term above `2x` [DERIVED], and it is t
 
 ### LEADERBOARD — neither workload
 
-**Recurring cost today is `$0`** [MEASURED], and that is a fact about the repository rather than an estimate: `refresh_daily_leaderboard.py` states in its own docstring that *"nothing in this repo runs this script automatically yet — there is no cron or CI schedule wired up"*, and redeploying LLM entries sits behind an explicit `--models` flag.
+**Recurring cost today is `$0`** [MEASURED] — but by deliberate pause, not by absence. Upstream ships `.github/workflows/daily-leaderboard.yml` with a weekday cron whose whole `schedule:` block is commented out, and `workflow_dispatch` defaults `deploy_models=false` [MEASURED]. Its own comment gives the reason: *"left on schedule it would keep deploying every competition LLM nightly, billable, for a board nobody can open."* Earlier phases reported that no scheduler existed; that was true of this branch and is no longer true of upstream.
+
+**The pause is one uncomment from a recurring bill**, so the counterfactual is worth pricing. A scheduled run always sets `deploy_models=true`, deploying all seven models over a rolling one-day window every weekday [MEASURED]:
+
+| cadence | per run | per month if re-enabled | Tier |
+|---|---:|---:|---|
+| hourly (~7 bars/day) | `$1.49` | `$31.26` | DERIVED |
+| Nof1 (~156 bars/day) | `$33.18` | `$696.69` | DERIVED |
 
 What exists is a one-off: `$34.24` per manual full deploy — 7 models over the 161-bar contest window [MEASURED].
 
