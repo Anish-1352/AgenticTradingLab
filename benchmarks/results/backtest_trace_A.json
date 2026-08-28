@@ -1,0 +1,105 @@
+{
+ "start": "2026-04-01",
+ "end": "2026-04-04",
+ "symbols": [
+  "AAPL",
+  "MSFT"
+ ],
+ "model": "nvidia/nemotron-3-nano-30b-a3b",
+ "timers_attached": {
+  "llm": true,
+  "parse": true,
+  "market_data": true,
+  "portfolio": true,
+  "execute": true,
+  "update_equity": true,
+  "extract_text": true,
+  "db_insert_run": true,
+  "db_equity_point": true,
+  "db_equity_points": true,
+  "db_trades": true
+ },
+ "estimate": {
+  "span_days": 3,
+  "trading_days": 2,
+  "approx_bars": 14,
+  "approx_llm_calls": 14,
+  "max_cost_usd": 0.0091,
+  "priced": true,
+  "assumption": "~7 hourly bars per trading day; output at the cap"
+ },
+ "construct_seconds": 0.1885420409962535,
+ "load_data_seconds": 0.9871575417928398,
+ "indicators_seconds": 0.19444637512788177,
+ "run_id": "agent_20260828_151147_dc44c3fb",
+ "bars": 14,
+ "llm_calls_reported": null,
+ "seed_db_sha256_before": "414bf53cb056b2c60bbdf4d963dffd1ffd7998fcb6235cf9bda963bd52504c80",
+ "seed_db_sha256_after": "414bf53cb056b2c60bbdf4d963dffd1ffd7998fcb6235cf9bda963bd52504c80",
+ "timings": {
+  "wall_seconds": 252.77752037532628,
+  "phases": {
+   "llm": {
+    "total_seconds": 252.68995616585016,
+    "calls": 38,
+    "mean_seconds": 6.649735688575004,
+    "median_seconds": 6.399983500130475,
+    "max_seconds": 8.095930832903832,
+    "share_of_wall": 0.9996535917855903
+   },
+   "market_data": {
+    "total_seconds": 0.987144541926682,
+    "calls": 1,
+    "mean_seconds": 0.987144541926682,
+    "median_seconds": 0.987144541926682,
+    "max_seconds": 0.987144541926682,
+    "share_of_wall": 0.003905191175469089
+   },
+   "db": {
+    "total_seconds": 0.013861332554370165,
+    "calls": 3,
+    "mean_seconds": 0.004620444184790055,
+    "median_seconds": 0.0030572079122066498,
+    "max_seconds": 0.00836583273485303,
+    "share_of_wall": 5.4836096713777145e-05
+   },
+   "parse": {
+    "total_seconds": 0.001652497798204422,
+    "calls": 11,
+    "mean_seconds": 0.00015022707256403837,
+    "median_seconds": 6.870785728096962e-05,
+    "max_seconds": 0.0010734167881309986,
+    "share_of_wall": 6.537360583926841e-06
+   },
+   "portfolio": {
+    "total_seconds": 0.0013421219773590565,
+    "calls": 14,
+    "mean_seconds": 9.586585552564689e-05,
+    "median_seconds": 0.00010612467303872108,
+    "max_seconds": 0.00016945786774158478,
+    "share_of_wall": 5.309498943443476e-06
+   },
+   "execute": {
+    "total_seconds": 0.0010626260191202164,
+    "calls": 14,
+    "mean_seconds": 7.590185850858688e-05,
+    "median_seconds": 6.166752427816391e-06,
+    "max_seconds": 0.0009739999659359455,
+    "share_of_wall": 4.203799521185349e-06
+   },
+   "update_equity": {
+    "total_seconds": 0.0006587496027350426,
+    "calls": 14,
+    "mean_seconds": 4.705354305250304e-05,
+    "median_seconds": 6.787478923797607e-05,
+    "max_seconds": 8.854176849126816e-05,
+    "share_of_wall": 2.6060450381700294e-06
+   }
+  },
+  "accounted_seconds": 253.69567803572863,
+  "unattributed_seconds": -0.9181576604023576,
+  "unattributed_share": -0.0036322757618599513
+ },
+ "_label": "A",
+ "_note": "LLM response bodies are not retained; only timings, counts and config."
+}
