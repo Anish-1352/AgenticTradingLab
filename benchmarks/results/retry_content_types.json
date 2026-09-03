@@ -1,0 +1,19 @@
+{
+ "source": "unfiltered stdout of the four Phase 21 arms (benchmarks/results/retry_{reproA,onesym2,altwin,deepseek}.json)",
+ "what_this_counts": "every occurrence of the backend's own 'content types: [...]' print, which appears on each retry and on the final give-up. It is the response shape that caused the retry, read from the production log rather than inferred.",
+ "content_types_by_arm": {
+  "reproA": {
+   "['thinking']": 16
+  },
+  "onesym2": {
+   "['thinking']": 3
+  },
+  "altwin": {
+   "['thinking']": 13
+  }
+ },
+ "content_types_total": {
+  "['thinking']": 32
+ },
+ "distinct_shapes": 1
+}

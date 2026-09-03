@@ -1,0 +1,430 @@
+{
+ "label": "onesym2",
+ "model": "nvidia/nemotron-3-nano-30b-a3b",
+ "start": "2026-04-01",
+ "end": "2026-04-03",
+ "symbols": [
+  "AAPL"
+ ],
+ "timers_attached": {
+  "request": true,
+  "usage": true,
+  "extract": true,
+  "bar_boundary": true
+ },
+ "seed_db_sha256_before": "414bf53cb056b2c60bbdf4d963dffd1ffd7998fcb6235cf9bda963bd52504c80",
+ "cost_ceiling": {
+  "approx_bars": 7,
+  "worst_case_attempts": 35,
+  "max_cost_usd": 0.02275,
+  "priced": true,
+  "assumption": "every decision retries to the 5-attempt cap"
+ },
+ "client_timeout": {
+  "read_timeout_seconds": 120.0,
+  "connect_timeout_seconds": 10.0,
+  "sdk_max_retries": 2,
+  "clients_patched": 1,
+  "sdk_default_timeout": "Timeout(connect=5.0, read=600, write=600, pool=600)",
+  "sdk_default_max_retries": 2
+ },
+ "complete": true,
+ "summary": {
+  "model": "nvidia/nemotron-3-nano-30b-a3b",
+  "decisions_with_requests": 14,
+  "total_attempts": 17,
+  "attempts_per_decision": 1.2142857142857142,
+  "retries": 3,
+  "retry_share_of_attempts": 0.17647058823529413,
+  "retry_share_of_seconds": 0.13224377306953608,
+  "rescue_calls": 0,
+  "attempts_histogram": {
+   "1": 13,
+   "4": 1
+  },
+  "triggers": {
+   "no_text_content": 3
+  },
+  "retry_input_tokens": 5682,
+  "retry_output_tokens": 5311,
+  "total_input_tokens": 29437,
+  "total_output_tokens": 27038,
+  "total_seconds": 237.7702406682074,
+  "retry_seconds": 31.4436337496154,
+  "transport_requests": 17,
+  "sdk_level_retries": 0,
+  "sdk_retry_share": 0.0,
+  "status_counts": {
+   "200": 17
+  },
+  "transport_errors": {},
+  "transport_seconds": 237.68923621065915,
+  "max_request_seconds": 45.6313873748295,
+  "transport_requests_per_decision": 1.2142857142857142,
+  "transport_requests_per_atl_attempt": 1.0
+ },
+ "attempts": [
+  {
+   "decision_index": 0,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 10.342652374878526,
+   "input_tokens": 1554,
+   "output_tokens": 930,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 1,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 4.427299959119409,
+   "input_tokens": 1554,
+   "output_tokens": 1089,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 2,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 8.959580416791141,
+   "input_tokens": 1552,
+   "output_tokens": 1983,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 3,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 6.413475374691188,
+   "input_tokens": 1555,
+   "output_tokens": 1351,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 4,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 8.391441083047539,
+   "input_tokens": 1554,
+   "output_tokens": 1530,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 5,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 7.556106416974217,
+   "input_tokens": 1554,
+   "output_tokens": 1545,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 6,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 23.879578082822263,
+   "input_tokens": 1553,
+   "output_tokens": 1733,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 7,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 15.33553033368662,
+   "input_tokens": 1749,
+   "output_tokens": 1642,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 8,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 4.990808125119656,
+   "input_tokens": 1822,
+   "output_tokens": 1022,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 9,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 6.442032292019576,
+   "input_tokens": 1812,
+   "output_tokens": 1439,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 10,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 45.63357766717672,
+   "input_tokens": 1891,
+   "output_tokens": 2000,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 11,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 10.859174625016749,
+   "input_tokens": 1892,
+   "output_tokens": 2000,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 20.944256416987628,
+   "input_tokens": 1894,
+   "output_tokens": 2000,
+   "outcome": "no_text_content"
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 1,
+   "is_retry": true,
+   "is_rescue": false,
+   "seconds": 6.986064166761935,
+   "input_tokens": 1894,
+   "output_tokens": 2000,
+   "outcome": "no_text_content"
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 2,
+   "is_retry": true,
+   "is_rescue": false,
+   "seconds": 6.208810790907592,
+   "input_tokens": 1894,
+   "output_tokens": 2000,
+   "outcome": "no_text_content"
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 3,
+   "is_retry": true,
+   "is_rescue": false,
+   "seconds": 18.248758791945875,
+   "input_tokens": 1894,
+   "output_tokens": 1311,
+   "outcome": "text_returned"
+  },
+  {
+   "decision_index": 13,
+   "attempt_index": 0,
+   "is_retry": false,
+   "is_rescue": false,
+   "seconds": 32.15109375026077,
+   "input_tokens": 1819,
+   "output_tokens": 1463,
+   "outcome": "text_returned"
+  }
+ ],
+ "transport_requests_log": [
+  {
+   "decision_index": 0,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 10.292777667287737,
+   "error": null
+  },
+  {
+   "decision_index": 1,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 4.425565875135362,
+   "error": null
+  },
+  {
+   "decision_index": 2,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 8.957067749928683,
+   "error": null
+  },
+  {
+   "decision_index": 3,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 6.411495707929134,
+   "error": null
+  },
+  {
+   "decision_index": 4,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 8.389755832962692,
+   "error": null
+  },
+  {
+   "decision_index": 5,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 7.5539123341441154,
+   "error": null
+  },
+  {
+   "decision_index": 6,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 23.87783250026405,
+   "error": null
+  },
+  {
+   "decision_index": 7,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 15.333415958099067,
+   "error": null
+  },
+  {
+   "decision_index": 8,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 4.988655583932996,
+   "error": null
+  },
+  {
+   "decision_index": 9,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 6.440020875073969,
+   "error": null
+  },
+  {
+   "decision_index": 10,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 45.6313873748295,
+   "error": null
+  },
+  {
+   "decision_index": 11,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 10.857359250076115,
+   "error": null
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 20.94265608396381,
+   "error": null
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 1,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 6.984308333136141,
+   "error": null
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 2,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 6.207109250128269,
+   "error": null
+  },
+  {
+   "decision_index": 12,
+   "attempt_index": 3,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 18.24669345887378,
+   "error": null
+  },
+  {
+   "decision_index": 13,
+   "attempt_index": 0,
+   "sdk_retry_count": 0,
+   "is_sdk_retry": false,
+   "method": "POST",
+   "path": "/api/v1/messages",
+   "status": 200,
+   "seconds": 32.149222374893725,
+   "error": null
+  }
+ ],
+ "run_id": "agent_20260903_155529_c3ff04d8",
+ "bars": 14,
+ "seed_db_sha256_after": "414bf53cb056b2c60bbdf4d963dffd1ffd7998fcb6235cf9bda963bd52504c80"
+}

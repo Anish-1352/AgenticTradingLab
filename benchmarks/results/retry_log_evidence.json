@@ -1,0 +1,25 @@
+{
+ "log": "/tmp/retry_reproA.log",
+ "decisions_started": 7,
+ "retry_events": 15,
+ "rescue_events": 2,
+ "extra_attempts": 17,
+ "retries_by_stage": {
+  "1": 5,
+  "2": 4,
+  "3": 4,
+  "4": 2
+ },
+ "observed_content_types_on_retry": {
+  "['thinking']": 15
+ },
+ "implied_attempts": 24,
+ "implied_attempts_per_decision": 3.43,
+ "_provenance": {
+  "source": "unfiltered stdout of a retry_amplification run, nvidia/nemotron-3-nano-30b-a3b, AAPL+MSFT, 2026-04-01..04",
+  "terminated": "yes - killed after a request stalled. The backend passes no timeout, so the request inherited the Anthropic SDK default read timeout of 600s; counts are of decisions completed before the kill.",
+  "why_it_still_counts": "these are the production retry prints from portfolio_manager.py:411-413, so the trigger is read from the code path rather than inferred from a call count",
+  "parser": "analysis/parse_retry_log.py",
+  "superseded_by": "results/retry_reproA.json - same condition, re-run with a 120s client-side timeout installed and requests counted at httpx.Client.send"
+ }
+}
