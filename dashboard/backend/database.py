@@ -260,6 +260,26 @@ class BacktestDatabase:
 
         # idempotency_keys: replay-safe decision submissions (v2)
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS llm_call_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                step_index INTEGER NOT NULL,
+                attempt_index INTEGER NOT NULL DEFAULT 0,
+                phase TEXT NOT NULL DEFAULT 'decision',
+                outcome TEXT NOT NULL,
+                model TEXT,
+                input_tokens INTEGER NOT NULL DEFAULT 0,
+                output_tokens INTEGER NOT NULL DEFAULT 0,
+                max_output_tokens INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_llm_call_usage_run
+            ON llm_call_usage(run_id, step_index, attempt_index)
+        """)
+
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS idempotency_keys (
                 run_id TEXT NOT NULL,
                 step_index INTEGER NOT NULL,
@@ -903,6 +923,45 @@ class BacktestDatabase:
         conn.close()
 
         return [self._parse_run_row(dict(row)) for row in rows]
+
+    def insert_llm_call_usage(
+        self, run_id: str, rows: List[Dict[str, Any]]
+    ) -> None:
+        """Batch insert one row per billed LLM request, retries included.
+
+        ``agent_runs.llm_calls`` is the same requests summed, so the two must
+        agree; ``test_llm_call_usage_rows_reconcile_with_llm_calls`` asserts it.
+        What the sum cannot answer, and these rows can, is how much of a run's
+        spend was retry — ``WHERE attempt_index > 0`` — and why those attempts
+        were unusable.
+        """
+        if not rows:
+            return
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.executemany(
+            """
+            INSERT INTO llm_call_usage
+                (run_id, step_index, attempt_index, phase, outcome, model,
+                 input_tokens, output_tokens, max_output_tokens)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    run_id,
+                    int(r.get("step_index", -1)),
+                    int(r.get("attempt_index", 0)),
+                    str(r.get("phase") or "decision"),
+                    str(r.get("outcome") or "unknown"),
+                    r.get("model"),
+                    int(r.get("input_tokens") or 0),
+                    int(r.get("output_tokens") or 0),
+                    r.get("max_output_tokens"),
+                )
+                for r in rows
+            ],
+        )
+        conn.commit()
 
     def insert_trades(self, run_id: str, trades: List[Dict[str, Any]]) -> None:
         """Batch insert trade records for a backtest run."""

@@ -48,6 +48,7 @@ from dashboard.backend.domain.backtesting.reference_agent import (
     make_rule_based_decision as _make_rule_based_decision,
 )
 from dashboard.backend.infrastructure.llm.backtest_harness import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
     HAS_ANTHROPIC,
     extract_response_text as _extract_response_text,
     extract_token_usage as _extract_token_usage,
@@ -122,6 +123,13 @@ class PortfolioManager:
         self.equity_history = []
         # Real LLM token usage (server-side calls report actual counts)
         self.llm_calls = 0        # billed API calls (any response with usage)
+        # One row per billed request, including the ones a retry throws away.
+        # ``llm_calls`` is a total and cannot say how much of itself was retry;
+        # these rows can, because each carries the attempt it belongs to and
+        # why that attempt was unusable. Buffered here and drained by the
+        # engine: this module must not import the database singleton.
+        self.llm_call_rows: List[Dict] = []
+        self.llm_step_index = -1  # which decision the rows below belong to
         self.llm_decisions = 0    # steps the model actually drove (H6 coverage)
         self.input_tokens = 0
         self.output_tokens = 0
@@ -270,6 +278,10 @@ class PortfolioManager:
         Returns:
             {"actions": [list of trading actions]}
         """
+        # Advance before the early returns below: a step that fell back
+        # without spending a call still consumed a decision, and leaving the
+        # index behind would file the next step's rows under this one.
+        self.llm_step_index += 1
         unified_client = bool(getattr(llm_client, "execution_service", None))
         if (not llm_client) or (not HAS_ANTHROPIC and not unified_client):
             if strict_llm:
@@ -513,13 +525,26 @@ class PortfolioManager:
                             temperature=temperature,
                             market_context=market_context,
                         )
-                    output_delta = self._record_llm_usage(response)
+                    output_delta = self._record_llm_usage(
+                        response,
+                        attempt_index=attempt,
+                        phase="decision",
+                        model=model,
+                        max_output_tokens=(
+                            RECOVERY_MAX_OUTPUT_TOKENS
+                            if attempt == no_text_retries
+                            else DEFAULT_MAX_OUTPUT_TOKENS
+                        ),
+                    )
                     try:
                         llm_response = _extract_response_text(response)
+                        self._mark_last_llm_call("text_returned")
                         break
                     except AttributeError as extract_err:
                         if "No text content" not in str(extract_err):
+                            self._mark_last_llm_call("extract_error")
                             raise
+                        self._mark_last_llm_call("no_text_content")
                         if attempt < no_text_retries:
                             print(
                                 f"   ⚠️  {extract_err}; "
@@ -555,8 +580,17 @@ class PortfolioManager:
                             temperature=temperature,
                             market_context=market_context,
                         )
-                        self._record_llm_usage(retry_response)
+                        self._record_llm_usage(
+                            retry_response,
+                            attempt_index=1,
+                            phase="truncation_recovery",
+                            model=model,
+                            max_output_tokens=RECOVERY_MAX_OUTPUT_TOKENS,
+                        )
                         retry_text = response_text_or_none(retry_response)
+                        self._mark_last_llm_call(
+                            "no_text_content" if retry_text is None
+                            else "text_returned")
                         if retry_text is None:
                             print(
                                 "   ⚠️  Retry returned no text block; "
@@ -776,21 +810,57 @@ class PortfolioManager:
             print(f"   Falling back to rule-based logic\n")
             return self.make_trading_decision(portfolio_state)
 
-    def _record_llm_usage(self, response) -> int:
+    def _record_llm_usage(
+        self,
+        response,
+        *,
+        attempt_index: int = 0,
+        phase: str = "decision",
+        max_output_tokens: Optional[int] = None,
+        model: Optional[str] = None,
+    ) -> int:
         """Bill one received response; returns its output-token delta.
 
         A response whose usage cannot be read is logged and not counted as a
         call — ``llm_calls`` is "billed API calls (any response with usage)".
+        It still gets a row: a request that was paid for and unreadable is
+        exactly the kind of thing a totals-only counter loses.
+
+        ``attempt_index`` is 0 for the first request of a step and increments
+        per retry, so ``attempt_index > 0`` is the retry filter that
+        ``llm_calls`` cannot express. ``phase`` separates the two retry
+        mechanisms that share this counter: the no-text loop and the
+        post-parse truncation recovery.
         """
+        row = {
+            "step_index": self.llm_step_index,
+            "attempt_index": attempt_index,
+            "phase": phase,
+            "model": model,
+            "max_output_tokens": max_output_tokens,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            # Set by the caller once it knows whether the reply was usable.
+            "outcome": "pending",
+        }
+        self.llm_call_rows.append(row)
         try:
             input_delta, output_delta = _extract_token_usage(response)
         except Exception as usage_err:
             print(f"   ⚠️  Could not read token usage: {usage_err}")
+            row["outcome"] = "usage_unreadable"
             return 0
+        row["input_tokens"] = input_delta
+        row["output_tokens"] = output_delta
         self.input_tokens += input_delta
         self.output_tokens += output_delta
         self.llm_calls += 1
         return output_delta
+
+    def _mark_last_llm_call(self, outcome: str) -> None:
+        """Record how the most recent billed request turned out."""
+        if self.llm_call_rows and self.llm_call_rows[-1]["outcome"] == "pending":
+            self.llm_call_rows[-1]["outcome"] = outcome
 
     def strict_llm_fallback_budget(self) -> int:
         """How many unusable model responses this strict run may absorb."""

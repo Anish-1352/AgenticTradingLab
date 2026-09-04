@@ -1645,6 +1645,13 @@ class HourlyBacktester:
 
         db.insert_equity_points(run_id, equity_curve)
         db.insert_trades(run_id, self._serialize_trades(manager.trades))
+        # Per-request rows, retries included. The manager buffers them because
+        # the domain layer must not import the database singleton; this is the
+        # drain. A rule-based run produces none, and calling a writer with an
+        # empty list only forces every test double to grow the method.
+        llm_call_rows = getattr(manager, "llm_call_rows", None)
+        if llm_call_rows:
+            db.insert_llm_call_usage(run_id, llm_call_rows)
         if self.runtime_type == AI_HEDGE_FUND_RUNTIME_TYPE:
             db.insert_decisions(run_id, self.runtime_dispatcher.decision_audit_rows)
         
