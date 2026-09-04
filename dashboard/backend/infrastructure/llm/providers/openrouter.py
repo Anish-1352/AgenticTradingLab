@@ -126,6 +126,50 @@ def reasoning_extra_body(override: Optional[str] = None) -> Optional[dict[str, A
     return {"reasoning": {"effort": effort, "enabled": True}}
 
 
+# Tokens held back from the reasoning budget so a reply always has room for the
+# answer. OpenRouter documents the invariant this enforces: "max_tokens must be
+# strictly higher than the reasoning budget to ensure there are tokens
+# available for the final response after thinking". Shipped defaults violated
+# it -- ``medium`` effort budgets 2048 thinking tokens against a 2000-token
+# ``max_tokens`` ceiling -- so a model that used its whole budget was cut off
+# inside the thinking block and returned content types ``['thinking']`` with no
+# text at all. That is the sole condition that advances the no-text retry loop
+# in ``portfolio_manager``, so every such reply cost four more billed calls.
+_TEXT_HEADROOM_TOKENS = 512
+
+# Never clamp below this: a thinking budget too small to reason with is its own
+# failure mode, and the mapped ``low`` tier is already 1024.
+_MIN_REASONING_BUDGET = 1024
+
+
+def reconcile_budget_enabled() -> bool:
+    """Whether to clamp the thinking budget to fit under ``max_tokens``.
+
+    Defaults to OFF so behaviour is unchanged unless a caller opts in.
+    """
+    raw = os.getenv("OPENROUTER_FIT_REASONING_TO_MAX_TOKENS", "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def fit_reasoning_budget(budget: Optional[int],
+                         max_tokens: Optional[int]) -> Optional[int]:
+    """Shrink ``budget`` so ``max_tokens`` can still carry an answer.
+
+    Returns ``budget`` unchanged when it already fits, when either number is
+    unknown, or when the ceiling is too small for the clamp to leave a usable
+    thinking budget -- in that last case the caller's ceiling is the thing that
+    needs raising, and silently reasoning at 200 tokens would hide it.
+    """
+    if budget is None or not max_tokens:
+        return budget
+    allowed = max_tokens - _TEXT_HEADROOM_TOKENS
+    if budget <= allowed:
+        return budget
+    if allowed < _MIN_REASONING_BUDGET:
+        return budget
+    return allowed
+
+
 def _reasoning_budget_tokens(override: Optional[str] = None) -> Optional[int]:
     """Resolved thinking budget (≥1024), or None when passthrough/disabled."""
     effort = _reasoning_effort(override)
@@ -177,14 +221,31 @@ class _OpenRouterMessages:
         self._reasoning_effort = reasoning_effort
 
     def create(self, **kwargs: Any) -> Any:
+        # ``max_tokens`` is a per-request value, so this is the first point at
+        # which the thinking budget and the ceiling it has to fit under are
+        # both in scope. Reconciling them here keeps the clamp next to the
+        # request it applies to rather than guessing at client construction.
+        fitted = (
+            fit_reasoning_budget(
+                _reasoning_budget_tokens(self._reasoning_effort),
+                kwargs.get("max_tokens"),
+            )
+            if reconcile_budget_enabled()
+            else None
+        )
         extras = reasoning_extra_body(self._reasoning_effort)
         if extras:
             body = dict(kwargs.get("extra_body") or {})
             if "reasoning" not in body:
-                body.update(extras)
+                reasoning = dict(extras["reasoning"])
+                if fitted is not None and "max_tokens" in reasoning:
+                    reasoning["max_tokens"] = fitted
+                body["reasoning"] = reasoning
                 kwargs["extra_body"] = body
         thinking = anthropic_thinking_kwarg(self._reasoning_effort)
         if thinking is not None and "thinking" not in kwargs:
+            if fitted is not None and thinking.get("type") == "enabled":
+                thinking = dict(thinking, budget_tokens=fitted)
             kwargs["thinking"] = thinking
         return self._inner.create(**kwargs)
 

@@ -312,3 +312,113 @@ def test_harness_reexports_provider_factory(monkeypatch):
     assert bh.default_model_name() == bh.LLM_MODEL_NAME
     assert bh.default_model_name("openrouter") == bh.OPENROUTER_MODEL_NAME
     assert bh.COMMONSTACK_MODEL_NAME == commonstack.DEFAULT_MODEL
+
+
+# ---------------------------------------------------------------------------
+# Fitting the thinking budget under max_tokens.
+#
+# The shipped defaults budget 2048 thinking tokens against a 2000-token
+# max_tokens ceiling. OpenRouter documents that max_tokens must be strictly
+# higher than the reasoning budget, and a model that spends the whole budget
+# returns content types ['thinking'] with no text -- the one condition that
+# advances the no-text retry loop, at four extra billed calls each.
+# ---------------------------------------------------------------------------
+
+class _RecordingMessages:
+    def __init__(self):
+        self.kwargs = None
+
+    def create(self, **kwargs):
+        self.kwargs = kwargs
+        return "ok"
+
+
+def _client_with(monkeypatch, effort=None, enabled=True):
+    if enabled:
+        monkeypatch.setenv("OPENROUTER_FIT_REASONING_TO_MAX_TOKENS", "1")
+    else:
+        monkeypatch.delenv("OPENROUTER_FIT_REASONING_TO_MAX_TOKENS", raising=False)
+    inner = _RecordingMessages()
+    proxy = openrouter._OpenRouterMessages(inner, reasoning_effort=effort)
+    return inner, proxy
+
+
+def test_shipped_defaults_budget_more_thinking_than_the_output_ceiling():
+    """The defect, asserted so a future default change is caught here."""
+    from dashboard.backend.infrastructure.llm.backtest_harness import (
+        DEFAULT_MAX_OUTPUT_TOKENS,
+    )
+    budget = openrouter._reasoning_budget_tokens(None)
+    assert budget is not None
+    assert budget >= DEFAULT_MAX_OUTPUT_TOKENS, (
+        "if this fails the defaults were fixed elsewhere and this guard "
+        "should be revisited")
+
+
+def test_budget_is_clamped_to_leave_room_for_an_answer(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_REASONING_MAX_TOKENS", raising=False)
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "medium")
+    inner, proxy = _client_with(monkeypatch)
+    proxy.create(model="m", max_tokens=2000, messages=[])
+    assert inner.kwargs["extra_body"]["reasoning"]["max_tokens"] == 1488
+    assert inner.kwargs["thinking"]["budget_tokens"] == 1488
+    assert inner.kwargs["thinking"]["budget_tokens"] < 2000
+
+
+def test_a_budget_that_already_fits_is_left_alone(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_REASONING_MAX_TOKENS", raising=False)
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "medium")
+    inner, proxy = _client_with(monkeypatch)
+    proxy.create(model="m", max_tokens=4096, messages=[])
+    assert inner.kwargs["extra_body"]["reasoning"]["max_tokens"] == 2048
+    assert inner.kwargs["thinking"]["budget_tokens"] == 2048
+
+
+def test_disabled_by_default_reproduces_current_behaviour(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_REASONING_MAX_TOKENS", raising=False)
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "medium")
+    inner, proxy = _client_with(monkeypatch, enabled=False)
+    proxy.create(model="m", max_tokens=2000, messages=[])
+    assert inner.kwargs["extra_body"]["reasoning"]["max_tokens"] == 2048
+    assert inner.kwargs["thinking"]["budget_tokens"] == 2048
+
+
+def test_a_ceiling_too_small_to_clamp_is_left_for_the_caller_to_fix(monkeypatch):
+    """Reasoning at 200 tokens would hide the real problem, so refuse."""
+    monkeypatch.delenv("OPENROUTER_REASONING_MAX_TOKENS", raising=False)
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "medium")
+    inner, proxy = _client_with(monkeypatch)
+    proxy.create(model="m", max_tokens=1200, messages=[])
+    assert inner.kwargs["thinking"]["budget_tokens"] == 2048
+
+
+def test_reasoning_off_is_untouched_by_the_clamp(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "none")
+    inner, proxy = _client_with(monkeypatch)
+    proxy.create(model="m", max_tokens=2000, messages=[])
+    assert inner.kwargs["thinking"] == {"type": "disabled"}
+
+
+def test_a_caller_supplied_reasoning_block_still_wins(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "medium")
+    inner, proxy = _client_with(monkeypatch)
+    proxy.create(model="m", max_tokens=2000, messages=[],
+                 extra_body={"reasoning": {"max_tokens": 99}})
+    assert inner.kwargs["extra_body"]["reasoning"]["max_tokens"] == 99
+
+
+def test_missing_max_tokens_leaves_the_budget_alone(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_REASONING_MAX_TOKENS", raising=False)
+    monkeypatch.setenv("OPENROUTER_REASONING_EFFORT", "medium")
+    inner, proxy = _client_with(monkeypatch)
+    proxy.create(model="m", messages=[])
+    assert inner.kwargs["thinking"]["budget_tokens"] == 2048
+
+
+def test_fit_helper_is_pure_arithmetic():
+    f = openrouter.fit_reasoning_budget
+    assert f(2048, 2000) == 1488
+    assert f(2048, 4096) == 2048
+    assert f(2048, 1200) == 2048      # clamp would be unusably small
+    assert f(None, 2000) is None
+    assert f(2048, None) == 2048
