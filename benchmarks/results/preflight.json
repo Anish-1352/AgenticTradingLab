@@ -1,0 +1,629 @@
+{
+ "upstream": "origin/main",
+ "upstream_head": "4388762fa25f044f534b8c48b3725ffa325c8d31",
+ "local_head": "7377c5f3f0ef9b0f4c5fe1865c28391d8f74e8b8",
+ "commits_behind": 533,
+ "probes": [
+  {
+   "id": "per_call_usage_table",
+   "claim": "no per-call usage table exists",
+   "holds_when": "absent",
+   "found_upstream": false,
+   "still_holds": true,
+   "n_matches": 0,
+   "sample": []
+  },
+  {
+   "id": "attempt_level_column",
+   "claim": "nothing records which attempt a call was",
+   "holds_when": "absent",
+   "found_upstream": true,
+   "still_holds": false,
+   "n_matches": 55,
+   "sample": [
+    "origin/main:dashboard/backend/domain/credits/models.py:366:    attempt_index: StrictInt = Field(default=0, ge=0)",
+    "origin/main:dashboard/backend/domain/credits/models.py:385:    attempt_index: StrictInt = Field(default=0, ge=0)",
+    "origin/main:dashboard/backend/domain/credits/repository.py:156:    attempt_index INTEGER NOT NULL DEFAULT 0 CHECK (attempt_index >= 0),",
+    "origin/main:dashboard/backend/domain/credits/repository.py:175:    UNIQUE (user_id, run_id, call_index, attempt_index)"
+   ]
+  },
+  {
+   "id": "llm_decisions_persisted",
+   "claim": "llm_decisions is never written to agent_runs",
+   "holds_when": "absent",
+   "found_upstream": false,
+   "still_holds": true,
+   "n_matches": 0,
+   "sample": []
+  },
+  {
+   "id": "retry_loop_unchanged",
+   "claim": "the no-text retry loop is still five attempts on one trigger",
+   "holds_when": "present",
+   "found_upstream": true,
+   "still_holds": true,
+   "n_matches": 1,
+   "sample": [
+    "origin/main:dashboard/backend/domain/backtesting/portfolio_manager.py:483:                no_text_retries = 4"
+   ]
+  },
+  {
+   "id": "retry_trigger_unchanged",
+   "claim": "the only trigger is an AttributeError carrying 'No text content'",
+   "holds_when": "present",
+   "found_upstream": true,
+   "still_holds": true,
+   "n_matches": 1,
+   "sample": [
+    "origin/main:dashboard/backend/domain/backtesting/portfolio_manager.py:521:                        if \"No text content\" not in str(extract_err):"
+   ]
+  },
+  {
+   "id": "reasoning_off_rescue",
+   "claim": "the fifth attempt rescues by forcing reasoning off",
+   "holds_when": "present",
+   "found_upstream": false,
+   "still_holds": false,
+   "n_matches": 0,
+   "sample": []
+  },
+  {
+   "id": "backtest_client_has_no_timeout",
+   "claim": "the backtest LLM client is built with no timeout or max_retries",
+   "holds_when": "absent",
+   "found_upstream": false,
+   "still_holds": true,
+   "n_matches": 0,
+   "sample": []
+  },
+  {
+   "id": "pipeline_decisions_not_persisted",
+   "claim": "the pipeline runtime writes no per-decision rows",
+   "holds_when": "present",
+   "found_upstream": true,
+   "still_holds": true,
+   "n_matches": 1,
+   "sample": [
+    "origin/main:dashboard/backend/domain/backtesting/engine.py:1648:        if self.runtime_type == AI_HEDGE_FUND_RUNTIME_TYPE:"
+   ]
+  },
+  {
+   "id": "hourly_interval_hardcoded",
+   "claim": "the bar interval is hardcoded to one hour at the fetch site",
+   "holds_when": "present",
+   "found_upstream": false,
+   "still_holds": false,
+   "n_matches": 0,
+   "sample": []
+  },
+  {
+   "id": "structured_outputs_unused",
+   "claim": "the backtest path requests no JSON schema / structured output",
+   "holds_when": "absent",
+   "found_upstream": false,
+   "still_holds": true,
+   "n_matches": 0,
+   "sample": []
+  }
+ ],
+ "citation_anchors": [
+  {
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "anchor": "no_text_retries = 4",
+   "describes": "the retry loop",
+   "upstream_line": 483
+  },
+  {
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "anchor": "retry {attempt + 1}/{no_text_retries}",
+   "describes": "the retry print",
+   "upstream_line": 526
+  },
+  {
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "anchor": "Final rescue",
+   "describes": "the rescue call",
+   "upstream_line": 493
+  },
+  {
+   "path": "dashboard/backend/database.py",
+   "anchor": "llm_calls INTEGER DEFAULT 0",
+   "describes": "the billing counter column",
+   "upstream_line": 143
+  },
+  {
+   "path": "dashboard/backend/database.py",
+   "anchor": "CREATE TABLE IF NOT EXISTS agent_runs",
+   "describes": "the run table",
+   "upstream_line": 130
+  },
+  {
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "anchor": "db.insert_decisions",
+   "describes": "the decision write site",
+   "upstream_line": 1649
+  }
+ ],
+ "report_citations": [
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/infrastructure/market_data/alpaca_bars.py:114`",
+   "path": "dashboard/backend/infrastructure/market_data/alpaca_bars.py",
+   "upstream_lines": 596,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/domain/backtesting/engine.py:892`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/domain/backtesting/engine.py:921`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/domain/trading/execution.py:64`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/domain/trading/portfolio.py:78`",
+   "path": "dashboard/backend/domain/trading/portfolio.py",
+   "upstream_lines": 176,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/domain/backtesting/engine.py:833`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/scripts/refresh_daily_leaderboard.py:89`",
+   "path": "dashboard/scripts/refresh_daily_leaderboard.py",
+   "upstream_lines": 159,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/infrastructure/llm/pipeline_runner.py:451`",
+   "path": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+   "upstream_lines": 784,
+   "status": "in_range"
+  },
+  {
+   "report": "ADVISOR_REPORT.md",
+   "citation": "`dashboard/backend/execution/paper_backend.py:1`",
+   "path": "dashboard/backend/execution/paper_backend.py",
+   "upstream_lines": 32,
+   "status": "in_range"
+  },
+  {
+   "report": "BACKTEST_LATENCY.md",
+   "citation": "`portfolio_manager.py:377`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "BACKTEST_LATENCY.md",
+   "citation": "`portfolio_manager.py:615`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "BACKTEST_LATENCY.md",
+   "citation": "`portfolio_manager.py:105-112`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "BACKTEST_LATENCY.md",
+   "citation": "`portfolio_manager.py:297`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "BACKTEST_LATENCY.md",
+   "citation": "`validator.py:719-725`",
+   "path": "dashboard/backend/infrastructure/llm/validator.py",
+   "upstream_lines": 799,
+   "status": "in_range"
+  },
+  {
+   "report": "BACKTEST_LATENCY.md",
+   "citation": "`validator.py:452-455`",
+   "path": "dashboard/backend/infrastructure/llm/validator.py",
+   "upstream_lines": 799,
+   "status": "in_range"
+  },
+  {
+   "report": "CADENCE_RESCOPE.md",
+   "citation": "`dashboard/backend/execution/paper_backend.py:5`",
+   "path": "dashboard/backend/execution/paper_backend.py",
+   "upstream_lines": 32,
+   "status": "in_range"
+  },
+  {
+   "report": "CADENCE_RESCOPE.md",
+   "citation": "`dashboard/backend/infrastructure/market_data/alpaca_bars.py:349`",
+   "path": "dashboard/backend/infrastructure/market_data/alpaca_bars.py",
+   "upstream_lines": 596,
+   "status": "in_range"
+  },
+  {
+   "report": "CADENCE_RESCOPE.md",
+   "citation": "`dashboard/scripts/backtest_hourly_agent.py:285`",
+   "path": "dashboard/scripts/backtest_hourly_agent.py",
+   "upstream_lines": 566,
+   "status": "in_range"
+  },
+  {
+   "report": "CADENCE_RESCOPE.md",
+   "citation": "`dashboard/backend/domain/trading/execution.py:457`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "DECISION_routing_on_the_leaderboard.md",
+   "citation": "`portfolio_manager.py:432-446`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "FALLBACK_RECOVERABILITY.md",
+   "citation": "`portfolio_manager.py:432-446`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "FALLBACK_RECOVERABILITY.md",
+   "citation": "`portfolio_manager.py:340-342`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "FALLBACK_RECOVERABILITY.md",
+   "citation": "`portfolio_manager.py:399-401`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "FALLBACK_RECOVERABILITY.md",
+   "citation": "`engine.py:892`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`dashboard/backend/domain/backtesting/portfolio_manager.py:340-342`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`dashboard/backend/domain/backtesting/portfolio_manager.py:399-401`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`dashboard/backend/domain/backtesting/engine.py:892`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`engine.py:921`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`infrastructure/llm/pipeline_runner.py:473`",
+   "path": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+   "upstream_lines": 784,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`infrastructure/llm/pipeline_runner.py:388`",
+   "path": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+   "upstream_lines": 784,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`domain/backtesting/portfolio_manager.py:398`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`pipeline_runner.py:451`",
+   "path": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+   "upstream_lines": 784,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`engine.py:735`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "INSTRUMENTATION_PATCH.md",
+   "citation": "`database.py:531`",
+   "path": "dashboard/backend/database.py",
+   "upstream_lines": 1148,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`portfolio_manager.py:366-412`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`database.py:116`",
+   "path": "dashboard/backend/database.py",
+   "upstream_lines": 1148,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`database.py:103-123`",
+   "path": "dashboard/backend/database.py",
+   "upstream_lines": 1148,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`engine.py:922`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`portfolio_manager.py:366-412`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`portfolio_manager.py:411-413`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "RETRY_AMPLIFICATION.md",
+   "citation": "`portfolio_manager.py:370-388`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "ROUTING_ENDTOEND.md",
+   "citation": "`portfolio_manager.py:432-446`",
+   "path": "dashboard/backend/domain/backtesting/portfolio_manager.py",
+   "upstream_lines": 883,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`execution.py:67`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`execution.py:85`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`vnpy_simulation.py:75`",
+   "path": "dashboard/backend/infrastructure/market_data/vnpy_simulation.py",
+   "upstream_lines": 123,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`execution.py:68`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`execution.py:83`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`execution.py:84`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`domain/runs/service.py:1`",
+   "path": "dashboard/backend/domain/runs/service.py",
+   "upstream_lines": 1328,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`agents/optimization/cost_optimizer.py:225`",
+   "path": "orchestration/FinAgents/agent_pools/transaction_cost_agent_pool/agents/optimization/cost_optimizer.py",
+   "upstream_lines": 705,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`agents/optimization/timing_optimizer.py:636`",
+   "path": "orchestration/FinAgents/agent_pools/transaction_cost_agent_pool/agents/optimization/timing_optimizer.py",
+   "upstream_lines": 981,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`config_loader.py:53`",
+   "path": "orchestration/FinAgents/agent_pools/data_agent_pool/config_loader.py",
+   "upstream_lines": 23,
+   "status": "out_of_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`engine.py:765`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`engine.py:833`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`alpaca_bars.py:110`",
+   "path": "dashboard/backend/infrastructure/market_data/alpaca_bars.py",
+   "upstream_lines": 596,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`engine.py:571`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`alpaca_bars.py:114`",
+   "path": "dashboard/backend/infrastructure/market_data/alpaca_bars.py",
+   "upstream_lines": 596,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`engine.py:735-846`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`market_data/quotes.py:413`",
+   "path": "dashboard/backend/infrastructure/market_data/quotes.py",
+   "upstream_lines": 833,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`pipeline_runner.py:460`",
+   "path": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+   "upstream_lines": 784,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`pipeline_runner.py:120-127`",
+   "path": "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+   "upstream_lines": 784,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`execution.py:64`",
+   "path": "dashboard/backend/domain/trading/execution.py",
+   "upstream_lines": 892,
+   "status": "in_range"
+  },
+  {
+   "report": "latency_sensitivity_audit.md",
+   "citation": "`portfolio.py:78`",
+   "path": "dashboard/backend/api/routers/portfolio.py",
+   "upstream_lines": 72,
+   "status": "out_of_range"
+  },
+  {
+   "report": "local_atl_setup.md",
+   "citation": "`dashboard/backend/domain/backtesting/engine.py:242`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "local_atl_setup.md",
+   "citation": "`engine.py:235`",
+   "path": "dashboard/backend/domain/backtesting/engine.py",
+   "upstream_lines": 1862,
+   "status": "in_range"
+  },
+  {
+   "report": "local_atl_setup.md",
+   "citation": "`dashboard/backend/infrastructure/llm/providers/__init__.py:11-12`",
+   "path": "dashboard/backend/infrastructure/llm/providers/__init__.py",
+   "upstream_lines": 120,
+   "status": "in_range"
+  }
+ ],
+ "branches": [
+  {
+   "branch": "feature/serving-cost-reduction",
+   "resolved": true,
+   "merge_base": "030b1770",
+   "files_changed_in_both": 5,
+   "conflict_candidates": [
+    "dashboard/backend/database.py",
+    "dashboard/backend/database_postgres.py",
+    "dashboard/backend/domain/backtesting/engine.py",
+    "dashboard/backend/domain/backtesting/portfolio_manager.py",
+    "dashboard/backend/infrastructure/llm/pipeline_runner.py",
+    "dashboard/frontend/assets/index-DRL4_iuP.css",
+    "dashboard/frontend/assets/index-DT12OnYj.js"
+   ],
+   "merges_cleanly": false
+  }
+ ]
+}

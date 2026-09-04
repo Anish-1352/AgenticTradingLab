@@ -133,17 +133,17 @@ There is no scheduler. Paper trading is an explicit stub with no order submissio
 
 *Consequence:* Nothing in the codebase can fire a decision every 150 seconds. This is the primary blocker: every other item is downstream of having a clock. [DERIVED]
 
-### `dashboard/backend/infrastructure/market_data/alpaca_bars.py:455` [MEASURED]
+### `dashboard/backend/infrastructure/market_data/alpaca_bars.py:349` [MEASURED]
 
 ```python
-timeframe=self.TimeFrame.Hour,
+def _alpaca_timeframe(self):
 ```
 
-The bar interval is hardcoded to one hour at the fetch site, and every market profile declares timeframe="60m". [MEASURED]
+RESOLVED upstream. The fetch site took a hardcoded hourly interval; the loader now accepts source_timeframe and translates 1m, 5m and 60m. [MEASURED]
 
-*Consequence:* Minute or 2.5-minute bars are unreachable without changing both the fetch and the profile table. [DERIVED]
+*Consequence:* Sub-hourly bars are reachable from configuration at this layer. The remaining blockers below are unaffected: a bar interval is not a scheduler. [DERIVED]
 
-### `dashboard/scripts/backtest_hourly_agent.py:251` [MEASURED]
+### `dashboard/scripts/backtest_hourly_agent.py:285` [MEASURED]
 
 ```python
 if args.timeframe is not None and args.timeframe != market_profile.timeframe:
@@ -153,10 +153,10 @@ if args.timeframe is not None and args.timeframe != market_profile.timeframe:
 
 *Consequence:* Passing --timeframe 1m fails rather than switching cadence. There is no configuration path to a sub-hourly run. [DERIVED]
 
-### `dashboard/backend/domain/trading/execution.py:526` [MEASURED]
+### `dashboard/backend/domain/trading/execution.py:457` [MEASURED]
 
 ```python
-price = market_data[symbol]["close"]
+reference_price = market_data[symbol]["close"]
 ```
 
 The fill price is the close of the same bar the decision was computed from, and the agent is shown that same close as the current price (portfolio.py:95). Decision price and fill price are the same number. [MEASURED]

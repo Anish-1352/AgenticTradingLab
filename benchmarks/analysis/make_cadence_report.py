@@ -62,22 +62,29 @@ BLOCKERS: List[Dict[str, str]] = [
         "id": "hourly_hardcoded",
         "ref": "origin/main",
         "file": "dashboard/backend/infrastructure/market_data/alpaca_bars.py",
-        # Moved 114 -> 455 by upstream refactoring. The claim is unchanged and
-        # still verified against origin/main; only the line drifted.
-        "line": 455,
-        "expect": "timeframe=self.TimeFrame.Hour",
+        # RESOLVED UPSTREAM. Was "the interval is hardcoded to one hour at the
+        # fetch site" (line 114, then 455). The loader now takes a
+        # ``source_timeframe`` and translates 1m / 5m / 60m, so the fetch site
+        # is no longer the obstacle. Re-pointed at the translation itself,
+        # which is the evidence that it is configurable.
+        "line": 349,
+        "expect": "def _alpaca_timeframe",
+        "resolved_upstream": True,
         "blocker": (
-            "The bar interval is hardcoded to one hour at the fetch site, and "
-            "every market profile declares timeframe=\"60m\"."),
+            "RESOLVED upstream. The fetch site took a hardcoded hourly "
+            "interval; the loader now accepts source_timeframe and translates "
+            "1m, 5m and 60m."),
         "consequence": (
-            "Minute or 2.5-minute bars are unreachable without changing both "
-            "the fetch and the profile table."),
+            "Sub-hourly bars are reachable from configuration at this layer. "
+            "The remaining blockers below are unaffected: a bar interval is "
+            "not a scheduler."),
     },
     {
         "id": "timeframe_flag_is_an_assertion",
         "ref": "origin/main",
         "file": "dashboard/scripts/backtest_hourly_agent.py",
-        "line": 251,
+        # Moved 251 -> 285 by upstream refactoring; claim unchanged.
+        "line": 285,
         "expect": "args.timeframe != market_profile.timeframe",
         "blocker": (
             "--timeframe looks like a knob but is a guard: it errors unless the "
@@ -90,8 +97,8 @@ BLOCKERS: List[Dict[str, str]] = [
         "id": "fill_equals_decision_price",
         "ref": "origin/main",
         "file": "dashboard/backend/domain/trading/execution.py",
-        # Moved 169 -> 526 by upstream refactoring; claim unchanged.
-        "line": 526,
+        # Moved 169 -> 526 -> 457 by upstream refactoring; claim unchanged.
+        "line": 457,
         "expect": 'price = market_data[symbol]["close"]',
         "blocker": (
             "The fill price is the close of the same bar the decision was "
