@@ -1,0 +1,70 @@
+{
+ "off": {
+  "returns": [
+   -0.009194999999999936,
+   -0.005330000000000041,
+   -0.0009699999999999136
+  ],
+  "mean_return": -0.005164999999999964,
+  "n_runs": 3,
+  "decisions": 42,
+  "attempts": 112,
+  "attempts_per_decision": 2.6666666666666665,
+  "retries": 70,
+  "tail_decisions": 14,
+  "tail_rate": 0.3333333333333333,
+  "histogram": {
+   "1": 13,
+   "2": 11,
+   "3": 4,
+   "4": 5,
+   "5": 9
+  },
+  "input_tokens": 224255,
+  "output_tokens": 241848,
+  "seconds": 1531.2065569129772,
+  "cost_usd": 0.059582350000000006,
+  "max_attempts_seen": 5
+ },
+ "on": {
+  "returns": [
+   -0.003730000000000132,
+   -0.0031649999999999634,
+   0.0017400000000000091
+  ],
+  "mean_return": -0.0017183333333333623,
+  "n_runs": 3,
+  "decisions": 42,
+  "attempts": 79,
+  "attempts_per_decision": 1.880952380952381,
+  "retries": 37,
+  "tail_decisions": 0,
+  "tail_rate": 0.0,
+  "histogram": {
+   "1": 10,
+   "2": 27,
+   "3": 5
+  },
+  "input_tokens": 150130,
+  "output_tokens": 190003,
+  "seconds": 1426.7420179233886,
+  "cost_usd": 0.0455071,
+  "max_attempts_seen": 3
+ },
+ "paired": true,
+ "tail_table": {
+  "off_tail": 14,
+  "off_rest": 28,
+  "on_tail": 0,
+  "on_rest": 42
+ },
+ "tail_p_one_sided": 1.6655529977007662e-05,
+ "deltas": {
+  "attempts_per_decision": -0.2946428571428571,
+  "retries": -0.4714285714285714,
+  "input_tokens": -0.3305388954538361,
+  "output_tokens": -0.21437018292481225,
+  "seconds": -0.06822367532189555,
+  "cost_usd": -0.23623187067982387
+ }
+}

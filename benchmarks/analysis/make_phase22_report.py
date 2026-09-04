@@ -334,9 +334,10 @@ def build() -> str:
     add("| Raise the output ceiling | `2.93` → `1.14` attempts/decision, "
         "`-61%` input tokens, `-28%` wall | env var, no code | **yes** — "
         "different decisions | MEASURED |")
-    add("| Escalate the ceiling on the first retry, not the fifth | removes "
-        "up to `4` truncated attempts per failing decision | small, additive | "
-        "no — same first request | DERIVED |")
+    add("| Escalate the ceiling on the first retry, not the fifth | "
+        "`2.67` → `1.88` attempts/decision, `-33%` input tokens, `-24%` cost, "
+        "and the `4`–`5` attempt tail goes to zero | small, additive | "
+        "no — same first request | MEASURED |")
     add("| Record per-request rows | none directly; makes the above "
         "measurable | small, additive | no | MEASURED |")
     add("| Clamp the thinking budget | none for this model | done, off by "
@@ -345,13 +346,13 @@ def build() -> str:
         "common path | small | no | MEASURED |")
     add("| Structured outputs | none — wrong mechanism | n/a | n/a | DERIVED |")
     add("")
-    add("The second row is the one worth building next and was not built here. "
-        "Upstream already raises the ceiling on attempt five; every failing "
-        "decision therefore pays four truncated calls before the remedy it "
-        "already knows about is applied [MEASURED]. Moving that escalation to "
-        "the first retry keeps the first request unchanged — so it does not "
-        "alter results the way raising the default ceiling does — while "
-        "removing most of the amplification [DERIVED].")
+    add("The second row has since been built and measured; see "
+        "`ESCALATION_ON_FIRST_RETRY.md`. Pooled over three interleaved pairs "
+        "it removes the `4`–`5` attempt tail completely — `14` of `42` "
+        "decisions to `0`, one-sided Fisher `p < 0.001` — for `-24%` cost, "
+        "and it did **not** degrade returns the way raising the default "
+        "ceiling did [MEASURED]. That asymmetry is the case for preferring it: "
+        "it changes only the requests that had already failed.")
     add("")
 
     add("## 6. What this does not establish")
