@@ -1,0 +1,1545 @@
+{
+ "tree": {
+  "head": "4388762fa25f044f534b8c48b3725ffa325c8d31",
+  "head_subject": "Merge pull request #444 from Open-Finance-Lab/feature/admin-user-value-analytics",
+  "is_origin_main": true,
+  "behind_origin_main": "0",
+  "marketplace_path": "/private/tmp/claude-501/-Users-ark-Columbia-MAFN-Sand-Hill-East---MeetSynthia-columbia-aicontext/4328cf77-ec47-43e5-a085-b06afeb09429/scratchpad/wt-main/dashboard/config/marketplace.json"
+ },
+ "seed_db_sha256_before": "414bf53cb056b2c60bbdf4d963dffd1ffd7998fcb6235cf9bda963bd52504c80",
+ "pipeline_parser": [
+  {
+   "group": "envelope",
+   "case": "actions, non-empty",
+   "input": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL"
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "envelope",
+   "case": "orders, non-empty",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "envelope",
+   "case": "risk_actions, non-empty",
+   "input": {
+    "risk_actions": [
+     {
+      "symbol": "AAPL",
+      "action": "stop_loss"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "sell",
+      "symbol": "AAPL",
+      "confidence": 0.8,
+      "reasoning": "stop_loss",
+      "position_size": 100
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "envelope",
+   "case": "actions, empty",
+   "input": {
+    "actions": []
+   },
+   "parsed": {
+    "actions": []
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 0
+  },
+  {
+   "group": "envelope",
+   "case": "orders, empty",
+   "input": {
+    "orders": []
+   },
+   "parsed": {
+    "actions": []
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 0
+  },
+  {
+   "group": "envelope",
+   "case": "risk_actions, empty",
+   "input": {
+    "risk_actions": []
+   },
+   "parsed": {
+    "actions": []
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 0
+  },
+  {
+   "group": "envelope",
+   "case": "unknown key only",
+   "input": {
+    "decisions": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": null,
+   "error": null,
+   "accepted": false,
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "empty object",
+   "input": {},
+   "parsed": null,
+   "error": null,
+   "accepted": false,
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "a list, not an object",
+   "input": [
+    "x"
+   ],
+   "parsed": null,
+   "error": null,
+   "accepted": false,
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "orders is not a list",
+   "input": {
+    "orders": {
+     "symbol": "AAPL"
+    }
+   },
+   "parsed": null,
+   "error": null,
+   "accepted": false,
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "orders of non-objects",
+   "input": {
+    "orders": [
+     1,
+     2,
+     3
+    ]
+   },
+   "parsed": null,
+   "error": null,
+   "accepted": false,
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "template shape verbatim",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 2,
+      "order_type": "market",
+      "limit_price": null,
+      "reason": "trend"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "trend",
+      "position_size": 2,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=buy",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=SELL (uppercase)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "SELL",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "sell",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=hold",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "hold",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "hold",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=short (unknown)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "short",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "hold",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=liquidate everything",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "liquidate everything",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "hold",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side missing",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "hold",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "action= used instead of side=",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "action": "sell",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "sell",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=None",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": null,
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "hold",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty=3",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty='7' (string)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": "7"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 7,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty=2.9 (float)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 2.9
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 2,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty=-5 (negative)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": -5
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": -5,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty=1e9 (huge)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 1000000000
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 1000000000,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty='many' (unparseable)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": "many"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 0,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "qty missing",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 0,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "quantity= alias",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "quantity": 4
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 4,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "qty",
+   "case": "position_size= alias",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "position_size": 5
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 5,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "symbol",
+   "case": "symbol missing",
+   "input": {
+    "orders": [
+     {
+      "side": "buy",
+      "qty": 1
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": null,
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 1,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "symbol",
+   "case": "symbol=None",
+   "input": {
+    "orders": [
+     {
+      "symbol": null,
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": null,
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "symbol",
+   "case": "symbol not in DJIA",
+   "input": {
+    "orders": [
+     {
+      "symbol": "NOTAREALTICKER",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "NOTAREALTICKER",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "symbol",
+   "case": "symbol lowercase",
+   "input": {
+    "orders": [
+     {
+      "symbol": "aapl",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "aapl",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "symbol",
+   "case": "symbol is a number",
+   "input": {
+    "orders": [
+     {
+      "symbol": 42,
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": 42,
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "confidence",
+   "case": "confidence missing",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "confidence",
+   "case": "confidence=2.5 (out of range)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3,
+      "confidence": 2.5
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 2.5,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "confidence",
+   "case": "confidence=-1",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3,
+      "confidence": -1
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": -1.0,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "confidence",
+   "case": "confidence='high'",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3,
+      "confidence": "high"
+     }
+    ]
+   },
+   "parsed": null,
+   "error": "ValueError: could not convert string to float: 'high'",
+   "accepted": false,
+   "n_actions": null
+  },
+  {
+   "group": "extras",
+   "case": "unknown extra field",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3,
+      "wibble": "ignored?"
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  },
+  {
+   "group": "extras",
+   "case": "order_type / limit_price (template asks for these)",
+   "input": {
+    "orders": [
+     {
+      "symbol": "AAPL",
+      "side": "buy",
+      "qty": 3,
+      "order_type": "limit",
+      "limit_price": 123.4
+     }
+    ]
+   },
+   "parsed": {
+    "actions": [
+     {
+      "action": "buy",
+      "symbol": "AAPL",
+      "confidence": 0.75,
+      "reasoning": "",
+      "position_size": 3,
+      "stop_loss_price": null,
+      "take_profit_price": null
+     }
+    ]
+   },
+   "error": null,
+   "accepted": true,
+   "n_actions": 1
+  }
+ ],
+ "pydantic_parser": [
+  {
+   "group": "envelope",
+   "case": "actions, non-empty",
+   "accepted": false,
+   "error": "actions[0]: Field required",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "orders, non-empty",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "risk_actions, non-empty",
+   "accepted": false,
+   "error": "Payload must include an \"actions\" array",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "actions, empty",
+   "accepted": true,
+   "error": null,
+   "n_actions": 0
+  },
+  {
+   "group": "envelope",
+   "case": "orders, empty",
+   "accepted": true,
+   "error": null,
+   "n_actions": 0
+  },
+  {
+   "group": "envelope",
+   "case": "risk_actions, empty",
+   "accepted": false,
+   "error": "Payload must include an \"actions\" array",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "unknown key only",
+   "accepted": false,
+   "error": "Payload must include an \"actions\" array",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "empty object",
+   "accepted": false,
+   "error": "Payload must include an \"actions\" array",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "orders is not a list",
+   "accepted": false,
+   "error": "Payload must include an \"actions\" array",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "orders of non-objects",
+   "accepted": false,
+   "error": "TypeError: dashboard.backend.infrastructure.llm.validator.LLMTradingDecision() argument after ** must be a mapping, not int",
+   "n_actions": null
+  },
+  {
+   "group": "envelope",
+   "case": "template shape verbatim",
+   "accepted": true,
+   "error": null,
+   "n_actions": 1
+  },
+  {
+   "group": "side",
+   "case": "side=buy",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "side=SELL (uppercase)",
+   "accepted": false,
+   "error": "actions[0]: Input should be 'buy', 'sell' or 'hold'",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "side=hold",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "side=short (unknown)",
+   "accepted": false,
+   "error": "actions[0]: Input should be 'buy', 'sell' or 'hold'",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "side=liquidate everything",
+   "accepted": false,
+   "error": "actions[0]: Input should be 'buy', 'sell' or 'hold'",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "side missing",
+   "accepted": false,
+   "error": "actions[0]: Input should be 'buy', 'sell' or 'hold'",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "action= used instead of side=",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "side",
+   "case": "side=None",
+   "accepted": false,
+   "error": "actions[0]: Input should be 'buy', 'sell' or 'hold'",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty=3",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty='7' (string)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty=2.9 (float)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty=-5 (negative)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty=1e9 (huge)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty='many' (unparseable)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "qty missing",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "quantity= alias",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "qty",
+   "case": "position_size= alias",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "symbol",
+   "case": "symbol missing",
+   "accepted": false,
+   "error": "actions[0]: Input should be a valid string",
+   "n_actions": null
+  },
+  {
+   "group": "symbol",
+   "case": "symbol=None",
+   "accepted": false,
+   "error": "actions[0]: Input should be a valid string",
+   "n_actions": null
+  },
+  {
+   "group": "symbol",
+   "case": "symbol not in DJIA",
+   "accepted": false,
+   "error": "actions[0]: Value error, Invalid symbol format: NOTAREALTICKER",
+   "n_actions": null
+  },
+  {
+   "group": "symbol",
+   "case": "symbol lowercase",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "symbol",
+   "case": "symbol is a number",
+   "accepted": false,
+   "error": "actions[0]: Input should be a valid string",
+   "n_actions": null
+  },
+  {
+   "group": "confidence",
+   "case": "confidence missing",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "confidence",
+   "case": "confidence=2.5 (out of range)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Confidence 2.5 out of range [0.0, 1.0]",
+   "n_actions": null
+  },
+  {
+   "group": "confidence",
+   "case": "confidence=-1",
+   "accepted": false,
+   "error": "actions[0]: Value error, Confidence -1.0 out of range [0.0, 1.0]",
+   "n_actions": null
+  },
+  {
+   "group": "confidence",
+   "case": "confidence='high'",
+   "accepted": false,
+   "error": "actions[0]: Input should be a valid number, unable to parse string as a number",
+   "n_actions": null
+  },
+  {
+   "group": "extras",
+   "case": "unknown extra field",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  },
+  {
+   "group": "extras",
+   "case": "order_type / limit_price (template asks for these)",
+   "accepted": false,
+   "error": "actions[0]: Value error, Reasoning too short: 0 < 5 chars",
+   "n_actions": null
+  }
+ ],
+ "templates": {
+  "templates": [
+   {
+    "name": "Balanced Starter",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "Momentum Scout",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "Three-Step Analyst",
+    "n_steps": 3,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Information Gathering",
+      "envelope": "facts",
+      "outputFormat": "JSON: { \"timestamp\": \"ISO8601\", \"symbols\": [\"...\"], \"facts\": [{ \"source\": \"...\", \"summary\": \"...\", \"impact\": \"bullish|bearish|neutral\" }], \"confidence\": 0.0-1.0 }"
+     },
+     {
+      "index": 1,
+      "label": "Information to Signal",
+      "envelope": "signals",
+      "outputFormat": "JSON: { \"signals\": [{ \"symbol\": \"...\", \"direction\": \"long|short|flat\", \"strength\": 0.0-1.0, \"horizon\": \"1h|4h|1d\", \"rationale\": \"...\" }] }"
+     },
+     {
+      "index": 2,
+      "label": "Signal to Execution",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "AI Hedge Fund",
+    "n_steps": 0,
+    "steps": [],
+    "final_envelope": null
+   },
+   {
+    "name": "Blue-Chip Steady",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "Even-Split Dow",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "A-Share Steady (T+1)",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "Contrarian Dip Buyer",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "Sector Rotator",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "Volatility Guard",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   },
+   {
+    "name": "A-Share Momentum (T+1)",
+    "n_steps": 1,
+    "steps": [
+     {
+      "index": 0,
+      "label": "Trading instruction",
+      "envelope": "orders",
+      "outputFormat": "JSON: { \"orders\": [{ \"symbol\": \"...\", \"side\": \"buy|sell|hold\", \"qty\": number, \"order_type\": \"market|limit\", \"limit_price\": number|null, \"reason\": \"...\" }] }"
+     }
+    ],
+    "final_envelope": "orders"
+   }
+  ],
+  "distinct_final_envelopes": [
+   "orders"
+  ],
+  "all_templates_agree_on_final": true
+ },
+ "template_fields_read_by_pipeline_parser": {
+  "symbol": true,
+  "side": true,
+  "qty": true,
+  "order_type": false,
+  "limit_price": false,
+  "reason": true
+ },
+ "parser_agreement": {
+  "compared": 39,
+  "accepted_by_both": 3,
+  "accepted_by_pipeline_only": 31,
+  "accepted_by_pydantic_only": 0,
+  "rejected_by_both": 5,
+  "agreement_rate": 0.20512820512820512,
+  "pipeline_only_cases": [
+   "actions, non-empty",
+   "orders, non-empty",
+   "risk_actions, non-empty",
+   "risk_actions, empty",
+   "side=buy",
+   "side=SELL (uppercase)",
+   "side=hold",
+   "side=short (unknown)",
+   "side=liquidate everything",
+   "side missing",
+   "action= used instead of side=",
+   "side=None",
+   "qty=3",
+   "qty='7' (string)",
+   "qty=2.9 (float)",
+   "qty=-5 (negative)",
+   "qty=1e9 (huge)",
+   "qty='many' (unparseable)",
+   "qty missing",
+   "quantity= alias",
+   "position_size= alias",
+   "symbol missing",
+   "symbol=None",
+   "symbol not in DJIA",
+   "symbol lowercase",
+   "symbol is a number",
+   "confidence missing",
+   "confidence=2.5 (out of range)",
+   "confidence=-1",
+   "unknown extra field",
+   "order_type / limit_price (template asks for these)"
+  ],
+  "pydantic_only_cases": []
+ },
+ "envelope_output_shapes": {
+  "per_case_keys": {
+   "actions, non-empty": [
+    "action",
+    "symbol"
+   ],
+   "orders, non-empty": [
+    "action",
+    "confidence",
+    "position_size",
+    "reasoning",
+    "stop_loss_price",
+    "symbol",
+    "take_profit_price"
+   ],
+   "risk_actions, non-empty": [
+    "action",
+    "confidence",
+    "position_size",
+    "reasoning",
+    "symbol"
+   ],
+   "template shape verbatim": [
+    "action",
+    "confidence",
+    "position_size",
+    "reasoning",
+    "stop_loss_price",
+    "symbol",
+    "take_profit_price"
+   ]
+  },
+  "distinct_shapes": 3
+ },
+ "seed_db_sha256_after": "414bf53cb056b2c60bbdf4d963dffd1ffd7998fcb6235cf9bda963bd52504c80"
+}

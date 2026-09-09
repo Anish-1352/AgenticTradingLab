@@ -1,0 +1,243 @@
+{
+ "n_pairs": 325,
+ "by_path": {
+  "pipeline": {
+   "n": 168,
+   "parsed_json": 168,
+   "parse_rate": 1.0,
+   "hit_ceiling": 0,
+   "ceiling_rate": 0.0,
+   "no_text": 0,
+   "mean_output_tokens": 833.7916666666666,
+   "mean_prompt_chars": 1831.4880952380952
+  },
+  "single_prompt": {
+   "n": 157,
+   "parsed_json": 48,
+   "parse_rate": 0.3057324840764331,
+   "hit_ceiling": 111,
+   "ceiling_rate": 0.7070063694267515,
+   "no_text": 76,
+   "mean_output_tokens": 2170.541401273885,
+   "mean_prompt_chars": 5321.203821656051
+  }
+ },
+ "by_regime": {
+  "downtrend": {
+   "n": 125,
+   "parsed_json": 81,
+   "parse_rate": 0.648,
+   "hit_ceiling": 45,
+   "ceiling_rate": 0.36,
+   "no_text": 33,
+   "mean_output_tokens": 1527.248,
+   "mean_prompt_chars": 3609.536
+  },
+  "flat": {
+   "n": 78,
+   "parsed_json": 55,
+   "parse_rate": 0.7051282051282052,
+   "hit_ceiling": 23,
+   "ceiling_rate": 0.2948717948717949,
+   "no_text": 16,
+   "mean_output_tokens": 1386.8333333333333,
+   "mean_prompt_chars": 3434.7179487179487
+  },
+  "uptrend": {
+   "n": 122,
+   "parsed_json": 80,
+   "parse_rate": 0.6557377049180327,
+   "hit_ceiling": 43,
+   "ceiling_rate": 0.3524590163934426,
+   "no_text": 27,
+   "mean_output_tokens": 1489.9426229508197,
+   "mean_prompt_chars": 3475.565573770492
+  }
+ },
+ "by_step_label": {
+  "Information Gathering": {
+   "n": 56,
+   "parsed_json": 56,
+   "parse_rate": 1.0,
+   "hit_ceiling": 0,
+   "ceiling_rate": 0.0,
+   "no_text": 0,
+   "mean_output_tokens": 1091.6607142857142,
+   "mean_prompt_chars": 1672.6964285714287
+  },
+  "Information to Signal": {
+   "n": 56,
+   "parsed_json": 56,
+   "parse_rate": 1.0,
+   "hit_ceiling": 0,
+   "ceiling_rate": 0.0,
+   "no_text": 0,
+   "mean_output_tokens": 606.8571428571429,
+   "mean_prompt_chars": 1418.607142857143
+  },
+  "Signal to Execution": {
+   "n": 56,
+   "parsed_json": 56,
+   "parse_rate": 1.0,
+   "hit_ceiling": 0,
+   "ceiling_rate": 0.0,
+   "no_text": 0,
+   "mean_output_tokens": 802.8571428571429,
+   "mean_prompt_chars": 2403.160714285714
+  },
+  "None": {
+   "n": 157,
+   "parsed_json": 48,
+   "parse_rate": 0.3057324840764331,
+   "hit_ceiling": 111,
+   "ceiling_rate": 0.7070063694267515,
+   "no_text": 76,
+   "mean_output_tokens": 2170.541401273885,
+   "mean_prompt_chars": 5321.203821656051
+  }
+ },
+ "crossed": {
+  "cells": {
+   "downtrend|pipeline": {
+    "regime": "downtrend",
+    "path": "pipeline",
+    "n": 63,
+    "parse_rate": 1.0,
+    "ceiling_rate": 0.0,
+    "no_text": 0,
+    "mean_output_tokens": 903.2222222222222,
+    "mean_prompt_chars": 1877.047619047619
+   },
+   "flat|pipeline": {
+    "regime": "flat",
+    "path": "pipeline",
+    "n": 42,
+    "parse_rate": 1.0,
+    "ceiling_rate": 0.0,
+    "no_text": 0,
+    "mean_output_tokens": 782.7142857142857,
+    "mean_prompt_chars": 1822.857142857143
+   },
+   "uptrend|pipeline": {
+    "regime": "uptrend",
+    "path": "pipeline",
+    "n": 63,
+    "parse_rate": 1.0,
+    "ceiling_rate": 0.0,
+    "no_text": 0,
+    "mean_output_tokens": 798.4126984126984,
+    "mean_prompt_chars": 1791.6825396825398
+   },
+   "downtrend|single_prompt": {
+    "regime": "downtrend",
+    "path": "single_prompt",
+    "n": 62,
+    "parse_rate": 0.2903225806451613,
+    "ceiling_rate": 0.7258064516129032,
+    "no_text": 33,
+    "mean_output_tokens": 2161.3387096774195,
+    "mean_prompt_chars": 5369.967741935484
+   },
+   "flat|single_prompt": {
+    "regime": "flat",
+    "path": "single_prompt",
+    "n": 36,
+    "parse_rate": 0.3611111111111111,
+    "ceiling_rate": 0.6388888888888888,
+    "no_text": 16,
+    "mean_output_tokens": 2091.6388888888887,
+    "mean_prompt_chars": 5315.222222222223
+   },
+   "uptrend|single_prompt": {
+    "regime": "uptrend",
+    "path": "single_prompt",
+    "n": 59,
+    "parse_rate": 0.288135593220339,
+    "ceiling_rate": 0.7288135593220338,
+    "no_text": 27,
+    "mean_output_tokens": 2228.35593220339,
+    "mean_prompt_chars": 5273.610169491525
+   }
+  },
+  "regimes": [
+   "downtrend",
+   "flat",
+   "uptrend"
+  ],
+  "paths": [
+   "pipeline",
+   "single_prompt"
+  ],
+  "cells_filled": 6,
+  "cells_possible": 6,
+  "fully_crossed": true
+ },
+ "token_split": {
+  "n_pairs": 325,
+  "billed_output_tokens": 480852,
+  "visible_text_tokens_est": 84362,
+  "not_shown_in_the_response_est": 396490,
+  "hidden_share_est": 0.8245572442248342,
+  "note": "hidden = billed minus an estimate of the visible text; on a reasoning model this is dominated by the thinking block"
+ },
+ "field_usage": {
+  "keys_emitted": {
+   "symbol": 286,
+   "source": 167,
+   "summary": 167,
+   "impact": 167,
+   "confidence": 155,
+   "direction": 112,
+   "strength": 112,
+   "horizon": 112,
+   "rationale": 112,
+   "action": 91,
+   "reasoning": 91,
+   "position_size": 91,
+   "stop_loss_price": 91,
+   "take_profit_price": 91,
+   "side": 83,
+   "qty": 83,
+   "order_type": 83,
+   "limit_price": 83,
+   "reason": 83,
+   "timestamp": 56,
+   "symbols": 56,
+   "facts": 56,
+   "signals": 56,
+   "orders": 56,
+   "actions": 46
+  },
+  "keys_read_by_parser": {
+   "confidence": 155,
+   "symbol": 286,
+   "rationale": 112,
+   "side": 83,
+   "qty": 83,
+   "reason": 83,
+   "action": 91,
+   "position_size": 91,
+   "stop_loss_price": 91,
+   "take_profit_price": 91
+  },
+  "keys_asked_for_but_ignored": {
+   "order_type": 83,
+   "limit_price": 83
+  },
+  "n_distinct_keys": 25
+ },
+ "conversion": {
+  "pipeline_final_steps": 56,
+  "pipeline_final_converted": 56,
+  "pipeline_final_conversion_rate": 1.0,
+  "single_prompt_calls": 157,
+  "single_prompt_converted": 48
+ },
+ "content_type_shapes": {
+  "['thinking', 'text']": 220,
+  "['thinking']": 76,
+  "['text']": 29
+ },
+ "no_text_responses": 76,
+ "ceiling_hits": 111
+}
