@@ -35,6 +35,10 @@ Also sets `recovery_spent` when the escalated retry is what produced the text,
 so the post-parse truncation retry does not re-issue an identical request —
 which the existing comment says has "nothing different left to ask for".
 
+Behind `LLM_ESCALATE_CEILING_ON_RETRY`, default off — nothing changes until
+enabled. Happy to make it the default if preferred; the change only affects
+requests that already failed.
+
 ## Measured: three interleaved pairs, 42 decisions a side
 
 Paired because a single run cannot see this. The **same** configuration on the
