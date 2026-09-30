@@ -123,7 +123,9 @@ def test_minute_source_keeps_hourly_decisions_and_5m_execution(monkeypatch):
     # bucket has no next in-session source bar, so it fills at the 15:55
     # bar's close rather than being dropped.
     assert len(decisions) == 70
-    assert len(equity_curve) == 780
+    # Initial open anchor plus 780 completed-source-bar close events.
+    assert len(equity_curve) == 781
+    assert pd.Timestamp(equity_curve[-1]["timestamp"]).hour == 16
     assert run_id.startswith("agent_")
 
     trade = fake_db.trades[0][1][0]

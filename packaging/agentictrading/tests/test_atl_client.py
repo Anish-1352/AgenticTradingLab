@@ -74,7 +74,7 @@ def test_create_run_request_construction(fake_http):
     assert captured["body"]["agent_version_id"] == "agv_1"
     assert captured["body"]["environment"] == {"type": "backtest", "environment_id": "us-equity-hourly-v1"}
     assert captured["body"]["config"]["symbols"] == ["AAPL"]
-    # initial_cash is NOT advertised on the wire — the environment fixes capital.
+    # Omitted capital delegates the default to the backend.
     assert "initial_cash" not in captured["body"]["config"]
     assert run.id == "run_1"
     assert run.run_id == "run_1"
@@ -86,46 +86,26 @@ def test_create_run_requires_agent_version():
         _client().create_run("", environment_id="e", start_date="a", end_date="b")
 
 
-def test_create_run_rejects_custom_initial_cash():
-    """MEDIUM #12 — the environment fixes starting capital, so a non-default
-    initial_cash is rejected client-side (fail fast) with a clear code, before
-    any HTTP request the backend would 400."""
+@pytest.mark.parametrize("cash", [-1, float("nan"), float("inf"), "invalid"])
+@pytest.mark.parametrize("via_config", [False, True])
+def test_create_run_rejects_invalid_initial_cash(cash, via_config):
+    args = {"config": {"initial_cash": cash}} if via_config else {"initial_cash": cash}
     with pytest.raises(ATLValidationError) as exc:
-        _client().create_run(
-            "agv_1", environment_id="e", start_date="a", end_date="b",
-            initial_cash=50_000,
-        )
-    assert exc.value.code == "initial_cash_fixed"
+        _client().create_run("agv_1", environment_id="e", start_date="a", end_date="b", **args)
+    assert exc.value.code == "invalid_initial_cash"
 
 
-def test_create_run_rejects_custom_initial_cash_via_config():
-    """The guard can't be bypassed by smuggling initial_cash through the raw
-    config dict (config is merged into run_config, so it must be re-checked)."""
-    with pytest.raises(ATLValidationError) as exc:
-        _client().create_run(
-            "agv_1", environment_id="e", start_date="a", end_date="b",
-            config={"initial_cash": 50_000},
-        )
-    assert exc.value.code == "initial_cash_fixed"
-
-
-def test_create_run_accepts_the_fixed_default_initial_cash(fake_http):
-    """Passing the fixed default is tolerated (backward compat) and still omitted
-    from the wire payload."""
+@pytest.mark.parametrize("cash", [0, 1000, 3000])
+@pytest.mark.parametrize("via_config", [False, True])
+def test_create_run_forwards_explicit_initial_cash(fake_http, cash, via_config):
     captured = {}
-
     def responder(req):
-        captured["body"] = json.loads(req.data.decode())
-        return (200, {"run_id": "run_1", "status": "created",
-                      "environment": {"environment_id": "e", "type": "backtest"},
-                      "config": {}})
-
+        captured.update(json.loads(req.data.decode()))
+        return (200, {"run_id": "run_1"})
     fake_http(responder)
-    _client().create_run(
-        "agv_1", environment_id="e", start_date="a", end_date="b",
-        initial_cash=1_000,
-    )
-    assert "initial_cash" not in captured["body"]["config"]
+    args = {"config": {"initial_cash": cash}} if via_config else {"initial_cash": cash}
+    _client().create_run("agv_1", environment_id="e", start_date="a", end_date="b", **args)
+    assert captured["config"]["initial_cash"] == cash
 
 
 def test_api_key_not_in_repr():

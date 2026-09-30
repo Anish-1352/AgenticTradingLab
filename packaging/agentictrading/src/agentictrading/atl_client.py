@@ -26,6 +26,7 @@ Conceptual mapping::
 from __future__ import annotations
 
 import json
+import math
 import socket
 import time
 import urllib.error
@@ -227,19 +228,14 @@ class ATLClient:
     ) -> Run:
         """Create a run for an existing AgentVersion. Requires ``agent_version_id``.
 
-        ``initial_cash`` is accepted for forward-compatibility but the backtest
-        environment currently fixes starting capital, so a value other than the
-        fixed default is rejected client-side (fail fast) rather than making a
-        request the backend would reject with ``invalid_config``. Leave it unset —
-        the environment applies the fixed default.
+        Explicit ``initial_cash`` is forwarded to the backend, which owns the
+        environment's capital limits. Omission uses the environment default.
         """
         if not agent_version_id:
             raise ATLValidationError(
                 "agent_version_id is required; create an AgentVersion first",
                 code="missing_agent_version_id",
             )
-        # The backtest environment fixes starting capital (backend INITIAL_CAPITAL).
-        _FIXED_INITIAL_CASH = 1_000
         run_config: Dict[str, Any] = {
             "start_date": start_date,
             "end_date": end_date,
@@ -248,17 +244,19 @@ class ATLClient:
             run_config["symbols"] = symbols
         if config:
             run_config.update(config)
-        # Validate the EFFECTIVE value — from the kwarg OR a raw config dict — so
-        # config={"initial_cash": ...} can't smuggle a value past the guard, then
-        # never put it on the wire (the environment applies its fixed default).
+        # Raw config retains its existing precedence over the keyword argument.
         effective_cash = run_config.get("initial_cash", initial_cash)
-        if effective_cash is not None and float(effective_cash) != _FIXED_INITIAL_CASH:
-            raise ATLValidationError(
-                f"initial_cash is fixed at {_FIXED_INITIAL_CASH:.0f} in this "
-                "environment; custom starting capital is not supported",
-                code="initial_cash_fixed",
-            )
-        run_config.pop("initial_cash", None)
+        if effective_cash is not None:
+            try:
+                cash = float(effective_cash)
+            except (TypeError, ValueError):
+                cash = float("nan")
+            if not math.isfinite(cash) or cash < 0:
+                raise ATLValidationError(
+                    "initial_cash must be a finite nonnegative number",
+                    code="invalid_initial_cash",
+                )
+            run_config["initial_cash"] = cash
         body = {
             "agent_version_id": agent_version_id,
             "environment": {"type": environment_type, "environment_id": environment_id},

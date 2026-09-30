@@ -1,9 +1,9 @@
 """Technical indicator feature computation.
 
 Extracted (Phase 2A) verbatim from ``TechnicalIndicators`` in
-``dashboard/scripts/backtest_hourly_agent.py``. Feature names, dataframe column
-names, NaN behavior, minimum-history assumptions, indicator parameters, and the
-returned dataframe shape are unchanged.
+``dashboard/scripts/backtest_hourly_agent.py``. Feature names and indicator
+parameters are preserved. Warm-up and failure defaults use only the prefix
+available at each completed decision bar.
 """
 
 import pandas as pd
@@ -59,9 +59,17 @@ class TechnicalIndicators:
             print(f"   Recommended: 3+ months for meaningful results.\n")
             # Still calculate what we can
 
+        defaults = {
+            "rsi_14": 50.0, "macd": 0.0, "macd_signal": 0.0,
+            "bb_upper": df["close"].expanding().max(),
+            "bb_lower": df["close"].expanding().min(),
+            "sma20": df["close"].expanding().mean(),
+            "sma50": df["close"].expanding().mean(),
+        }
+
         try:
-            # RSI (14-period requires 14+ bars)
-            if len(df) >= 14:
+            # RSI needs 14 differences (15 closes).
+            if len(df) >= 15:
                 rsi = ta.rsi(df["close"], length=14)
                 if rsi is not None:
                     df["rsi_14"] = rsi
@@ -70,8 +78,8 @@ class TechnicalIndicators:
             else:
                 df["rsi_14"] = 50.0  # Not enough data
 
-            # MACD (26-period required)
-            if len(df) >= 26:
+            # The combined MACD/signal calculation needs 26 + 9 - 1 bars.
+            if len(df) >= 34:
                 macd = ta.macd(df["close"], fast=12, slow=26, signal=9)
                 if macd is not None and isinstance(macd, pd.DataFrame):
                     macd_cols = [c for c in macd.columns if "MACD_12_26_9" in c]
@@ -100,36 +108,45 @@ class TechnicalIndicators:
                     if bbu_cols:
                         df["bb_upper"] = bbands[bbu_cols[0]]
                     else:
-                        df["bb_upper"] = df["close"].max()
+                        df["bb_upper"] = df["close"].expanding().max()
                     if bbl_cols:
                         df["bb_lower"] = bbands[bbl_cols[0]]
                     else:
-                        df["bb_lower"] = df["close"].min()
+                        df["bb_lower"] = df["close"].expanding().min()
                 else:
-                    df["bb_upper"] = df["close"].max()
-                    df["bb_lower"] = df["close"].min()
+                    df["bb_upper"] = df["close"].expanding().max()
+                    df["bb_lower"] = df["close"].expanding().min()
             else:
-                df["bb_upper"] = df["close"].max()
-                df["bb_lower"] = df["close"].min()
+                df["bb_upper"] = df["close"].expanding().max()
+                df["bb_lower"] = df["close"].expanding().min()
 
             # SMAs
             if len(df) >= 20:
                 sma20 = ta.sma(df["close"], length=20)
-                df["sma20"] = sma20 if sma20 is not None else df["close"].mean()
+                df["sma20"] = sma20 if sma20 is not None else df["close"].expanding().mean()
             else:
-                df["sma20"] = df["close"].mean()
+                df["sma20"] = df["close"].expanding().mean()
 
             if len(df) >= 50:
                 sma50 = ta.sma(df["close"], length=50)
-                df["sma50"] = sma50 if sma50 is not None else df["close"].mean()
+                df["sma50"] = sma50 if sma50 is not None else df["close"].expanding().mean()
             else:
-                df["sma50"] = df["close"].mean()
+                df["sma50"] = df["close"].expanding().mean()
 
         except Exception as e:
             print(f"Warning: Error calculating indicators: {e}")
             # Fill in defaults
             for col in ["rsi_14", "macd", "macd_signal", "bb_upper", "bb_lower", "sma20", "sma50"]:
                 if col not in df.columns:
-                    df[col] = df["close"].mean() if col != "rsi_14" else 50.0
+                    df[col] = defaults[col]
 
+        # A prefix has the same warm-up values whether evaluated alone or as
+        # the beginning of a longer tape. Never backfill from future rows.
+        for col, default in defaults.items():
+            df[col] = df[col].fillna(default)
+        # pandas-ta may return early values retrospectively once its minimum
+        # input length is met. Those values were unavailable on a short prefix.
+        df.iloc[:14, df.columns.get_loc("rsi_14")] = 50.0
+        for col in ("macd", "macd_signal"):
+            df.iloc[:33, df.columns.get_loc(col)] = 0.0
         return df

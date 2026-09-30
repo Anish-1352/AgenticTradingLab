@@ -1,0 +1,33 @@
+{
+  "phase_id": "27",
+  "dataset_version": "atl-outcomes-v0",
+  "feature_version": "completed-hour-prefix-v0",
+  "label_version": "long-one-hour-net-cash-v0",
+  "split_version": "expanding-3-months-v0",
+  "universe": ["AAPL"],
+  "market": "US",
+  "timezone": "America/New_York",
+  "source_timeframe": "5m",
+  "decision_timeframe": "60m",
+  "decision_clock": "completed full hourly bar; fill at next source open at its boundary",
+  "horizon_minutes": 60,
+  "allow_short": false,
+  "quantity": 1,
+  "initial_cash": 3000,
+  "feature_fields": ["close", "return_1", "return_3", "volatility_6", "volume_ratio_6", "estimated_cost"],
+  "lookback_bars": 6,
+  "trade_threshold": 0.001,
+  "probability_threshold": 0.5,
+  "embargo_hours": 24,
+  "purge_policy": "outcome_available_at must be strictly before partition end",
+  "seed": 27,
+  "costs": {"version": "phase27-us-v0", "currency": "USD", "commission_rate": 0.0001, "minimum_commission": 0, "stamp_duty_sell_rate": 0, "transfer_fee_rate": 0, "buy_slippage_rate": 0.0005, "sell_slippage_rate": 0.0005, "price_tick": 0.01},
+  "classifier": {"version": "numpy-logistic-v0", "iterations": 600, "learning_rate": 0.1, "l2": 0.01, "standardization": "training rows only", "calibration_bins": 5},
+  "excluded_sessions": ["2023-01-02", "2023-01-16", "2023-02-20", "2023-04-07", "2023-05-29", "2023-06-19", "2023-07-03", "2023-07-04", "2023-09-04", "2023-11-23", "2023-11-24", "2023-12-25"],
+  "calendar_source": "https://www.nyse.com/publicdocs/ICE_NYSE_2023_Yearly_Trading_Calendar.pdf",
+  "folds": [
+    {"id": "2023-07", "train": ["2023-01-01", "2023-06-01"], "validation": ["2023-06-01", "2023-07-01"], "test": ["2023-07-01", "2023-08-01"]},
+    {"id": "2023-09", "train": ["2023-01-01", "2023-08-01"], "validation": ["2023-08-01", "2023-09-01"], "test": ["2023-09-01", "2023-10-01"]},
+    {"id": "2023-11", "train": ["2023-01-01", "2023-10-01"], "validation": ["2023-10-01", "2023-11-01"], "test": ["2023-11-01", "2023-12-01"]}
+  ]
+}

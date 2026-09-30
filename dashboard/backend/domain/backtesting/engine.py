@@ -58,6 +58,7 @@ from dashboard.backend.infrastructure.llm.validator import DJIA_30, TOP_10_STOCK
 from dashboard.backend.infrastructure.market_data.strategy_universe import (
     resolve_strategy_universe, validate_selection,
 )
+from dashboard.backend.domain.backtesting.valuation import EventTimeValuator
 from dashboard.backend.domain.backtesting.constants import (
     INITIAL_CAPITAL,
     fractional_return,
@@ -1963,7 +1964,15 @@ class HourlyBacktester:
             if self.intraday_mode
             else price_cache
         )
-        valuation_cursor = 0
+        valuator = EventTimeValuator(
+            manager, raw_timestamps if self.intraday_mode else all_timestamps,
+            lambda timestamp: self._market_data_at(
+                self.source_data if self.intraday_mode else self.all_data,
+                self.symbols, timestamp,
+            ),
+            source_minutes=timeframe_minutes(self.source_timeframe) if self.intraday_mode else 0,
+            transform=self._require_currency_context().reporting_equity_record,
+        )
 
         print("   ✅ Cache ready\n")
 
@@ -2092,6 +2101,8 @@ class HourlyBacktester:
                     if fill.price_field in row
                 }
 
+            # Drain earlier marks using pre-fill holdings, then apply the fill.
+            valuator.through(fill.filled_at)
             # Execute trades (only if real data available)
             trades_before_execution = len(manager.trades)
             manager.execute_actions(
@@ -2106,41 +2117,7 @@ class HourlyBacktester:
                     len(manager.trades) - trades_before_execution
                 )
             
-            # Update equity. The minute path emits one mark for every source
-            # bar through the fill, while the legacy path emits one hourly mark.
-            if self.intraday_mode:
-                while (
-                    valuation_cursor < len(raw_timestamps)
-                    and raw_timestamps[valuation_cursor] <= execution_timestamp
-                ):
-                    valuation_timestamp = raw_timestamps[valuation_cursor]
-                    valuation_market_data = self._market_data_at(
-                        self.source_data,
-                        self.symbols,
-                        valuation_timestamp,
-                    )
-                    manager.update_equity(
-                        valuation_market_data,
-                        valuation_price_cache,
-                        valuation_timestamp,
-                    )
-                    manager.equity_history[-1] = (
-                        self._require_currency_context().reporting_equity_record(
-                            manager.equity_history[-1]
-                        )
-                    )
-                    valuation_cursor += 1
-            else:
-                manager.update_equity(
-                    execution_market_data,
-                    price_cache,
-                    execution_timestamp,
-                )
-                manager.equity_history[-1] = (
-                    self._require_currency_context().reporting_equity_record(
-                        manager.equity_history[-1]
-                    )
-                )
+            valuator.after_fill(fill)
             self._publish_live_progress(i + 1, total_steps, manager)
 
             if post_trade_steps and is_last_bar_of_trading_day(all_timestamps, i):
@@ -2156,28 +2133,9 @@ class HourlyBacktester:
                 pct_return = fractional_return(equity, self.initial_capital) * 100
                 print(f"   Decision {i+1}/{len(all_timestamps)}: Equity ${equity:,.0f} ({pct_return:+.1f}%)")
 
-        if self.intraday_mode:
-            # Mark any remaining source bars after the final decision/fill so
-            # the curve closes at the end of the requested market window.
-            while valuation_cursor < len(raw_timestamps):
-                valuation_timestamp = raw_timestamps[valuation_cursor]
-                valuation_market_data = self._market_data_at(
-                    self.source_data,
-                    self.symbols,
-                    valuation_timestamp,
-                )
-                manager.update_equity(
-                    valuation_market_data,
-                    valuation_price_cache,
-                    valuation_timestamp,
-                )
-                manager.equity_history[-1] = (
-                    self._require_currency_context().reporting_equity_record(
-                        manager.equity_history[-1]
-                    )
-                )
-                valuation_cursor += 1
-        
+        # Remaining closes become marks only at their availability times.
+        valuator.through()
+
         equity_curve = manager.get_equity_curve()
         
         # Convert timestamps to strings

@@ -59,13 +59,14 @@ def test_sma_values_are_rolling_means():
     assert out["sma50"].iloc[-1] == pytest.approx(df["close"].iloc[-50:].mean())
 
 
-def test_nan_behavior_on_early_rows():
+def test_warmup_values_are_identical_for_short_and_long_histories():
     df = _df(60, seed=2)
     out = TechnicalIndicators.calculate_indicators(df)
-    # rolling indicators are NaN until they have enough history
-    assert np.isnan(out["rsi_14"].iloc[0])
-    assert np.isnan(out["sma20"].iloc[0])
-    assert np.isnan(out["sma50"].iloc[0])
+    # Warm-up defaults are prefix-only, not dependent on total tape length.
+    assert out["rsi_14"].iloc[0] == 50.0
+    assert out["sma20"].iloc[0] == df["close"].iloc[0]
+    assert out["sma50"].iloc[0] == df["close"].iloc[0]
+    pd.testing.assert_frame_equal(out.iloc[:10], TechnicalIndicators.calculate_indicators(df.iloc[:10]))
 
 
 def test_insufficient_data_uses_defaults():
