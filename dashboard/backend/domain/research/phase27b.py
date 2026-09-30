@@ -146,6 +146,29 @@ def decision_schedule(sessions, spec):
     return [(i, i + horizon) for i in range(spec["warmup_sessions"], len(sessions) - horizon, step)]
 
 
+def spell_cash(chosen, spec, cost_multiplier=1.0):
+    """Cash a book of chosen rows earns when back-to-back LONGs are held through.
+
+    Rows whose exit is the next row's entry form one spell: one buy at the
+    first entry, one sell at the last exit. Each row's own label still charges
+    a full round trip, so this is never below the sum of the rows' net cash.
+    """
+    total, spell = 0.0, None
+    for row in sorted(chosen, key=lambda r: r["entry_timestamp"]):
+        if spell and spell["exit_timestamp"] == row["entry_timestamp"]:
+            spell = {**spell, "exit_timestamp": row["exit_timestamp"], "exit_price": row["exit_price"]}
+            continue
+        if spell:
+            total += _spell_value(spell, spec, cost_multiplier)
+        spell = dict(row)
+    return total + (_spell_value(spell, spec, cost_multiplier) if spell else 0.0)
+
+
+def _spell_value(spell, spec, cost_multiplier):
+    entry = spell["entry_price"]
+    return round_trip(entry, spell["exit_price"], spec, cost_multiplier) * entry * spec["quantity"]
+
+
 def make_outcome(entry, exit_price, path, spec, cost_multiplier=1.0):
     """Hidden outcome of a long position entered at ``entry``, exited at ``exit_price``.
 

@@ -101,10 +101,8 @@ def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, star
             if self.previous is not None and t <= self.previous:
                 raise ValueError("non-increasing decision clock")
             self.previous = t
-            orders = []
             held = sum(p["quantity"] for p in obs.positions if p["symbol"] == symbol)
-            if held:
-                orders.append({"symbol": symbol, "side": "sell", "quantity": held})
+            long_ = False
             if t in self.rows:
                 row = self.rows[t]
                 if abs(bar["close"] - observed_close[t]) > 1e-9:
@@ -112,8 +110,15 @@ def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, star
                 prediction = validate_prediction(predict(model_payload(row, spec)))
                 self.predictions.append({"record_id": row["record_id"], "timestamp": row["timestamp"],
                                          "symbol": symbol, **prediction})
-                if prediction["direction"] == "LONG":
-                    orders.append({"symbol": symbol, "side": "buy", "quantity": spec["quantity"]})
+                long_ = prediction["direction"] == "LONG"
+            # A LONG on a held position holds through: ATL's position cap counts
+            # this decision's buys but not its sells, so selling and rebuying a
+            # name above ~$375 is judged as two shares and rejected.
+            orders = []
+            if held and not long_:
+                orders.append({"symbol": symbol, "side": "sell", "quantity": held})
+            elif long_ and not held:
+                orders.append({"symbol": symbol, "side": "buy", "quantity": spec["quantity"]})
             self.expected_fills = len(orders)
             self.decisions.append({"timestamp": t.isoformat(), "orders": orders})
             return {"orders": orders, "confidence": 1.0}
@@ -216,7 +221,7 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash):
     import pandas as pd
     from dashboard.backend.domain.research.phase27 import canonical, digest
     from dashboard.backend.domain.research.phase27b import (
-        build_dataset, build_splits, calendar_sessions, session_frame, write_dataset)
+        build_dataset, build_splits, calendar_sessions, session_frame, spell_cash, write_dataset)
     from dashboard.backend.domain.research.phase27b_metrics import (
         cost_sensitivity, probability_buckets, rank_signal, score_window)
     from dashboard.backend.database import db
@@ -278,9 +283,9 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash):
             labels = [o["trade_worthy"] for o in outs]
             net = [o["cost_adjusted_forward_return"] for o in outs]
             for symbol, run in per_symbol.items():
-                expected = spec["initial_cash"] + sum(
-                    hidden[p["record_id"]]["cost_adjusted_forward_return"] * hidden[p["record_id"]]["entry_price"]
-                    * spec["quantity"] for p in run["predictions"] if p["trade_probability"] >= threshold)
+                expected = spec["initial_cash"] + spell_cash(
+                    [hidden[p["record_id"]] for p in run["predictions"] if p["trade_probability"] >= threshold],
+                    spec)
                 if abs(run["metrics"]["final_equity"] - expected) > 1e-6:
                     raise ValueError(f"ATL cash disagrees with hidden outcomes: {fold['id']} {name} {symbol}")
             entry = {"fold": fold["id"], "baseline": name,
