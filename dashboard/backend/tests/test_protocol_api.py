@@ -660,6 +660,165 @@ def test_position_cap_accounts_for_intra_decision_accumulation(client):
     assert aapl and aapl[0]["market_value"] <= 250, body
 
 
+def _decide_next_step(client, run_id, key, orders):
+    """Wait for the active step and submit ``orders`` against it."""
+    step = _wait_for_step(client, run_id, key)
+    resp = client.post(
+        f"/api/v1/runs/{run_id}/steps/{step['step_id']}/decision",
+        json={"idempotency_key": str(uuid.uuid4()), "orders": orders},
+        headers={"X-API-Key": key},
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+def _run_holding_aapl(client, shares):
+    """A run whose first step bought ``shares`` AAPL (~$100 each, $1k equity,
+    $250 cap). Returns ``(run_id, key)`` with the second step up next."""
+    agent_id, key, _ = _new_agent(client)
+    version_id = _new_version(client, agent_id, key)
+    run_id = _create_run(client, key, version_id)
+    body = _decide_next_step(
+        client, run_id, key, [{"symbol": "AAPL", "side": "buy", "quantity": shares}]
+    )
+    assert sum(f["filled_quantity"] for f in body["fills"]) == shares, body
+    return run_id, key
+
+
+def _cap_rejected_sides(body):
+    return [
+        r["order"]["side"]
+        for r in body["validation"]["rejections"]
+        if r["reason"] == "exceeds_max_position_weight"
+    ]
+
+
+def _filled(body, side):
+    return sum(
+        f["filled_quantity"] for f in body["fills"] if f["symbol"] == "AAPL" and f["side"] == side
+    )
+
+
+def test_position_cap_credits_sell_listed_before_rebuy(client):
+    """A SELL accepted earlier in the same decision frees cap room for a later
+    BUY of that symbol, because the engine executes orders in submission order.
+    Holding 2 AAPL (~$200), [sell 2, buy 2] ends at 2 shares (~$200 < $250);
+    judging the buy as 2 held + 2 bought (~$400) would wrongly reject it.
+    """
+    run_id, key = _run_holding_aapl(client, 2)
+    body = _decide_next_step(
+        client,
+        run_id,
+        key,
+        [
+            {"symbol": "AAPL", "side": "sell", "quantity": 2},
+            {"symbol": "AAPL", "side": "buy", "quantity": 2},
+        ],
+    )
+    assert _cap_rejected_sides(body) == [], body
+    assert _filled(body, "sell") == 2 and _filled(body, "buy") == 2, body
+    aapl = [p for p in body["portfolio_after"]["positions"] if p["symbol"] == "AAPL"]
+    assert aapl and aapl[0]["quantity"] == 2 and aapl[0]["market_value"] <= 250, body
+
+
+def test_position_cap_oversized_sell_credit_floors_at_zero(client):
+    """Selling more than is held credits only down to a flat position: the
+    over-sell must not bank negative shares that let a later BUY exceed the cap.
+    Holding 2 AAPL, [sell 5, buy 3] leaves the buy judged as 3 shares (~$300).
+    """
+    run_id, key = _run_holding_aapl(client, 2)
+    body = _decide_next_step(
+        client,
+        run_id,
+        key,
+        [
+            {"symbol": "AAPL", "side": "sell", "quantity": 5},
+            {"symbol": "AAPL", "side": "buy", "quantity": 3},
+        ],
+    )
+    assert _cap_rejected_sides(body) == ["buy"], body
+    assert _filled(body, "buy") == 0, body
+
+
+def test_position_cap_sell_credit_capped_at_pre_decision_position(client):
+    """The engine clamps a sell to the position held BEFORE the decision, so
+    shares bought earlier in the same decision cannot be sold back to make room.
+    Holding 1 AAPL, [buy 1, sell 5, buy 2]: the sell executes 1 share, leaving
+    1, so the final buy would land at 3 shares (~$300) and must be rejected.
+    """
+    run_id, key = _run_holding_aapl(client, 1)
+    body = _decide_next_step(
+        client,
+        run_id,
+        key,
+        [
+            {"symbol": "AAPL", "side": "buy", "quantity": 1},
+            {"symbol": "AAPL", "side": "sell", "quantity": 5},
+            {"symbol": "AAPL", "side": "buy", "quantity": 2},
+        ],
+    )
+    assert _cap_rejected_sides(body) == ["buy"], body
+    assert _filled(body, "buy") == 1 and _filled(body, "sell") == 1, body
+    aapl = [p for p in body["portfolio_after"]["positions"] if p["symbol"] == "AAPL"]
+    assert aapl and aapl[0]["market_value"] <= 250, body
+
+
+def test_position_cap_sell_does_not_free_capacity_for_larger_rebuy(client):
+    """Sell credit only offsets the shares actually sold: holding 2 AAPL,
+    [sell 2, buy 3] still yields a 3-share (~$300) position over the $250 cap.
+    """
+    run_id, key = _run_holding_aapl(client, 2)
+    body = _decide_next_step(
+        client,
+        run_id,
+        key,
+        [
+            {"symbol": "AAPL", "side": "sell", "quantity": 2},
+            {"symbol": "AAPL", "side": "buy", "quantity": 3},
+        ],
+    )
+    assert _cap_rejected_sides(body) == ["buy"], body
+    assert _filled(body, "sell") == 2 and _filled(body, "buy") == 0, body
+
+
+def test_position_cap_sell_listed_after_buy_does_not_free_capacity(client):
+    """Order matters: the engine executes the BUY before a SELL listed after
+    it, so that sell cannot retroactively make room. Holding 2 AAPL,
+    [buy 2, sell 2] would pass through a 4-share (~$400) position.
+    """
+    run_id, key = _run_holding_aapl(client, 2)
+    body = _decide_next_step(
+        client,
+        run_id,
+        key,
+        [
+            {"symbol": "AAPL", "side": "buy", "quantity": 2},
+            {"symbol": "AAPL", "side": "sell", "quantity": 2},
+        ],
+    )
+    assert _cap_rejected_sides(body) == ["buy"], body
+    assert _filled(body, "buy") == 0 and _filled(body, "sell") == 2, body
+
+
+def test_position_cap_accumulates_buys_on_held_position(client):
+    """Sell credit leaves buy accumulation intact: holding 1 AAPL (~$100),
+    [buy 1, buy 1] accepts the first (2 shares, ~$200) and rejects the second
+    (3 shares, ~$300 over the $250 cap).
+    """
+    run_id, key = _run_holding_aapl(client, 1)
+    body = _decide_next_step(
+        client,
+        run_id,
+        key,
+        [
+            {"symbol": "AAPL", "side": "buy", "quantity": 1},
+            {"symbol": "AAPL", "side": "buy", "quantity": 1},
+        ],
+    )
+    assert _cap_rejected_sides(body) == ["buy"], body
+    assert _filled(body, "buy") == 1, body
+
+
 def test_engine_share_cap_does_not_void_valid_orders(client, monkeypatch):
     """H3 refinement: an order above the engine's hard 10k-share ceiling is
     rejected per-order (exceeds_max_order_size) instead of tripping the engine's
