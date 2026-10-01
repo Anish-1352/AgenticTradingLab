@@ -47,6 +47,7 @@ from dashboard.backend.domain.runs.protocol import (
     resolve_order_quantity,
 )
 from dashboard.backend.domain.runs.repository import run_store
+from dashboard.backend.domain.backtesting.replay import resolve_replay
 from dashboard.backend.domain.analytics import instrumentation as analytics_instrumentation
 
 _runs: Dict[str, "ProtocolRun"] = {}
@@ -634,6 +635,13 @@ def create_run(
     if mode not in ("safe_trading", "buy_and_hold"):
         raise ProtocolError("invalid_config", f"Unsupported mode '{mode}'", 400)
 
+    replay = None
+    if "replay_id" in config:
+        try:
+            replay = resolve_replay(config["replay_id"], start_date, end_date, symbols or DJIA_30)
+        except (ValueError, TypeError) as exc:
+            raise ProtocolError("invalid_replay", str(exc), 400) from exc
+
     # Bound concurrent resource use: refuse a new run once the agent already has
     # MAX_ACTIVE_RUNS_PER_AGENT non-terminal runs (each pins an in-memory engine
     # session holding market data). The reaper frees these as they finish.
@@ -688,6 +696,7 @@ def create_run(
             # symbol constraints() advertises as tradeable (LOW #11).
             symbols=config.get("symbols") or DJIA_30,
             initial_capital=resolved_capital,
+            **({"replay": replay} if replay is not None else {}),
         )
         backtest_id = start_res["backtest_id"]
 
@@ -1017,8 +1026,7 @@ def submit_decision(run_id: str, step_id: str, decision: DecisionIn) -> Dict[str
                 )
 
         fills = session.fills_since(trades_before)
-        exec_ts = session.executed_step_timestamp()
-        portfolio_after = session.protocol_portfolio(exec_ts)
+        portfolio_after = session.protocol_execution_portfolio()
         decision_id = _new_decision_id()
         run_completed = session.status == "completed"
 
