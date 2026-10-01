@@ -936,10 +936,16 @@ def submit_decision(run_id: str, step_id: str, decision: DecisionIn) -> Dict[str
         accepted_order_reprs: List[Dict[str, Any]] = []
         rejections: List[Dict[str, Any]] = []
         confidence = decision.confidence if decision.confidence is not None else 0.75
-        # Buy shares provisionally accepted earlier in THIS decision, per symbol,
-        # so the position cap accounts for intra-decision accumulation (several
-        # buys of the same symbol) rather than judging each order in isolation.
-        pending_buy_shares: Dict[str, int] = {}
+        # Per-symbol position projected through the orders provisionally
+        # accepted earlier in THIS decision, so the position cap judges each buy
+        # against the position it will actually land on (several buys
+        # accumulate; an earlier sell frees room) rather than each order in
+        # isolation. The engine executes accepted orders in submission order, so
+        # only orders listed BEFORE a buy count: a sell listed after it cannot
+        # free room for it.
+        projected_shares: Dict[str, int] = {
+            symbol: qty or 0 for symbol, qty in positions_before.items()
+        }
 
         for order in decision.orders:
             side = order.side.lower()
@@ -963,9 +969,7 @@ def submit_decision(run_id: str, step_id: str, decision: DecisionIn) -> Dict[str
             # Reject an over-cap order on its own (H2/H3): pre-filtering here
             # keeps a single oversized order from voiding the whole decision —
             # the remaining valid orders still reach the engine and execute.
-            # ``existing_shares`` folds in what's already held AND what earlier
-            # orders in this same decision provisionally bought.
-            held = (positions_before.get(order.symbol, 0) or 0) + pending_buy_shares.get(order.symbol, 0)
+            held = projected_shares.get(order.symbol, 0)
             cap_reason = _exceeds_position_cap(
                 side,
                 order.symbol,
@@ -985,7 +989,14 @@ def submit_decision(run_id: str, step_id: str, decision: DecisionIn) -> Dict[str
                 rejections.append({"order": order_repr, "reason": "exceeds_max_order_size"})
                 continue
             if side == "buy":
-                pending_buy_shares[order.symbol] = pending_buy_shares.get(order.symbol, 0) + shares
+                projected_shares[order.symbol] = held + shares
+            elif side == "sell":
+                # Mirror the engine's clamps: ``actions_to_executable`` caps a
+                # sell at the pre-decision position, execution caps it at the
+                # position then held. An over-sell therefore frees no more room
+                # than the shares the engine will actually sell.
+                sold = min(shares, positions_before.get(order.symbol, 0) or 0, held)
+                projected_shares[order.symbol] = held - sold
             accepted_actions.append(
                 order_to_action(
                     order, shares=shares, confidence=confidence, rationale=decision.rationale
@@ -1312,8 +1323,8 @@ def _exceeds_position_cap(
     ``max_position_weight`` is a fraction of total equity that any single
     position may occupy (already coerced to a finite positive float or None).
     Sells reduce exposure and are never capped here. The resulting position is
-    valued at the current price and includes ``existing_shares`` (held plus
-    already-accepted-this-decision).
+    valued at the current price and includes ``existing_shares`` (the position
+    projected through the buys and sells accepted earlier in this decision).
     """
     if side != "buy":
         return None
