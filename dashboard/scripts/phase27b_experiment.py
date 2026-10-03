@@ -55,7 +55,8 @@ def exit_timestamp(t, calendar, spec):
     return pd.Timestamp(f"{exit_day} {spec['decision_bar_end_local']}", tz=spec["timezone"]).tz_convert("UTC")
 
 
-def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, start, end, predict, metadata):
+def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, start, end, predict, metadata,
+                      prepared=None):
     """Inference and execution for one symbol and one window. Outcomes cannot enter.
 
     ``predict`` is the replacement point for a future open model. It sees the
@@ -64,8 +65,8 @@ def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, star
     import pandas as pd
     from agentictrading import ATLClient, AgentRunner
     from dashboard.backend.domain.research.phase27 import canonical, digest
-    from dashboard.backend.domain.research.phase27b import model_payload, session_frame
-    from dashboard.backend.domain.research.phase27b_replay import make_symbol_replay
+    from dashboard.backend.domain.research.phase27b import model_payload
+    from dashboard.backend.domain.research import phase27b_replay
     from dashboard.backend.domain.backtesting.replay import register_replay
     from dashboard.backend.domain.backtesting import external_run_service as ebs
     from dashboard.backend.domain.runs import service as runs
@@ -84,7 +85,11 @@ def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, star
             response.raise_for_status()
             return response.json()
 
-    prices = session_frame(raw, spec)
+    # ``prepared`` carries the whole-tape derivations computed once per symbol;
+    # without it the run derives them itself, with identical results.
+    if prepared is None:
+        prepared = phase27b_replay.prepare_symbol_tape(raw, symbol, spec)
+    prices = prepared["sessions"]
     observed_close = {row.decision_timestamp: row.price for row in prices.itertuples()}
     entries = [pd.Timestamp(r["timestamp"]) for r in inputs]
     exits = [exit_timestamp(t, calendar, spec) for t in entries]
@@ -131,7 +136,8 @@ def run_symbol_window(http, directory, raw, inputs, calendar, spec, symbol, star
     policy = Policy()
     try:
         replay_id = "phase27b-" + uuid.uuid4().hex
-        register_replay(replay_id, make_symbol_replay(raw, symbol, entries, exits, spec, start, end))
+        register_replay(replay_id, phase27b_replay.make_symbol_replay(raw, symbol, entries, exits, spec,
+                                                                      start, end, prepared=prepared))
         response = http.post("/api/v1/agents", json={"name": "phase27b-offline"},
                              headers={"X-Session-Id": uuid.uuid4().hex})
         response.raise_for_status()
@@ -220,6 +226,7 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
     """Every fold x baseline x symbol through ATL, twice; labels joined after sealing."""
     import pandas as pd
     from dashboard.backend.domain.research.phase27 import canonical, digest
+    from dashboard.backend.domain.research import phase27b_replay
     from dashboard.backend.domain.research.phase27b import (
         build_dataset, build_splits, calendar_sessions, session_frame, spell_cash, write_dataset)
     from dashboard.backend.domain.research.phase27b_metrics import (
@@ -242,6 +249,7 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
         folds = [f for f in folds if f["id"] in set(fold_ids)]
     indexed = {r["record_id"]: r for r in inputs}
     hidden = {o["record_id"]: o for o in outcomes}
+    prepared = {}
     threshold = spec["probability_threshold"]
     experiment_id = digest([manifest["dataset_id"], spec, code_hash])
     report = {"experiment_id": experiment_id, "dataset_id": manifest["dataset_id"], "code_hash": code_hash,
@@ -274,8 +282,11 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
                 metadata = {"experiment_id": experiment_id, "dataset_id": manifest["dataset_id"],
                             "code_hash": code_hash, "fold": fold["id"], "baseline": name,
                             "model_state": states[name], "seed": spec["seed"]}
+                if symbol not in prepared:
+                    prepared[symbol] = phase27b_replay.prepare_symbol_tape(traded[symbol], symbol, spec)
                 repeats = [run_symbol_window(http, root / symbol / str(k), traded[symbol], rows, calendar,
-                                             spec, symbol, start, end, gate, {**metadata, "repeat": k})
+                                             spec, symbol, start, end, gate, {**metadata, "repeat": k},
+                                             prepared=prepared[symbol])
                            for k in range(2)]
                 if repeats[0]["fingerprint"] != repeats[1]["fingerprint"]:
                     raise ValueError(f"non-reproducible replay: {fold['id']} {name} {symbol}")

@@ -13,17 +13,35 @@ from dashboard.backend.domain.backtesting.replay import FrozenReplay
 from dashboard.backend.domain.research.phase27 import digest, regular_source
 from dashboard.backend.infrastructure.market_data.profiles import TransactionCostProfile
 
-__all__ = ["make_symbol_replay"]
+__all__ = ["prepare_symbol_tape", "make_symbol_replay"]
 
 
-def make_symbol_replay(raw, symbol, entries, exits, spec, start, end):
-    """Frozen replay whose steps are ``entries`` and ``exits`` (UTC timestamps)."""
-    if not entries:
-        raise ValueError("empty replay")
+def prepare_symbol_tape(raw, symbol, spec):
+    """Everything a run derives from the WHOLE tape, computed once per symbol.
+
+    The regular-hours source, its complete hourly bars, the aggregation quality
+    ATL records, and the session prices the run checks ATL's observations
+    against. None of it depends on the run, so a run given this sees exactly
+    what it would have computed itself.
+    """
+    from dashboard.backend.domain.research.phase27b import session_frame
     source = regular_source(raw, spec)
     hours = aggregate_bars(source, source_timeframe="5m", decision_timeframe="60m", timezone=spec["timezone"])
     quality = summarize_aggregation_quality({symbol: hours})
     hours = hours.loc[hours.is_complete & (hours.expected_source_bars == 12)]
+    return {"symbol": symbol, "source": source, "hours": hours, "quality": quality,
+            "sessions": session_frame(raw, spec)}
+
+
+def make_symbol_replay(raw, symbol, entries, exits, spec, start, end, prepared=None):
+    """Frozen replay whose steps are ``entries`` and ``exits`` (UTC timestamps)."""
+    if not entries:
+        raise ValueError("empty replay")
+    if prepared is None:
+        prepared = prepare_symbol_tape(raw, symbol, spec)
+    elif prepared["symbol"] != symbol:
+        raise ValueError("prepared tape belongs to another symbol")
+    source, hours, quality = prepared["source"], prepared["hours"], prepared["quality"]
     steps = sorted(set(entries) | set(exits))
     index = pd.DatetimeIndex(steps)
     if not index.isin(source.index).all() or not index.isin(hours.index).all():

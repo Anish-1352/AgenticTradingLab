@@ -108,3 +108,48 @@ def test_the_experiment_cli_takes_a_fold_subset():
     args = ["--output", "/tmp/x", "--source-manifest", "/tmp/m.json"]
     assert phase27b_experiment.parse_args(args).folds is None
     assert phase27b_experiment.parse_args([*args, "--folds", "2018Q1,2018Q2"]).folds == ["2018Q1", "2018Q2"]
+
+
+def _window(seed):
+    from dashboard.backend.domain.research.phase27b import build_dataset, calendar_sessions, session_frame
+    s = small_spec()
+    raw = tape(sessions=60, seed=seed)
+    inputs, outcomes, _ = build_dataset({"AAPL": raw}, raw, s)
+    sessions = session_frame(raw, s)
+    calendar = calendar_sessions(sessions.index[0], sessions.index[-1], s)
+    start = pd.Timestamp(inputs[0]["timestamp"]).tz_convert(s["timezone"]).date().isoformat()
+    end = pd.Timestamp(outcomes[-1]["exit_timestamp"]).tz_convert(s["timezone"]).date().isoformat()
+    return s, raw, inputs, calendar, start, end
+
+
+def test_a_prepared_tape_runs_exactly_like_the_raw_tape(client, tmp_path):
+    """Whole-tape aggregation is a property of the symbol, not of the run.
+    Preparing it once must not change a single byte ATL sees or records."""
+    from dashboard.backend.domain.research.phase27b_replay import prepare_symbol_tape
+    from dashboard.scripts.phase27b_experiment import run_symbol_window
+    s, raw, inputs, calendar, start, end = _window(70)
+    every_other = {r["timestamp"] for r in inputs[::2]}
+    gate = lambda p: ({"trade_probability": 1.0, "direction": "LONG"} if p["timestamp"] in every_other
+                      else {"trade_probability": 0.0, "direction": "NONE"})
+    plain = run_symbol_window(client, tmp_path / "a", raw, inputs, calendar, s, "AAPL", start, end, gate, {})
+    prepared = prepare_symbol_tape(raw, "AAPL", s)
+    fast = run_symbol_window(client, tmp_path / "b", raw, inputs, calendar, s, "AAPL", start, end, gate, {},
+                             prepared=prepared)
+    assert fast["fingerprint"] == plain["fingerprint"]
+    assert fast["trades"] and fast["trades"] == plain["trades"]
+
+
+def test_evaluate_prepares_each_symbol_once_not_once_per_run(client, tmp_path, monkeypatch):
+    from dashboard.backend.domain.research import phase27b_replay
+    calls = []
+    real = phase27b_replay.prepare_symbol_tape
+    monkeypatch.setattr(phase27b_replay, "prepare_symbol_tape",
+                        lambda raw, symbol, spec: calls.append(symbol) or real(raw, symbol, spec))
+    s = small_spec(universe=["AAPL", "MSFT"], folds=[
+        {"id": "f1", "train": ["2024-01-01", "2024-03-18"], "validation": ["2024-03-18", "2024-04-01"],
+         "test": ["2024-04-01", "2024-05-06"]},
+        {"id": "f2", "train": ["2024-01-01", "2024-04-15"], "validation": ["2024-04-15", "2024-05-06"],
+         "test": ["2024-05-06", "2024-06-10"]}])
+    raws = {"AAPL": tape(sessions=120, seed=71), "MSFT": tape(sessions=120, seed=72)}
+    evaluate(client, tmp_path, raws, tape(sessions=120, seed=73), {"sha256": "s" * 64}, s, "code")
+    assert sorted(calls) == ["AAPL", "MSFT"]     # 2 folds x 3 baselines x 2 repeats would be 24
