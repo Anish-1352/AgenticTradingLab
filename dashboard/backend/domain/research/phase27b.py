@@ -31,8 +31,11 @@ __all__ = ["load_spec", "read_sources", "session_frame", "calendar_sessions", "b
 _INPUT_KEYS = {"record_id", "timestamp", "feature_timestamp", "symbol", "features"}
 
 
-def load_spec():
-    return json.loads(Path(__file__).with_name("phase27b-v1.json").read_text())
+def load_spec(name="phase27b-v1.json"):
+    """A frozen spec by file name, from this directory only -- never a path."""
+    if Path(name).name != name or not name.endswith(".json"):
+        raise ValueError(f"spec must be a .json file name in {Path(__file__).parent.name}/, not {name!r}")
+    return json.loads(Path(__file__).with_name(name).read_text())
 
 
 def read_sources(manifest_path, universe, market_symbol):

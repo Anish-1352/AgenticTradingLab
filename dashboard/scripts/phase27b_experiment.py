@@ -216,7 +216,7 @@ def portfolio_financials(runs, spec):
             "weekly_steps": int(len(sampled))}
 
 
-def evaluate(http, output, raws, market_raw, source, spec, code_hash):
+def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=None):
     """Every fold x baseline x symbol through ATL, twice; labels joined after sealing."""
     import pandas as pd
     from dashboard.backend.domain.research.phase27 import canonical, digest
@@ -233,13 +233,21 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash):
     calendar = calendar_sessions(market.index[0], market.index[-1], spec)
     manifest = write_dataset(output / "dataset", inputs, outcomes, quality, calendar, spec, source, code_hash)
     folds = build_splits(inputs, outcomes, calendar, spec)
+    if fold_ids is not None:
+        # A worker runs a subset of the folds of the SAME spec and dataset, so
+        # workers' windows join on spec_hash and dataset_id.
+        unknown = sorted(set(fold_ids) - {f["id"] for f in folds})
+        if unknown:
+            raise ValueError(f"unknown folds: {unknown}")
+        folds = [f for f in folds if f["id"] in set(fold_ids)]
     indexed = {r["record_id"]: r for r in inputs}
     hidden = {o["record_id"]: o for o in outcomes}
     threshold = spec["probability_threshold"]
     experiment_id = digest([manifest["dataset_id"], spec, code_hash])
     report = {"experiment_id": experiment_id, "dataset_id": manifest["dataset_id"], "code_hash": code_hash,
-              "source_sha256": source.get("sha256"), "spec_hash": digest(spec), "windows": [], "pooled": {}}
-    pooled = {}
+              "source_sha256": source.get("sha256"), "spec_hash": digest(spec), "windows": [], "pooled": {},
+              "pooled_by_class": {}, "fold_ids": [f["id"] for f in folds]}
+    pooled, pooled_by_class = {}, {}
 
     for fold in folds:
         if not fold["train_ids"] or not fold["test_ids"]:
@@ -288,7 +296,8 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash):
                     spec)
                 if abs(run["metrics"]["final_equity"] - expected) > 1e-6:
                     raise ValueError(f"ATL cash disagrees with hidden outcomes: {fold['id']} {name} {symbol}")
-            entry = {"fold": fold["id"], "baseline": name,
+            window_class = fold["bounds"].get("window_class", "unclassified")
+            entry = {"fold": fold["id"], "baseline": name, "window_class": window_class,
                      "classification": score_window(labels, probs, net,
                                                     [o["maximum_adverse_excursion"] for o in outs],
                                                     [o["maximum_favorable_excursion"] for o in outs], threshold),
@@ -311,17 +320,25 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash):
                 db.insert_run_manifest(run["result_run_id"], {**stored, "evaluation_window": fold["id"]})
             (root / "evaluation.json").write_text(canonical(entry) + "\n")
             report["windows"].append(entry)
-            acc = pooled.setdefault(name, {k: [] for k in ("y", "p", "net", "mae", "mfe")})
-            acc["y"] += labels; acc["p"] += probs; acc["net"] += net
-            acc["mae"] += [o["maximum_adverse_excursion"] for o in outs]
-            acc["mfe"] += [o["maximum_favorable_excursion"] for o in outs]
+            # Seen and unseen evidence never share an accumulator: "pooled"
+            # spans every window, "pooled_by_class" keeps each class apart.
+            for acc in (pooled.setdefault(name, {k: [] for k in ("y", "p", "net", "mae", "mfe")}),
+                        pooled_by_class.setdefault(window_class, {}).setdefault(
+                            name, {k: [] for k in ("y", "p", "net", "mae", "mfe")})):
+                acc["y"] += labels; acc["p"] += probs; acc["net"] += net
+                acc["mae"] += [o["maximum_adverse_excursion"] for o in outs]
+                acc["mfe"] += [o["maximum_favorable_excursion"] for o in outs]
             print(f"Completed {fold['id']} {name}: {len(sealed)} predictions, "
                   f"{entry['financial']['fills']} fills; repeat identical", flush=True)
 
-    for name, acc in pooled.items():
-        report["pooled"][name] = {**score_window(acc["y"], acc["p"], acc["net"], acc["mae"], acc["mfe"], threshold),
-                                  "ranking": rank_signal(acc["p"], acc["y"], acc["net"]),
-                                  "probability_buckets": probability_buckets(acc["p"], acc["net"])}
+    def summarise(acc):
+        return {**score_window(acc["y"], acc["p"], acc["net"], acc["mae"], acc["mfe"], threshold),
+                "ranking": rank_signal(acc["p"], acc["y"], acc["net"]),
+                "probability_buckets": probability_buckets(acc["p"], acc["net"])}
+
+    report["pooled"] = {name: summarise(acc) for name, acc in pooled.items()}
+    report["pooled_by_class"] = {cls: {name: summarise(acc) for name, acc in by_name.items()}
+                                 for cls, by_name in pooled_by_class.items()}
     (output / "experiment.json").write_text(canonical(report) + "\n")
     return report
 
@@ -334,11 +351,19 @@ def configure_offline(output):
     os.environ["ATL_BAR_CACHE"] = "0"
 
 
-def main():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-manifest", required=True)
     parser.add_argument("--output", required=True)
-    args = parser.parse_args()
+    parser.add_argument("--spec", default="phase27b-v1.json",
+                        help="frozen spec file name in domain/research/")
+    parser.add_argument("--folds", type=lambda v: v.split(","), default=None,
+                        help="comma-separated fold ids to run; default all")
+    return parser.parse_args(argv)
+
+
+def main():
+    args = parse_args()
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     configure_offline(output)
@@ -351,14 +376,15 @@ def main():
     provenance = {"git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
                   "files": files, "source_tree_hash": digest(files), "python": sys.version}
     (output / "code-manifest.json").write_text(canonical(provenance) + "\n")
-    spec = load_spec()
+    spec = load_spec(args.spec)
     raws, meta = read_sources(args.source_manifest, spec["universe"], spec["market_symbol"])
     source = {"sha256": digest(meta), "manifest": meta}
     market = raws.pop(spec["market_symbol"])
     try:
         # Not used as a context manager: entering it would fire the app's
         # startup workers, one of which fetches live bars.
-        evaluate(TestClient(app), output, raws, market, source, spec, provenance["source_tree_hash"])
+        evaluate(TestClient(app), output, raws, market, source, spec, provenance["source_tree_hash"],
+                 fold_ids=args.folds)
     except Exception as error:
         (output / "failure.json").write_text(canonical({"error_type": type(error).__name__}) + "\n")
         raise

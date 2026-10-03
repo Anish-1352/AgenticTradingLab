@@ -9,7 +9,8 @@ only Phase 27B code that touches the network; the experiment CLI reads the
 frozen bytes and checks their hashes.
 
 Before writing the manifest it verifies the spec's holiday/early-close list
-against the tape and that one share of every symbol fits ATL's position limit.
+against the tape, that one share of every symbol fits ATL's position limit, and
+that every split the spec lists left no mechanical jump in the tape.
 Either failure exits nonzero, so a wrong calendar or an untradable name is a
 decision someone makes explicitly rather than a silent row loss.
 """
@@ -117,13 +118,43 @@ def fetch(symbol, start, end):
     return frame.sort_index()
 
 
+def split_audit(raw, events, spec):
+    """Does a known split leave a mechanical jump in this tape?
+
+    For each event, the first regular-session open on the split date against
+    the last regular close before it. On a split-adjusted tape that is an
+    ordinary overnight gap; on a raw tape a 4:1 split reads as -75%. ``ok``
+    means the gap is nearer no jump than the full split jump, in log terms.
+    """
+    import numpy as np
+    regular = _regular(raw)
+    days = regular.index.tz_convert(TZ).date
+    out = []
+    for event in events:
+        day = pd.Timestamp(event["date"]).date()
+        before, on = regular[days < day], regular[days == day]
+        if before.empty or on.empty:
+            out.append({**event, "mechanical_return": None, "ok": False, "reason": "no bars around the split"})
+            continue
+        gap = float(on["open"].iloc[0] / before["close"].iloc[-1])
+        out.append({**event, "mechanical_return": gap - 1,
+                    "ok": bool(abs(np.log(gap)) < np.log(event["ratio"]) / 2)})
+    return out
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", required=True)
+    parser.add_argument("--spec", default="phase27b-v1.json",
+                        help="frozen spec file name in domain/research/")
+    return parser.parse_args(argv)
+
+
 def main():
     from dashboard.backend.domain.research.phase27 import digest
     from dashboard.backend.domain.research.phase27b import load_spec
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", required=True)
-    args = parser.parse_args()
-    spec = load_spec()
+    args = parse_args()
+    spec = load_spec(args.spec)
     start, end = spec["data_window"]
     out = Path(args.output).resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -139,15 +170,20 @@ def main():
     calendar = verify_calendar(frames[spec["market_symbol"]], spec, start, end)
     per_symbol_gaps = {s: symbol_data_gaps(f, spec, start, end) for s, f in frames.items()}
     feasibility = price_feasibility({s: frames[s] for s in spec["universe"]}, spec)
+    splits = {s: split_audit(frames[s], events, spec)
+              for s, events in spec.get("split_events", {}).items() if s in frames}
+    unadjusted = sorted(s for s, rows in splits.items() if not all(r["ok"] for r in rows))
     manifest = {"files": files, "adjustment": "split", "feed": "sip", "timeframe": "5m",
                 "window": [start, end], "retrieved_at": datetime.now(timezone.utc).isoformat(),
                 "frame_attrs": {"bar_open_stamped_minutes": 5},
                 "calendar_verification": {"authority": spec["market_symbol"], **calendar},
-                "data_gaps_per_symbol": per_symbol_gaps, "price_feasibility": feasibility}
+                "data_gaps_per_symbol": per_symbol_gaps, "price_feasibility": feasibility,
+                "split_audit": splits}
     (out / "source-manifest.json").write_text(json.dumps(manifest, indent=1, sort_keys=True))
     print(f"calendar ok={calendar['ok']}  infeasible={feasibility['infeasible']}  "
+          f"unadjusted splits={unadjusted}  "
           f"gap sessions={ {s: len(g) for s, g in per_symbol_gaps.items()} }")
-    if not calendar["ok"] or feasibility["infeasible"]:
+    if not calendar["ok"] or feasibility["infeasible"] or unadjusted:
         sys.exit(2)
 
 
