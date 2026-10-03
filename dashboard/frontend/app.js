@@ -6833,6 +6833,9 @@ function setPerformanceComparisonState(state, message = '') {
 function clearPerformanceComparison(state = 'empty', message = '') {
     document.getElementById('performanceComparisonHead')?.replaceChildren();
     document.getElementById('performanceComparisonBody')?.replaceChildren();
+    // Loading, live, empty and launch-failed views all pass through here, and
+    // in none of them is a finished curve of the selected run on screen.
+    renderChartSingleSampleNotice(null);
     renderPerformanceLegend({ columns: [] });
     setPerformanceComparisonState(state, message);
 }
@@ -10166,6 +10169,82 @@ function formatBacktestMarketDataProvenance(provenance) {
     return parts.join(' · ');
 }
 
+/**
+ * The Sampling row's text. `null`/`undefined` is an LLM run written before
+ * the engine recorded its policy, so it reads "Not recorded" -- an unrecorded
+ * field is unknown, not a default. Never "deterministic": what was pinned is
+ * the request, not the provider.
+ *
+ * Every word here is a fact about the *request*, because a recorded request
+ * is all this function is given. It sees no catalog and no provider, so it
+ * cannot say what a model did with a value it was sent -- and the one time
+ * this row tried to, it said "this model ignores temperature" on the single
+ * policy (reasoning effort, no temperature) belonging to the single model
+ * that refuses a temperature outright, while the two models that really do
+ * ignore one carry both values and got no note at all. The general caveat
+ * that a pinned request is not a reproducible run lives where it stays true
+ * for every row: the CLAUDE.md bullet, and diff_backtest_runs.py, which
+ * measures the spread rather than asserting there is none.
+ *
+ * An effort in the off-set reads "thinking off": that is what the request
+ * asked for (the OpenAI adapter sends it to CommonStack as thinking
+ * disabled), and "reasoning effort none" would read as an effort level.
+ *
+ * The recorded `policy` decides the prefix, not the presence of values: a
+ * block whose values were dropped (or never written) must not read as a run
+ * that pinned nothing. `pinned_v1` is the catalog policy the execution client
+ * imposed, `provider_default` a run that pinned nothing, `leaderboard_entry`
+ * a leaderboard row's configured values; anything else is "Not recorded".
+ * When the calls were answered on more than one lane, the lanes are named:
+ * one policy takes a different shape on each, and only some are probed.
+ */
+function formatBacktestSampling(sampling) {
+    if (!sampling || typeof sampling !== 'object') return 'Not recorded';
+    // Python twin: REASONING_OFF_VALUES in
+    // infrastructure/llm/reasoning_controls.py -- held equal by
+    // test_backtest_sampling_row.py. Inside the function, not at module
+    // scope: the node harness lifts this function alone.
+    const THINKING_OFF_VALUES = new Set(['none', 'off', 'false', '0', 'disabled']);
+    const policy = typeof sampling.policy === 'string' ? sampling.policy : '';
+    const temperature = Number(sampling.temperature);
+    const hasTemperature = typeof sampling.temperature === 'number'
+        && Number.isFinite(temperature);
+    const effort = typeof sampling.reasoning_effort === 'string'
+        ? sampling.reasoning_effort.trim()
+        : '';
+    const parts = [];
+    if (hasTemperature) parts.push(`temperature ${temperature}`);
+    if (effort) {
+        parts.push(
+            THINKING_OFF_VALUES.has(effort.toLowerCase())
+                ? 'thinking off'
+                : `reasoning effort ${effort}`
+        );
+    }
+    const wire = sampling.wire && typeof sampling.wire === 'object'
+        ? Object.keys(sampling.wire)
+        : [];
+    const lanes = wire.length > 1 ? ` · lanes: ${wire.join(', ')}` : '';
+    if (policy === 'provider_default') {
+        // A provider-default record that carries values contradicts itself;
+        // say nothing rather than pick a side.
+        return parts.length ? 'Not recorded' : `Provider default${lanes}`;
+    }
+    if (policy === 'leaderboard_entry') {
+        return parts.length
+            ? `Entry config · ${parts.join(' · ')}`
+            : 'Entry config · integration default';
+    }
+    if (policy !== 'pinned_v1') return 'Not recorded';
+    if (!parts.length) return `Pinned · values not recorded${lanes}`;
+    // Names why the temperature half is *absent*, which is the only thing a
+    // recorded request can support. Without it an effort-only row is hard to
+    // tell from a half-recorded one, and this panel already has a separate
+    // state for "we do not know".
+    const note = effort && !hasTemperature ? ' (no temperature sent)' : '';
+    return `Pinned · ${parts.join(' · ')}${note}${lanes}`;
+}
+
 function renderBacktestRunConfig(
     run,
     {
@@ -10206,6 +10285,25 @@ function renderBacktestRunConfig(
         sip_fallback_to_iex: run?.sip_fallback_to_iex ?? metadata.sip_fallback_to_iex,
         end_clamped: run?.end_clamped ?? metadata.end_clamped,
     });
+    // Only for a run that used a model: rule-based runs had no sampler, and
+    // "Not recorded" beside one would read as an accusation. The ceiling is
+    // written on every LLM run and never on a rule-based one. Read off the
+    // top-level fields: the list route answers with RunMetadata, which has no
+    // `metadata` key, so the first two are the ones a finished run really
+    // carries. The last two let a run written before either field existed
+    // still say "Not recorded" -- it made model calls, so the row applies --
+    // instead of vanishing. `metadata.*` is kept for payloads that embed it.
+    const usedModel = Boolean(
+        run?.llm_sampling
+        || (run?.llm_max_output_tokens !== undefined && run?.llm_max_output_tokens !== null)
+        || Number(run?.llm_calls) > 0
+        || run?.llm_execution
+        || metadata.llm_sampling
+        || metadata.llm_max_output_tokens !== undefined
+    );
+    const samplingLabel = !running && usedModel
+        ? formatBacktestSampling(run?.llm_sampling ?? metadata.llm_sampling ?? null)
+        : null;
     const llmExecution = run?.llm_execution && typeof run.llm_execution === 'object'
         ? run.llm_execution
         : (metadata.llm_execution && typeof metadata.llm_execution === 'object'
@@ -10414,6 +10512,19 @@ function renderBacktestRunConfig(
     if (frequencyRow) frequencyRow.hidden = !frequencyLabel;
     if (dataQualityRow) dataQualityRow.hidden = !dataQualityLabel;
     if (provenanceRow) provenanceRow.hidden = !provenanceLabel;
+    const samplingRow = document.getElementById('backtestConfigSamplingRow');
+    if (samplingRow) samplingRow.hidden = !samplingLabel;
+    // Written unconditionally, unlike the three rows above it. Those guard
+    // the write on their label, so hiding a row leaves the previous run's
+    // text inside it: open an LLM run, then pick a rule-based one in the same
+    // session, and #backtestConfigSampling still holds "Pinned · temperature
+    // 0" behind `hidden`. Nothing reveals it today -- and nothing has to, for
+    // it to be wrong the moment any later path unhides the row before the
+    // text is set, which paints one run's sampling under another run's
+    // heading. The write is a single textContent assignment; there is nothing
+    // to buy by skipping it. '—' is the cell's own markup default, so a
+    // hidden row holds exactly what the page shipped with.
+    setBacktestConfigText('backtestConfigSampling', samplingLabel || '—');
     if (frequencyLabel) {
         setBacktestConfigText('backtestConfigFrequency', frequencyLabel);
     }
@@ -12007,6 +12118,7 @@ async function loadHistoricalBacktestSurfaces(selectedRun) {
         }
         const notice = document.getElementById('chartBaselineNotice');
         if (notice) notice.hidden = true;
+        renderChartSingleSampleNotice(null);
         renderPerformanceLegend({ columns: [] });
         setPerformanceComparisonState(
             'error',
@@ -12165,10 +12277,50 @@ async function loadData({ liveRunId = null } = {}) {
 }
 
 /**
+ * True when the selected run's curve is one draw of a model (#602, option 1).
+ *
+ * Identical model runs do not reproduce: three DeepSeek V4 Pro reruns with every
+ * input and the sampling pinned diverged on the first bar (#539). A pinned run
+ * is exactly the one a reader expects to repeat, so the sampling policy does
+ * not gate this.
+ *
+ * Reads the server's `decision_provenance`, never `llm_calls` or the recorded
+ * output ceiling. Those two say the run *asked* for a model. The ceiling is
+ * written whenever one was requested, and `llm_calls` is a billing counter: it
+ * ticks on responses that then traded rule-based, and on an external SDK run it
+ * counts every submitted decision, whatever produced it. A total fallback and a
+ * deterministic SMA agent both carry them, and both curves are repeatable.
+ * `partial` counts, since every step the model drove makes the curve a draw.
+ *
+ * `unknown` gets no note. That covers external runs, which record no decision
+ * count, and rows written before #458 recorded one. Leaving the caveat off an
+ * old model run is the cheaper mistake. Telling a reader that a repeatable
+ * curve will not repeat is a false statement about the curve they are reading.
+ */
+function curveIsOneModelSample(run) {
+    const provenance = run?.decision_provenance;
+    return provenance === LLM_DECISION_SOURCE || provenance === 'partial';
+}
+
+/**
+ * The only writer of #chartSingleSampleNotice. initializeCharts() is the only
+ * caller that can show it, after it has painted the run's curve. Every other
+ * caller passes null, because it is clearing or tearing down the chart.
+ */
+function renderChartSingleSampleNotice(run) {
+    const notice = document.getElementById('chartSingleSampleNotice');
+    if (notice) notice.hidden = !curveIsOneModelSample(run);
+}
+
+/**
  * Initialize charts with real data from backend.
  * Agent vs DJIA index + Nasdaq-100 (same baselines as Discord plot.png).
  */
 function initializeCharts() {
+    // Hidden until this call paints. None of the early returns below puts
+    // the selected run's curve on screen, so none of them should leave a
+    // note describing it.
+    renderChartSingleSampleNotice(null);
     if (liveBacktestChartActive) {
         console.log('Skipping historical chart paint — live backtest view is active');
         return;
@@ -12301,6 +12453,7 @@ function initializeCharts() {
             }
         });
 
+        renderChartSingleSampleNotice(window.SELECTED_RUN);
         renderPerformanceComparison(comparisonPayload, window.SELECTED_RUN);
         renderPerformanceLegend(model);
         liveBacktestChartActive = false;

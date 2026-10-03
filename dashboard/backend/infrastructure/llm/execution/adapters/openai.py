@@ -9,7 +9,16 @@ from dashboard.backend.domain.model_providers.execution_catalog import (
     resolve_execution_model_route,
 )
 from dashboard.backend.domain.model_providers.models import ProviderRecord
+from dashboard.backend.infrastructure.llm.chat_completions import (
+    first_choice,
+    response_text,
+    usage_counts,
+)
 from dashboard.backend.infrastructure.llm.execution.models import LLMExecutionRequest
+from dashboard.backend.infrastructure.llm.reasoning_controls import (
+    is_reasoning_off,
+    thinking_disabled_body,
+)
 
 from .base import (
     SDK_MAX_RETRIES,
@@ -18,6 +27,7 @@ from .base import (
     CredentialMaterial,
     ProviderExecutionError,
     build_safe_http_client,
+    describe_sampling_wire,
     map_provider_error,
     normalize_finish_reason,
     optional_nonnegative_float,
@@ -25,6 +35,15 @@ from .base import (
     usage_from_fields,
     value_at,
 )
+
+# Providers, by id, that take thinking off as ``thinking: {type: "disabled"}``.
+# Keyed on the provider, not on ``adapter_type == "openai_compatible"``: that
+# adapter type is the one an admin registers for any OpenAI-shaped server
+# (DeepSeek's own API, vLLM, Together), and those were never probed with this
+# field -- a strict one answers 400 to an unknown body key, a lenient one
+# ignores it and thinks anyway while the run says thinking was off. They keep
+# the ``reasoning`` shape they were sent before this existed.
+THINKING_TOGGLE_PROVIDERS = frozenset({"commonstack"})
 
 
 def _default_client_factory(**kwargs: Any) -> Any:
@@ -35,35 +54,9 @@ def _default_client_factory(**kwargs: Any) -> Any:
     return OpenAI(**kwargs)
 
 
-def _first_choice(response: Any) -> Any:
-    choices = value_at(response, "choices", ())
-    return choices[0] if choices else None
-
-
-def _response_text(response: Any) -> str:
-    first = _first_choice(response)
-    message = value_at(first, "message")
-    content = value_at(message, "content")
-    if isinstance(content, str):
-        return content.strip()
-    if isinstance(content, list):
-        chunks: list[str] = []
-        for block in content:
-            text = value_at(block, "text")
-            if isinstance(text, str) and text.strip():
-                chunks.append(text.strip())
-        return "".join(chunks).strip()
-    return ""
-
-
 def _response_usage(response: Any):
-    usage = value_at(response, "usage")
-    if usage is None:
-        return None
-    return usage_from_fields(
-        value_at(usage, "prompt_tokens", value_at(usage, "input_tokens")),
-        value_at(usage, "completion_tokens", value_at(usage, "output_tokens")),
-    )
+    counts = usage_counts(response)
+    return None if counts is None else usage_from_fields(*counts)
 
 
 class OpenAIExecutionAdapter:
@@ -118,27 +111,44 @@ class OpenAIExecutionAdapter:
                 "messages": messages,
                 "max_tokens": request.usage_policy.max_output_tokens,
             }
+            wire: list[str] = []
             if request.temperature is not None:
                 kwargs["temperature"] = request.temperature
+                wire.append(f"temperature={request.temperature}")
             if request.reasoning_effort and provider.adapter_type in {
                 "openrouter",
                 "openai_compatible",
             }:
-                effort = request.reasoning_effort.strip().lower()
-                reasoning = {"effort": request.reasoning_effort}
-                if provider.adapter_type == "openrouter" and effort in {
-                    "none",
-                    "off",
-                    "false",
-                    "0",
-                    "disabled",
-                }:
-                    reasoning.update({"enabled": False, "exclude": True})
-                kwargs["extra_body"] = {
-                    "reasoning": reasoning,
-                }
+                reasoning_off = is_reasoning_off(request.reasoning_effort)
+                if reasoning_off and provider.provider_id in THINKING_TOGGLE_PROVIDERS:
+                    # CommonStack honours no graduated reasoning control for
+                    # DeepSeek V4 Pro or Qwen3.7 Plus: reasoning.effort,
+                    # reasoning.enabled=false and thinking.budget_tokens were
+                    # all ignored in the 2026-10-01 probe (#539). Thinking
+                    # on/off is the one control it honours. Sent instead of
+                    # `reasoning`, not beside it.
+                    kwargs["extra_body"] = thinking_disabled_body()
+                    wire.append("thinking=disabled")
+                else:
+                    reasoning = {"effort": request.reasoning_effort}
+                    if provider.adapter_type == "openrouter" and reasoning_off:
+                        reasoning.update({"enabled": False, "exclude": True})
+                    kwargs["extra_body"] = {
+                        "reasoning": reasoning,
+                    }
+                    wire.append(
+                        "reasoning.effort="
+                        + request.reasoning_effort
+                        + (",enabled=false" if "enabled" in reasoning else "")
+                    )
+            elif request.reasoning_effort and provider.adapter_type == "openai":
+                # Chat Completions takes it as a top-level parameter; only
+                # reasoning models accept it, and only the catalog's
+                # reasoning-only policy ever asks for it here.
+                kwargs["reasoning_effort"] = request.reasoning_effort
+                wire.append(f"reasoning_effort={request.reasoning_effort}")
             response = client.chat.completions.create(**kwargs)
-            text = _response_text(response)
+            text = response_text(response)
             if not text:
                 raise ProviderExecutionError("response_invalid")
             usage = _response_usage(response)
@@ -151,8 +161,9 @@ class OpenAIExecutionAdapter:
                 usage=usage,
                 provider_cost_usd=provider_cost_usd,
                 finish_reason=normalize_finish_reason(
-                    value_at(_first_choice(response), "finish_reason")
+                    value_at(first_choice(response), "finish_reason")
                 ),
+                sampling_wire=describe_sampling_wire(wire),
             )
         except ProviderExecutionError:
             raise

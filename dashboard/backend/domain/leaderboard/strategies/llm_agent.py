@@ -73,10 +73,14 @@ class LLMAgentStrategy(BaselineStrategy):
         self.integration = self.config.get("integration")
         self.reasoning_effort = self.config.get("reasoning_effort")
         temperature = self.config.get("temperature")
-        # 0–1, not the OpenAI 0–2 range: every gateway here is reached through
-        # an Anthropic Messages client, which caps temperature at 1.0. A value
-        # above it would only surface as a per-request 400 — i.e. a silent
-        # rule-based fallback that the H6 guard then blocks from publishing.
+        # 0–1, not the OpenAI 0–2 range: native Anthropic, OpenRouter and
+        # CommonStack with thinking on are all reached through an Anthropic
+        # Messages client, which caps temperature at 1.0. CommonStack with
+        # thinking off speaks chat completions and would take up to 2, but
+        # one range keeps an entry valid on whichever gateway it is pointed
+        # at. A value above it would only surface as a per-request 400 — i.e.
+        # a silent rule-based fallback that the H6 guard then blocks from
+        # publishing.
         if temperature is not None and (
             isinstance(temperature, bool)
             or not isinstance(temperature, (int, float))
@@ -154,6 +158,7 @@ class LLMAgentStrategy(BaselineStrategy):
         self.input_tokens = 0
         self.output_tokens = 0
         self._num_trades = 0
+        self.trades: List[Dict[str, Any]] = []
         self.used_llm = False
         self.last_portfolio_snapshot: Optional[Dict[str, Any]] = None
 
@@ -328,6 +333,7 @@ class LLMAgentStrategy(BaselineStrategy):
     def _record_progress(self, manager: PortfolioManager, *, decision_steps: int) -> None:
         """Publish the run's counters and book as of ``decision_steps`` steps."""
         self._num_trades = len(manager.trades)
+        self.trades = list(manager.trades)
         self.llm_calls = manager.llm_calls
         self.llm_decisions = manager.llm_decisions  # steps the model actually drove
         self.decision_steps = decision_steps  # how many steps the model was asked to decide

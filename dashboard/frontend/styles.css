@@ -1062,7 +1062,8 @@ a.header-brand:hover .title-section h1 {
    provider was unreachable. Same treatment as .market-data-notice, including
    the explicit [hidden] rule — without it the display above would beat the
    hidden attribute and the notice would show on every healthy chart. */
-.chart-baseline-notice {
+.chart-baseline-notice,
+.chart-sample-notice {
     margin: 0 0 10px;
     padding: 6px 8px;
     border-left: 2px solid var(--warning-color);
@@ -1074,6 +1075,18 @@ a.header-brand:hover .title-section h1 {
 
 .chart-baseline-notice[hidden] {
     display: none;
+}
+
+/* Issue #602: a caveat about the curve rather than a fault in it, so the
+   shared notice box above takes the info accent instead of the warning one.
+   No [hidden] rule: nothing here sets `display`, so the UA rule already wins. */
+.chart-sample-notice {
+    border-left-color: var(--info-color);
+    background: rgba(0, 191, 255, 0.06);
+}
+
+.chart-sample-notice strong {
+    color: var(--text-primary);
 }
 
 .date-separator {
@@ -4452,6 +4465,18 @@ a.header-brand:hover .title-section h1 {
 
 .return-negative {
     color: var(--danger-color);
+}
+
+/* Relative, so it stays a sub-label under the return in the 10px compact
+   table, and allowed to wrap, so "median of 3 · -1.25% to +2.10%" breaks onto
+   a second line instead of widening the 110px Return column. */
+.leaderboard-sample-range {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-weight: 400;
+    line-height: 1.25;
+    white-space: normal;
 }
 
 .metric-value-text {
@@ -14098,11 +14123,7 @@ html[data-nav-page="home"] #homeView .home-landing-board[data-home-board-slide="
     white-space: nowrap;
 }
 
-#liveLeaderboardView .live-board-table th.rank-col { width: 60px; text-align: center; }
-#liveLeaderboardView .live-board-table th.portfolio-col,
-#liveLeaderboardView .live-board-table th.return-col,
-#liveLeaderboardView .live-board-table th.sharpe-col,
-#liveLeaderboardView .live-board-table th.dd-col { text-align: right; }
+#liveLeaderboardView .live-board-table th.num-col { text-align: right; }
 
 #liveLeaderboardView .live-board-table th.sortable {
     cursor: pointer;
@@ -14130,9 +14151,11 @@ html[data-nav-page="home"] #homeView .home-landing-board[data-home-board-slide="
     color: var(--text-primary);
 }
 
-#liveLeaderboardView .live-board-table td.rank-cell {
-    text-align: center;
-    font-weight: 700;
+#liveLeaderboardView .live-board-table td.num-cell {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 #liveLeaderboardView .legend-swatch,

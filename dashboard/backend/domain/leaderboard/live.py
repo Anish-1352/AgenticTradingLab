@@ -29,6 +29,11 @@ from zoneinfo import ZoneInfo
 
 from dashboard.backend.database import db
 from dashboard.backend.domain.leaderboard.baselines import INITIAL_CAPITAL, calc_metrics
+from dashboard.backend.domain.leaderboard.live_trade_stats import (
+    TRADE_STATS_KEY,
+    fold_trade_stats,
+    summarize_trade_stats,
+)
 from dashboard.backend.domain.leaderboard.strategies._common import reference_start_date
 from dashboard.backend.domain.leaderboard.us_market_calendar import is_trading_day
 from dashboard.backend.infrastructure.market_data.alpaca_bars import (
@@ -276,7 +281,7 @@ def live_freeze_config(
         "period": "live",
         "board_title": "Live Trading Leaderboard",
         "phase_label": "Season 0",
-        "standings_label": "Ranking",
+        "standings_label": "Performance",
     }
 
 
@@ -528,6 +533,55 @@ def _resume_point(
     return None, [], dropped
 
 
+# The entry's own config keys, as ``_llm_run_metadata`` records them: what the
+# model is asked, and how it is sampled. Every checkpoint re-records them, so
+# resuming a month written under other values would stitch two experiments into
+# one curve and label the whole month with the newer one.
+_RESUME_CONFIG_KEYS = (
+    "model_id",
+    "integration",
+    "temperature",
+    "reasoning_effort",
+    "strategy_prompt",
+)
+
+
+def _config_changes(
+    resume_from: Dict[str, Any],
+    entry: Dict[str, Any],
+    strategy_impl: Any,
+    *,
+    initial_capital: float,
+    month_start: str,
+    freeze_end: str,
+) -> List[str]:
+    """Config keys whose value differs from the one ``resume_from`` was run under.
+
+    The current side comes from ``_llm_run_metadata``, the function that wrote
+    the recorded side, so the two cannot drift apart by construction. A key
+    the checkpoint never recorded is unknown, not a change. So is a
+    ``model_id`` the entry leaves to the gateway default, which only ``run()``
+    resolves.
+    """
+    recorded = _run_metadata_dict(resume_from)
+    current = lb_service._llm_run_metadata(
+        entry["id"],
+        entry,
+        strategy_impl,
+        model_id=getattr(strategy_impl, "model_id", None) or entry.get("model_id"),
+        initial_capital=initial_capital,
+        start_date=month_start,
+        end_date=freeze_end,
+    ) or {}
+    return [
+        key
+        for key in _RESUME_CONFIG_KEYS
+        if key in recorded
+        and not (key == "model_id" and current.get(key) is None)
+        and recorded[key] != current.get(key)
+    ]
+
+
 def _checkpoint_passes_h6(
     entry_id: str,
     entry: Dict[str, Any],
@@ -660,6 +714,13 @@ def _write_live_checkpoint(
         end_date=day_iso,
     ) or {}
     meta["live_increment"] = {**lineage, "segment_end": day_iso}
+    segment_trades = getattr(strategy_impl, "trades", None)
+    if segment_trades is not None:
+        meta[TRADE_STATS_KEY] = fold_trade_stats(
+            _run_metadata_dict(base).get(TRADE_STATS_KEY),
+            segment_trades,
+            prior_has_history=carried("num_trades") > 0,
+        )
     meta = lb_service._with_market_data_provenance(meta, provenance) or {}
 
     row = {
@@ -760,12 +821,35 @@ def deploy_live_model_increment(
             "llm_calls": latest.get("llm_calls"),
         }
 
-    if force_refresh:
+    strategy_impl = lb_service.get_strategy(entry)
+    config_changed: List[str] = []
+    if resume_from is not None and not force_refresh:
+        config_changed = _config_changes(
+            resume_from,
+            entry,
+            strategy_impl,
+            initial_capital=initial_capital,
+            month_start=month_start,
+            freeze_end=freeze_end,
+        )
+    if config_changed:
+        # Replayed like a forced refresh, rows past the first checkpoint
+        # included: a replay killed part-way must not leave an old-config row
+        # as the newest one. If it does anyway, the next refresh finds the
+        # same change and replays again.
+        print(
+            f"WARNING: live.config_changed entry={entry_id} "
+            f"keys={','.join(config_changed)} checkpoint={resume_from.get('run_id')} "
+            f"replaying={month_start}..{freeze_end}",
+            flush=True,
+        )
+    replace_later = force_refresh or bool(config_changed)
+    if replace_later:
         resume_from, prior_curve = None, []
     if resume_from is None:
         segment_start, segment_end = month_start, freeze_end
         snapshot = None
-        if latest is not None and not force_refresh:
+        if latest is not None and not replace_later:
             print(
                 f"⚠️ Live {entry_id}: no resumable snapshot on this month's rows; "
                 f"replaying {month_start} → {freeze_end}"
@@ -795,7 +879,6 @@ def deploy_live_model_increment(
     # the 1st, so passing it here made a one-day increment on the 28th fetch
     # about two months of bars.
     bars_start = reference_start_date(segment_start, None)
-    strategy_impl = lb_service.get_strategy(entry)
     symbols = strategy_impl.required_symbols()
     memo_key = (tuple(sorted(symbols)), bars_start, segment_end)
     if bars_memo is not None and memo_key in bars_memo:
@@ -824,6 +907,7 @@ def deploy_live_model_increment(
         "segment_start": segment_start,
         "full_replay": not resumed,
         "forced": bool(force_refresh),
+        "config_changed": config_changed or None,
         "resumed_from_run_id": resume_from.get("run_id") if resume_from else None,
         "resumed_from_end_date": resume_from.get("end_date") if resume_from else None,
     }
@@ -857,7 +941,7 @@ def deploy_live_model_increment(
                 base=resume_from,
                 lineage=lineage,
                 provenance=provenance,
-                supersede_later=force_refresh,
+                supersede_later=replace_later,
             )
         )
 
@@ -1200,6 +1284,25 @@ def _recorded_seed(run: Dict[str, Any]) -> Optional[float]:
     return seed if seed > 0 else None
 
 
+def _invested_fraction(run: Dict[str, Any]) -> Optional[float]:
+    """Share of the book in positions at the stored close, from the snapshot.
+
+    Only model rows carry a snapshot; baselines answer None rather than a
+    guess. Cash and equity are both in the run's own capital units.
+    """
+    snapshot = _snapshot_from_run(run)
+    if not snapshot:
+        return None
+    try:
+        cash = float(snapshot.get("cash"))
+        equity = float(run.get("final_equity"))
+    except (TypeError, ValueError):
+        return None
+    if equity <= 0:
+        return None
+    return min(max(1.0 - cash / equity, 0.0), 1.0)
+
+
 def _entry_from_strategy(
     strategy: Dict[str, Any],
     *,
@@ -1239,6 +1342,9 @@ def _entry_from_strategy(
         total_return = None
         sharpe = None
         max_dd = None
+    trade_figures = summarize_trade_stats(
+        _run_metadata_dict(run).get(TRADE_STATS_KEY) if printed else None
+    )
     return {
         "entry_id": strategy["id"],
         "team_name": strategy.get("name") or "Agentic Trading Lab",
@@ -1255,6 +1361,9 @@ def _entry_from_strategy(
         "rank": None,
         "run_id": run.get("run_id") if run else None,
         "snapshot_end": run.get("end_date") if run else None,
+        "num_trades": int(run.get("num_trades") or 0) if printed else None,
+        **trade_figures,
+        "invested_pct": _invested_fraction(run) if printed else None,
         "llm_calls": (run or {}).get("llm_calls") or 0,
         "input_tokens": (run or {}).get("input_tokens") or 0,
         "output_tokens": (run or {}).get("output_tokens") or 0,
@@ -1406,7 +1515,7 @@ def get_live_leaderboard(
         "period": "live",
         "board_title": "Live Trading Leaderboard",
         "phase_label": "Season 0",
-        "standings_label": "Ranking",
+        "standings_label": "Performance",
         "window": {
             "start_date": start_date,
             "end_date": end_date,
