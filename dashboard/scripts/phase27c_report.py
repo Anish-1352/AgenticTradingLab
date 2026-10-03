@@ -49,6 +49,9 @@ def load_workers(roots, spec):
     if missing:
         raise ValueError(f"missing folds: {missing}")
     outcomes = pd.read_json(Path(roots[0]) / "dataset" / "outcomes.jsonl", lines=True).set_index("record_id")
+    # The hidden label's direction shares its name with the model's sealed
+    # decision; the prediction keeps "direction", the label is renamed.
+    outcomes = outcomes.rename(columns={"direction": "label_direction"})
     classes = {f["id"]: f["window_class"] for f in spec["folds"]}
     rows = []
     for fold, root in sorted(owner.items()):

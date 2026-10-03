@@ -25,6 +25,9 @@ def _worker(root, folds, dataset_id="d1", spec_hash="s1", signal=1.5, seed=0):
                 inputs.append({"record_id": rid, "timestamp": ts, "symbol": sym})
                 outcomes.append({"record_id": rid, "timestamp": ts, "symbol": sym,
                                  "cost_adjusted_forward_return": net, "trade_worthy": int(net > 0.0025),
+                                 # The real outcome schema also carries the label's direction,
+                                 # which shares its name with the model's sealed direction.
+                                 "direction": "LONG" if net > 0.0025 else "NONE",
                                  "maximum_adverse_excursion": min(0, net) - 0.01,
                                  "maximum_favorable_excursion": max(0, net) + 0.01,
                                  "entry_price": 100.0, "exit_price": 100.0 * (1 + net), "_score": score})
@@ -103,3 +106,12 @@ def test_a_strong_synthetic_signal_reads_promising_and_noise_does_not(tmp_path):
     noise = [_worker(tmp_path / "n1", ["2018Q1", "2018Q2"], signal=0.0, seed=2),
              _worker(tmp_path / "n2", ["2024Q1", "2025Q4"], signal=0.0, seed=2)]
     assert build_report(load_workers(noise, _spec()), _spec())["TASK_SIGNAL"] != "PROMISING"
+
+
+def test_the_hidden_label_direction_never_overwrites_the_model_direction(tmp_path):
+    a = _worker(tmp_path / "a", ["2018Q1", "2018Q2"])
+    b = _worker(tmp_path / "b", ["2024Q1", "2025Q4"])
+    rows = load_workers([a, b], _spec())["rows"]
+    hold = rows[rows["baseline"] == "always_hold"]
+    assert (hold["direction"] == "NONE").all()              # the model's decision, sealed
+    assert set(hold["label_direction"]) == {"LONG", "NONE"}   # the hidden label, joined after
