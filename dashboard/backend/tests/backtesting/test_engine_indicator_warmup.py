@@ -438,8 +438,14 @@ def test_minute_source_trims_the_pad_after_aggregation(monkeypatch):
     bt.calculate_indicators()
     assert bt.all_data["AAPL"].iloc[0]["macd"] != 0.0
     _, curve = bt.run_agent_backtest()
-    assert len(curve) == 4 * 78
+    # The event-time valuator's opening anchor plus one mark per completed
+    # source bar in the window (docs/phase27-causal-clock.md).
+    assert len(curve) == 4 * 78 + 1
     assert _market_date(curve[0]["timestamp"]) == date.fromisoformat(START)
+    # The pad is indicator input only: no equity mark lands before the window.
+    assert all(
+        _market_date(point["timestamp"]) >= date.fromisoformat(START) for point in curve
+    )
 
 
 # ---------------------------------------------------------------------------
