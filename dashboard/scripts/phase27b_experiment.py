@@ -16,9 +16,69 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def validate_prediction(value):
-    """The model contract is Phase 27's, unchanged: probability + LONG/NONE."""
+    """Phase 27's probability contract, or Phase 27D's continuous one -- nothing else.
+
+    A probability output keeps Phase 27's rule (LONG iff p >= 0.5); a predicted
+    net return carries its gate's direction. Either schema must match exactly.
+    """
+    from dashboard.backend.domain.research.phase27d import validate_regression_prediction
     from dashboard.scripts.phase27_experiment import validate_prediction as v27
+    if isinstance(value, dict) and "predicted_net_return" in value:
+        return validate_regression_prediction(value)
     return v27(value)
+
+
+CLASSIFIER_BASELINES = ("always_hold", "momentum_20", "logistic")
+REGRESSOR_BASELINES = ("train_mean", "linear_gt0", "linear_top20")
+
+
+def fold_gates(names, inputs, outcomes, fold, by_symbol, spec):
+    """(name, predict, state) for each named baseline, every model fit on training rows only.
+
+    The top-20% gate ranks the fold's test rows at each decision timestamp from
+    their model-visible features -- what a decision at that moment can see.
+    """
+    from dashboard.backend.domain.research.phase27d import (
+        fit_linear_regressor, fit_train_mean, top_fraction_selection)
+    unknown = [n for n in names if n not in CLASSIFIER_BASELINES + REGRESSOR_BASELINES]
+    if unknown:
+        raise ValueError(f"unknown baseline: {unknown}")
+    threshold = spec["probability_threshold"]
+    feature = lambda payload: [[payload["features"][f] for f in spec["feature_fields"]]]
+    gates = []
+    if "always_hold" in names:
+        gates.append(("always_hold", always_hold, {"constant_probability": 0.0}))
+    if "momentum_20" in names:
+        gates.append(("momentum_20", momentum_rule, spec["momentum_rule"]))
+    if "logistic" in names:
+        model = fit_pooled_gate(inputs, outcomes, fold["train_ids"], spec)
+
+        def logistic(payload, model=model):
+            p = float(model.predict(feature(payload))[0])
+            return {"trade_probability": p, "direction": "LONG" if p >= threshold else "NONE"}
+        gates.append(("logistic", logistic, model.state()))
+    if "train_mean" in names:
+        mean = fit_train_mean(outcomes, fold["train_ids"])
+        gates.append(("train_mean", lambda payload, m=mean: {
+            "predicted_net_return": m, "direction": "LONG" if m > 0 else "NONE"}, {"train_mean": mean}))
+    if {"linear_gt0", "linear_top20"} & set(names):
+        from dashboard.backend.domain.research.phase27b import model_payload
+        regressor = fit_linear_regressor(inputs, outcomes, fold["train_ids"], spec)
+        predict = lambda payload, r=regressor: float(r.predict(feature(payload))[0])
+        if "linear_gt0" in names:
+            gates.append(("linear_gt0", lambda payload: (lambda v: {
+                "predicted_net_return": v, "direction": "LONG" if v > 0 else "NONE"})(predict(payload)),
+                regressor.state()))
+        if "linear_top20" in names:
+            rows = [r for group in by_symbol.values() for r in group]
+            scores = {r["record_id"]: predict(model_payload(r, spec)) for r in rows}
+            chosen = {(r["timestamp"], r["symbol"]) for r in rows
+                      if r["record_id"] in top_fraction_selection(rows, scores, spec["ranking_gate"]["fraction"])}
+            gates.append(("linear_top20", lambda payload: {
+                "predicted_net_return": predict(payload),
+                "direction": "LONG" if (payload["timestamp"], payload["symbol"]) in chosen else "NONE"},
+                {**regressor.state(), "ranking_gate": spec["ranking_gate"]}))
+    return gates
 
 
 def momentum_rule(payload):
@@ -229,6 +289,7 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
     from dashboard.backend.domain.research import phase27b_replay
     from dashboard.backend.domain.research.phase27b import (
         build_dataset, build_splits, calendar_sessions, session_frame, spell_cash, write_dataset)
+    from dashboard.backend.domain.research.phase27d import regression_metrics
     from dashboard.backend.domain.research.phase27b_metrics import (
         cost_sensitivity, probability_buckets, rank_signal, score_window)
     from dashboard.backend.database import db
@@ -260,28 +321,20 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
     for fold in folds:
         if not fold["train_ids"] or not fold["test_ids"]:
             raise ValueError(f"empty split in {fold['id']}")
-        model = fit_pooled_gate(inputs, outcomes, fold["train_ids"], spec)
-
-        def logistic(payload, model=model):
-            p = float(model.predict([[payload["features"][f] for f in spec["feature_fields"]]])[0])
-            return {"trade_probability": p, "direction": "LONG" if p >= threshold else "NONE"}
-
         by_symbol = {}
         for rid in fold["test_ids"]:
             by_symbol.setdefault(indexed[rid]["symbol"], []).append(indexed[rid])
         start = fold["bounds"]["test"][0]
         end = (pd.Timestamp(fold["bounds"]["test"][1]) - pd.Timedelta(days=1)).date().isoformat()
-        states = {"always_hold": {"constant_probability": 0.0},
-                  "momentum_20": spec["momentum_rule"], "logistic": model.state()}
-
-        for name, gate in (("always_hold", always_hold), ("momentum_20", momentum_rule), ("logistic", logistic)):
+        for name, gate, state in fold_gates(spec.get("baselines", CLASSIFIER_BASELINES),
+                                            inputs, outcomes, fold, by_symbol, spec):
             root = output / "runs" / fold["id"] / name
             per_symbol, sealed = {}, []
             for symbol in sorted(by_symbol):
                 rows = sorted(by_symbol[symbol], key=lambda r: r["timestamp"])
                 metadata = {"experiment_id": experiment_id, "dataset_id": manifest["dataset_id"],
                             "code_hash": code_hash, "fold": fold["id"], "baseline": name,
-                            "model_state": states[name], "seed": spec["seed"]}
+                            "model_state": state, "seed": spec["seed"]}
                 if symbol not in prepared:
                     prepared[symbol] = phase27b_replay.prepare_symbol_tape(traded[symbol], symbol, spec)
                 repeats = [run_symbol_window(http, root / symbol / str(k), traded[symbol], rows, calendar,
@@ -298,12 +351,18 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
 
             # ---- test outcomes are joined only after every prediction is on disk ----
             outs = [hidden[p["record_id"]] for p in sealed]
-            probs = [p["trade_probability"] for p in sealed]
+            regressor = name in REGRESSOR_BASELINES
+            # A gate's trades are its LONG directions; for a probability model
+            # that is p >= threshold, as the contract enforces. Classification
+            # metrics see probabilities, or the 0/1 trade decision of a regressor.
+            selected = [1.0 if p["direction"] == "LONG" else 0.0 for p in sealed]
+            scores = [p["predicted_net_return" if regressor else "trade_probability"] for p in sealed]
+            probs = selected if regressor else scores
             labels = [o["trade_worthy"] for o in outs]
             net = [o["cost_adjusted_forward_return"] for o in outs]
             for symbol, run in per_symbol.items():
                 expected = spec["initial_cash"] + spell_cash(
-                    [hidden[p["record_id"]] for p in run["predictions"] if p["trade_probability"] >= threshold],
+                    [hidden[p["record_id"]] for p in run["predictions"] if p["direction"] == "LONG"],
                     spec)
                 if abs(run["metrics"]["final_equity"] - expected) > 1e-6:
                     raise ValueError(f"ATL cash disagrees with hidden outcomes: {fold['id']} {name} {symbol}")
@@ -312,8 +371,9 @@ def evaluate(http, output, raws, market_raw, source, spec, code_hash, fold_ids=N
                      "classification": score_window(labels, probs, net,
                                                     [o["maximum_adverse_excursion"] for o in outs],
                                                     [o["maximum_favorable_excursion"] for o in outs], threshold),
-                     "ranking": rank_signal(probs, labels, net),
-                     "probability_buckets": probability_buckets(probs, net),
+                     "ranking": rank_signal(scores, labels, net),
+                     "probability_buckets": None if regressor else probability_buckets(probs, net),
+                     "regression": regression_metrics(scores, net) if regressor else None,
                      "cost_sensitivity": cost_sensitivity(outs, probs, spec),
                      "financial": portfolio_financials(per_symbol, spec),
                      "per_symbol": {s: {"predictions": len(r["predictions"]), "fills": len(r["trades"]),
