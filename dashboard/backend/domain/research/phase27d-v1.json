@@ -1,0 +1,1142 @@
+{
+  "phase_id": "27D",
+  "base_commit": "1dc7726f",
+  "code_commit": "714d7223",
+  "base_spec": "phase27c-v1.json",
+  "allow_short": false,
+  "calendar_note": "NYSE holidays and early-close sessions. Early closes are neither decision sessions nor counted in the horizon, and their bars are excluded from MAE/MFE paths. Verified against the frozen tape at freeze time.",
+  "candidate_universe": [
+    "AAPL",
+    "AMGN",
+    "AMZN",
+    "AXP",
+    "BA",
+    "CAT",
+    "CRM",
+    "CSCO",
+    "CVX",
+    "DIS",
+    "GOOGL",
+    "GS",
+    "HD",
+    "HON",
+    "IBM",
+    "JNJ",
+    "JPM",
+    "KO",
+    "MCD",
+    "MMM",
+    "MRK",
+    "MSFT",
+    "NKE",
+    "NVDA",
+    "PG",
+    "SHW",
+    "TRV",
+    "UNH",
+    "V",
+    "WMT"
+  ],
+  "canonical_cost_multiplier": 1.0,
+  "classifier": {
+    "version": "numpy-logistic-v0",
+    "iterations": 600,
+    "learning_rate": 0.1,
+    "l2": 0.01,
+    "standardization": "training rows only",
+    "calibration_bins": 5
+  },
+  "corporate_action_policy": "Same as Phase 27B: split adjustment only, no dividend adjustment. Spin-offs are not adjusted by the provider's split adjustment; any row whose horizon spans one carries a mechanical drop. Such rows are reported in the data-quality report, not removed, because removing them would change the Phase 27B task.",
+  "cost_sensitivity_multipliers": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "costs": {
+    "version": "phase27b-us-v1",
+    "currency": "USD",
+    "commission_rate": 0.0001,
+    "minimum_commission": 0,
+    "stamp_duty_sell_rate": 0,
+    "transfer_fee_rate": 0,
+    "buy_slippage_rate": 0.0005,
+    "sell_slippage_rate": 0.0005,
+    "price_tick": 0.01
+  },
+  "data_audit": {
+    "source_manifest_sha256": "bb83ba6d8dd3d7904e688d767db97fcb9fc55e28b28ce708e5961d7d25078da0",
+    "frozen_directory": "atl-frozen-data/phase27c-v1 (outside the repository)",
+    "earliest_bar": "2016-01-01T00:00Z (provider start); first regular session 2016-01-04",
+    "latest_complete_session": "2026-10-02",
+    "calendar": "All 123 declared holidays and early closes confirmed on SPY by the closing-auction test. The verifier's one objection, 2019-08-12, is a regular NYSE session whose SPY tape stops after the 15:30 bar (provider gap; AAPL and MSFT are complete that day). It stays a regular session; rows needing missing bars are dropped by the Phase 27B builder.",
+    "market_halts": "2020-03-09, 03-12, 03-16, 03-18 carry 76 of 78 bars (Level 1 circuit-breaker halts); rows needing the missing bars are dropped.",
+    "split_audit": "every listed split shows an ordinary overnight gap on the split-adjusted tape",
+    "gap_sessions_per_symbol": {
+      "AAPL": 8,
+      "AMGN": 8,
+      "AMZN": 8,
+      "AXP": 10,
+      "BA": 18,
+      "CAT": 11,
+      "CRM": 10,
+      "CSCO": 8,
+      "CVX": 10,
+      "DIS": 10,
+      "GOOGL": 9,
+      "GS": 9,
+      "HD": 9,
+      "HON": 7,
+      "IBM": 9,
+      "JNJ": 10,
+      "JPM": 9,
+      "KO": 10,
+      "MCD": 13,
+      "MMM": 12,
+      "MRK": 11,
+      "MSFT": 8,
+      "NKE": 11,
+      "NVDA": 8,
+      "PG": 11,
+      "SHW": 172,
+      "SPY": 6,
+      "TRV": 25,
+      "UNH": 11,
+      "V": 11,
+      "WMT": 12
+    },
+    "gap_note": "SHW has 172 gap sessions, mostly single empty 5-minute intervals in 2016-2020 while it traded near $700 pre-split; Phase 27B's completeness rule drops the affected rows. Not corrected, reported."
+  },
+  "data_source": "Alpaca SIP 5-minute bars, adjustment=split; earliest available bar 2016-01-01T00:00Z",
+  "data_window": [
+    "2016-01-04",
+    "2026-10-03"
+  ],
+  "dataset_version": "atl-outcomes-v1",
+  "decision_bar_end_local": "15:30",
+  "decision_clock": "The completed 14:30-15:30 ET hourly bar of a full session closes at 15:30. Its OHLCV, every earlier completed bar, and the market symbol's bar with the same close timestamp are available. The decision is made at 15:30.",
+  "decision_every_sessions": 5,
+  "decision_timeframe": "60m",
+  "embargo_policy": "The first embargo_sessions full sessions of each validation and test partition are removed.",
+  "embargo_sessions": 5,
+  "excluded_sessions": [
+    "2016-01-18",
+    "2016-02-15",
+    "2016-03-25",
+    "2016-05-30",
+    "2016-07-04",
+    "2016-09-05",
+    "2016-11-24",
+    "2016-11-25",
+    "2016-12-26",
+    "2017-01-02",
+    "2017-01-16",
+    "2017-02-20",
+    "2017-04-14",
+    "2017-05-29",
+    "2017-07-03",
+    "2017-07-04",
+    "2017-09-04",
+    "2017-11-23",
+    "2017-11-24",
+    "2017-12-25",
+    "2018-01-01",
+    "2018-01-15",
+    "2018-02-19",
+    "2018-03-30",
+    "2018-05-28",
+    "2018-07-03",
+    "2018-07-04",
+    "2018-09-03",
+    "2018-11-22",
+    "2018-11-23",
+    "2018-12-05",
+    "2018-12-24",
+    "2018-12-25",
+    "2019-01-01",
+    "2019-01-21",
+    "2019-02-18",
+    "2019-04-19",
+    "2019-05-27",
+    "2019-07-03",
+    "2019-07-04",
+    "2019-09-02",
+    "2019-11-28",
+    "2019-11-29",
+    "2019-12-24",
+    "2019-12-25",
+    "2020-01-01",
+    "2020-01-20",
+    "2020-02-17",
+    "2020-04-10",
+    "2020-05-25",
+    "2020-07-03",
+    "2020-09-07",
+    "2020-11-26",
+    "2020-11-27",
+    "2020-12-24",
+    "2020-12-25",
+    "2021-01-01",
+    "2021-01-18",
+    "2021-02-15",
+    "2021-04-02",
+    "2021-05-31",
+    "2021-07-05",
+    "2021-09-06",
+    "2021-11-25",
+    "2021-11-26",
+    "2021-12-24",
+    "2022-01-17",
+    "2022-02-21",
+    "2022-04-15",
+    "2022-05-30",
+    "2022-06-20",
+    "2022-07-04",
+    "2022-09-05",
+    "2022-11-24",
+    "2022-11-25",
+    "2022-12-26",
+    "2023-01-02",
+    "2023-01-16",
+    "2023-02-20",
+    "2023-04-07",
+    "2023-05-29",
+    "2023-06-19",
+    "2023-07-03",
+    "2023-07-04",
+    "2023-09-04",
+    "2023-11-23",
+    "2023-11-24",
+    "2023-12-25",
+    "2024-01-01",
+    "2024-01-15",
+    "2024-02-19",
+    "2024-03-29",
+    "2024-05-27",
+    "2024-06-19",
+    "2024-07-03",
+    "2024-07-04",
+    "2024-09-02",
+    "2024-11-28",
+    "2024-11-29",
+    "2024-12-24",
+    "2024-12-25",
+    "2025-01-01",
+    "2025-01-09",
+    "2025-01-20",
+    "2025-02-17",
+    "2025-04-18",
+    "2025-05-26",
+    "2025-06-19",
+    "2025-07-03",
+    "2025-07-04",
+    "2025-09-01",
+    "2025-11-27",
+    "2025-11-28",
+    "2025-12-24",
+    "2025-12-25",
+    "2026-01-01",
+    "2026-01-19",
+    "2026-02-16",
+    "2026-04-03",
+    "2026-05-25",
+    "2026-06-19",
+    "2026-07-03",
+    "2026-09-07"
+  ],
+  "excluded_symbols": {
+    "CAT": "split-adjusted regular-hours high $1,073.46 exceeds the $750 one-share feasibility limit",
+    "GS": "split-adjusted regular-hours high $1,153.99 exceeds the $750 one-share feasibility limit"
+  },
+  "execution_clock": "ATL's verified intraday contract fills at the next source open at the decision boundary: the open of the 15:30 5-minute bar. Zero decision latency is assumed, as in Phase 27.",
+  "feature_fields": [
+    "return_1",
+    "return_5",
+    "return_10",
+    "return_20",
+    "volatility_short",
+    "volatility_long",
+    "volume_ratio",
+    "volume_change_1",
+    "sma_gap",
+    "market_return_1",
+    "market_return_5",
+    "estimated_cost"
+  ],
+  "feature_schema_version": "session-1530-prefix-v1",
+  "feature_windows": {
+    "short": 5,
+    "long": 20
+  },
+  "folds": [
+    {
+      "id": "2018Q1",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2017-12-01"
+      ],
+      "validation": [
+        "2017-12-01",
+        "2018-01-01"
+      ],
+      "test": [
+        "2018-01-01",
+        "2018-04-01"
+      ]
+    },
+    {
+      "id": "2018Q2",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2018-03-01"
+      ],
+      "validation": [
+        "2018-03-01",
+        "2018-04-01"
+      ],
+      "test": [
+        "2018-04-01",
+        "2018-07-01"
+      ]
+    },
+    {
+      "id": "2018Q3",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2018-06-01"
+      ],
+      "validation": [
+        "2018-06-01",
+        "2018-07-01"
+      ],
+      "test": [
+        "2018-07-01",
+        "2018-10-01"
+      ]
+    },
+    {
+      "id": "2018Q4",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2018-09-01"
+      ],
+      "validation": [
+        "2018-09-01",
+        "2018-10-01"
+      ],
+      "test": [
+        "2018-10-01",
+        "2019-01-01"
+      ]
+    },
+    {
+      "id": "2019Q1",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2018-12-01"
+      ],
+      "validation": [
+        "2018-12-01",
+        "2019-01-01"
+      ],
+      "test": [
+        "2019-01-01",
+        "2019-04-01"
+      ]
+    },
+    {
+      "id": "2019Q2",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2019-03-01"
+      ],
+      "validation": [
+        "2019-03-01",
+        "2019-04-01"
+      ],
+      "test": [
+        "2019-04-01",
+        "2019-07-01"
+      ]
+    },
+    {
+      "id": "2019Q3",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2019-06-01"
+      ],
+      "validation": [
+        "2019-06-01",
+        "2019-07-01"
+      ],
+      "test": [
+        "2019-07-01",
+        "2019-10-01"
+      ]
+    },
+    {
+      "id": "2019Q4",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2019-09-01"
+      ],
+      "validation": [
+        "2019-09-01",
+        "2019-10-01"
+      ],
+      "test": [
+        "2019-10-01",
+        "2020-01-01"
+      ]
+    },
+    {
+      "id": "2020Q1",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2019-12-01"
+      ],
+      "validation": [
+        "2019-12-01",
+        "2020-01-01"
+      ],
+      "test": [
+        "2020-01-01",
+        "2020-04-01"
+      ]
+    },
+    {
+      "id": "2020Q2",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2020-03-01"
+      ],
+      "validation": [
+        "2020-03-01",
+        "2020-04-01"
+      ],
+      "test": [
+        "2020-04-01",
+        "2020-07-01"
+      ]
+    },
+    {
+      "id": "2020Q3",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2020-06-01"
+      ],
+      "validation": [
+        "2020-06-01",
+        "2020-07-01"
+      ],
+      "test": [
+        "2020-07-01",
+        "2020-10-01"
+      ]
+    },
+    {
+      "id": "2020Q4",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2020-09-01"
+      ],
+      "validation": [
+        "2020-09-01",
+        "2020-10-01"
+      ],
+      "test": [
+        "2020-10-01",
+        "2021-01-01"
+      ]
+    },
+    {
+      "id": "2021Q1",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2020-12-01"
+      ],
+      "validation": [
+        "2020-12-01",
+        "2021-01-01"
+      ],
+      "test": [
+        "2021-01-01",
+        "2021-04-01"
+      ]
+    },
+    {
+      "id": "2021Q2",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2021-03-01"
+      ],
+      "validation": [
+        "2021-03-01",
+        "2021-04-01"
+      ],
+      "test": [
+        "2021-04-01",
+        "2021-07-01"
+      ]
+    },
+    {
+      "id": "2021Q3",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2021-06-01"
+      ],
+      "validation": [
+        "2021-06-01",
+        "2021-07-01"
+      ],
+      "test": [
+        "2021-07-01",
+        "2021-10-01"
+      ]
+    },
+    {
+      "id": "2021Q4",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2021-09-01"
+      ],
+      "validation": [
+        "2021-09-01",
+        "2021-10-01"
+      ],
+      "test": [
+        "2021-10-01",
+        "2022-01-01"
+      ]
+    },
+    {
+      "id": "2022Q1",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2021-12-01"
+      ],
+      "validation": [
+        "2021-12-01",
+        "2022-01-01"
+      ],
+      "test": [
+        "2022-01-01",
+        "2022-04-01"
+      ]
+    },
+    {
+      "id": "2022Q2",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2022-03-01"
+      ],
+      "validation": [
+        "2022-03-01",
+        "2022-04-01"
+      ],
+      "test": [
+        "2022-04-01",
+        "2022-07-01"
+      ]
+    },
+    {
+      "id": "2022Q3",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2022-06-01"
+      ],
+      "validation": [
+        "2022-06-01",
+        "2022-07-01"
+      ],
+      "test": [
+        "2022-07-01",
+        "2022-10-01"
+      ]
+    },
+    {
+      "id": "2022Q4",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2022-09-01"
+      ],
+      "validation": [
+        "2022-09-01",
+        "2022-10-01"
+      ],
+      "test": [
+        "2022-10-01",
+        "2023-01-01"
+      ]
+    },
+    {
+      "id": "2023Q1",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2022-12-01"
+      ],
+      "validation": [
+        "2022-12-01",
+        "2023-01-01"
+      ],
+      "test": [
+        "2023-01-01",
+        "2023-04-01"
+      ]
+    },
+    {
+      "id": "2023Q2",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2023-03-01"
+      ],
+      "validation": [
+        "2023-03-01",
+        "2023-04-01"
+      ],
+      "test": [
+        "2023-04-01",
+        "2023-07-01"
+      ]
+    },
+    {
+      "id": "2023Q3",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2023-06-01"
+      ],
+      "validation": [
+        "2023-06-01",
+        "2023-07-01"
+      ],
+      "test": [
+        "2023-07-01",
+        "2023-10-01"
+      ]
+    },
+    {
+      "id": "2023Q4",
+      "window_class": "new_historical",
+      "train": [
+        "2016-01-04",
+        "2023-09-01"
+      ],
+      "validation": [
+        "2023-09-01",
+        "2023-10-01"
+      ],
+      "test": [
+        "2023-10-01",
+        "2024-01-01"
+      ]
+    },
+    {
+      "id": "2024Q1",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2023-12-01"
+      ],
+      "validation": [
+        "2023-12-01",
+        "2024-01-01"
+      ],
+      "test": [
+        "2024-01-01",
+        "2024-04-01"
+      ]
+    },
+    {
+      "id": "2024Q2",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2024-03-01"
+      ],
+      "validation": [
+        "2024-03-01",
+        "2024-04-01"
+      ],
+      "test": [
+        "2024-04-01",
+        "2024-07-01"
+      ]
+    },
+    {
+      "id": "2024Q3",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2024-06-01"
+      ],
+      "validation": [
+        "2024-06-01",
+        "2024-07-01"
+      ],
+      "test": [
+        "2024-07-01",
+        "2024-10-01"
+      ]
+    },
+    {
+      "id": "2024Q4",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2024-09-01"
+      ],
+      "validation": [
+        "2024-09-01",
+        "2024-10-01"
+      ],
+      "test": [
+        "2024-10-01",
+        "2025-01-01"
+      ]
+    },
+    {
+      "id": "2025Q1",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2024-12-01"
+      ],
+      "validation": [
+        "2024-12-01",
+        "2025-01-01"
+      ],
+      "test": [
+        "2025-01-01",
+        "2025-04-01"
+      ]
+    },
+    {
+      "id": "2025Q2",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2025-03-01"
+      ],
+      "validation": [
+        "2025-03-01",
+        "2025-04-01"
+      ],
+      "test": [
+        "2025-04-01",
+        "2025-07-01"
+      ]
+    },
+    {
+      "id": "2025Q3",
+      "window_class": "legacy",
+      "train": [
+        "2016-01-04",
+        "2025-06-01"
+      ],
+      "validation": [
+        "2025-06-01",
+        "2025-07-01"
+      ],
+      "test": [
+        "2025-07-01",
+        "2025-10-01"
+      ]
+    },
+    {
+      "id": "2025Q4",
+      "window_class": "sealed",
+      "train": [
+        "2016-01-04",
+        "2025-09-01"
+      ],
+      "validation": [
+        "2025-09-01",
+        "2025-10-01"
+      ],
+      "test": [
+        "2025-10-16",
+        "2026-01-01"
+      ]
+    },
+    {
+      "id": "2026Q1",
+      "window_class": "sealed",
+      "train": [
+        "2016-01-04",
+        "2025-12-01"
+      ],
+      "validation": [
+        "2025-12-01",
+        "2026-01-01"
+      ],
+      "test": [
+        "2026-01-01",
+        "2026-04-01"
+      ]
+    },
+    {
+      "id": "2026Q2",
+      "window_class": "sealed",
+      "train": [
+        "2016-01-04",
+        "2026-03-01"
+      ],
+      "validation": [
+        "2026-03-01",
+        "2026-04-01"
+      ],
+      "test": [
+        "2026-04-01",
+        "2026-07-01"
+      ]
+    },
+    {
+      "id": "2026Q3",
+      "window_class": "sealed",
+      "train": [
+        "2016-01-04",
+        "2026-06-01"
+      ],
+      "validation": [
+        "2026-06-01",
+        "2026-07-01"
+      ],
+      "test": [
+        "2026-07-01",
+        "2026-10-01"
+      ]
+    }
+  ],
+  "frozen_from_phase27b": [
+    "task_version",
+    "dataset_version",
+    "feature_schema_version",
+    "label_version",
+    "market",
+    "market_symbol",
+    "market_symbol_role",
+    "timezone",
+    "source_timeframe",
+    "decision_timeframe",
+    "price_adjustment",
+    "decision_bar_end_local",
+    "decision_clock",
+    "execution_clock",
+    "outcome_clock",
+    "horizon_sessions",
+    "decision_every_sessions",
+    "warmup_sessions",
+    "feature_windows",
+    "feature_fields",
+    "allow_short",
+    "quantity",
+    "initial_cash",
+    "trade_threshold",
+    "trade_threshold_rule",
+    "probability_threshold",
+    "embargo_sessions",
+    "purge_policy",
+    "embargo_policy",
+    "seed",
+    "costs",
+    "cost_sensitivity_multipliers",
+    "classifier",
+    "momentum_rule",
+    "calendar_note"
+  ],
+  "horizon_sessions": 5,
+  "initial_cash": 3000,
+  "label_version": "long-five-session-net-cash-v1",
+  "market": "US",
+  "market_symbol": "SPY",
+  "market_symbol_role": "feature-only broad-market context; never traded",
+  "momentum_rule": {
+    "feature": "return_20",
+    "threshold": 0.0,
+    "rule": "TRADE/LONG iff return_20 > 0"
+  },
+  "outcome_clock": "Entry E is the 15:30 5-minute open on the decision session. Exit X is the 15:30 5-minute open exactly horizon_sessions full sessions later. The outcome is available at the exit timestamp.",
+  "price_adjustment": "split",
+  "probability_threshold": 0.5,
+  "purge_policy": "A row is purged from a partition when its outcome_available_at is at or after that partition's end.",
+  "quantity": 1,
+  "seed": 2727,
+  "source_timeframe": "5m",
+  "split_events": {
+    "AAPL": [
+      {
+        "date": "2020-08-31",
+        "ratio": 4
+      }
+    ],
+    "AMZN": [
+      {
+        "date": "2022-06-06",
+        "ratio": 20
+      }
+    ],
+    "GOOGL": [
+      {
+        "date": "2022-07-18",
+        "ratio": 20
+      }
+    ],
+    "NVDA": [
+      {
+        "date": "2021-07-20",
+        "ratio": 4
+      },
+      {
+        "date": "2024-06-10",
+        "ratio": 10
+      }
+    ],
+    "SHW": [
+      {
+        "date": "2021-04-01",
+        "ratio": 3
+      }
+    ],
+    "WMT": [
+      {
+        "date": "2024-02-26",
+        "ratio": 3
+      }
+    ]
+  },
+  "task_version": "atl-weekly-5-session-long-flat-v1",
+  "timezone": "America/New_York",
+  "trade_threshold": 0.0025,
+  "trade_threshold_rule": "About twice the modeled round-trip cost, fixed before any outcome was computed, so a TRADE label would remain profitable if realized costs were double the model.",
+  "training_policy": "Expanding window from the first decision after warm-up (2016) to each fold's validation start. The one-month validation partition is reserved and unused, as in Phase 27B. The LogisticGate is fit on training rows only, with no tuning.",
+  "uncertainty": {
+    "method": "decision-date cluster bootstrap, percentile interval",
+    "draws": 2000,
+    "seed": 2727,
+    "level": 0.95,
+    "cluster": "decision timestamp (all symbols on a date resampled together)"
+  },
+  "universe": [
+    "AAPL",
+    "AMGN",
+    "AMZN",
+    "AXP",
+    "BA",
+    "CRM",
+    "CSCO",
+    "CVX",
+    "DIS",
+    "GOOGL",
+    "HD",
+    "HON",
+    "IBM",
+    "JNJ",
+    "JPM",
+    "KO",
+    "MCD",
+    "MMM",
+    "MRK",
+    "MSFT",
+    "NKE",
+    "NVDA",
+    "PG",
+    "SHW",
+    "TRV",
+    "UNH",
+    "V",
+    "WMT"
+  ],
+  "universe_feasibility_rule": "The frozen execution convention is one share on a $3,000 account under ATL's 25% position cap, so a name whose split-adjusted 5-minute high exceeds $750 anywhere in the data window cannot be traded and is excluded. Prices only, no outcome. This removes names whose price rose most, a further selection effect that is reported, not corrected.",
+  "universe_policy": "fixed_djia30_20260629_v1",
+  "universe_rule": "ATL's DJIA_30 constant (S&P Dow Jones Indices membership effective 2026-06-29), fixed before any Phase 27C outcome was computed. This is TODAY's membership applied back to 2016, not point-in-time DJIA membership (none exists in ATL), so survivorship and selection bias are present: names that joined the index because they had grown (e.g. AMZN, NVDA, SHW) are included for years before they joined. A name is dropped only by the mechanical feasibility rule below; no name is chosen on outcomes.",
+  "warmup_sessions": 20,
+  "frozen_from_phase27c": [
+    "allow_short",
+    "calendar_note",
+    "candidate_universe",
+    "canonical_cost_multiplier",
+    "classifier",
+    "corporate_action_policy",
+    "cost_sensitivity_multipliers",
+    "costs",
+    "data_audit",
+    "data_source",
+    "data_window",
+    "dataset_version",
+    "decision_bar_end_local",
+    "decision_clock",
+    "decision_every_sessions",
+    "decision_timeframe",
+    "embargo_policy",
+    "embargo_sessions",
+    "excluded_sessions",
+    "excluded_symbols",
+    "execution_clock",
+    "feature_fields",
+    "feature_schema_version",
+    "feature_windows",
+    "folds",
+    "frozen_from_phase27b",
+    "horizon_sessions",
+    "initial_cash",
+    "label_version",
+    "market",
+    "market_symbol",
+    "market_symbol_role",
+    "momentum_rule",
+    "outcome_clock",
+    "price_adjustment",
+    "probability_threshold",
+    "purge_policy",
+    "quantity",
+    "seed",
+    "source_timeframe",
+    "split_events",
+    "task_version",
+    "timezone",
+    "trade_threshold",
+    "trade_threshold_rule",
+    "training_policy",
+    "uncertainty",
+    "universe",
+    "universe_feasibility_rule",
+    "universe_policy",
+    "universe_rule",
+    "warmup_sessions"
+  ],
+  "phase27c_dataset_sha256": {
+    "inputs.jsonl": "f2a43f975b4b9287308b64be2c5506ad07f290d3dfa59118dc2de9859d7d3f4c",
+    "outcomes.jsonl": "c15d98810b4bbc078c254f329a6a9b2baa5ac8f0d71f6f71a9d6438972686fa1",
+    "splits.json": "7c1c7dd3adf18bb6213fe440d67780781ce7ec97abe57960467705211d33bfe2",
+    "sessions.json": "ae40493bf59f40983efece2efdbd7e38c8e78ec25deaae007acd060579c3d713"
+  },
+  "phase27c_window_classes": {
+    "legacy": "2024Q1-2025Q3: Phase 27B's test quarters, already inspected. SEEN / NOT NEW EVIDENCE. Used only for replication.",
+    "new_historical": "2018Q1-2023Q4: never evaluated in this research. 2022-2023 rows were part of Phase 27B's training set and its pooled data-quality statistics, never scored.",
+    "sealed": "2025Q4 (from 2025-10-16, after Phase 27B's data window ended) through 2026Q3: never fetched or inspected in this research before this preregistration."
+  },
+  "scientific_change": "target representation only: binary TRADE/HOLD -> continuous net forward return",
+  "target": {
+    "name": "net_forward_return",
+    "field": "cost_adjusted_forward_return",
+    "definition": "Phase 27B/27C's stored hidden outcome, unchanged: the round trip from the 15:30 entry open to the 15:30 open five sessions later, through ATL's transaction-cost function at the frozen cost profile.",
+    "transform": "none: no thresholding, normalisation, winsorising, capping, log or volatility scaling",
+    "diagnostics_only": [
+      "maximum_adverse_excursion",
+      "maximum_favorable_excursion",
+      "future_volatility"
+    ]
+  },
+  "regressor": {
+    "name": "LinearOpportunityRegressor",
+    "l2": 0.01,
+    "l2_rule": "the single value the Phase 27C LogisticGate used; no alternative is fit",
+    "standardization": "training rows only: mean and population std per feature, zero-std columns scaled by 1",
+    "intercept": "unpenalised",
+    "objective": "mean squared error + l2 * squared weights; closed-form solve",
+    "implementation": "dashboard/backend/domain/research/phase27d.py"
+  },
+  "baselines": [
+    "train_mean",
+    "linear_gt0",
+    "linear_top20"
+  ],
+  "baseline_definitions": {
+    "train_mean": "trivial: the fold's training-row mean net return for every row (chosen over zero before results; also the reference for out-of-sample R2); LONG iff that mean > 0",
+    "linear_gt0": "LinearOpportunityRegressor; LONG iff predicted net return > 0 (threshold not tuned)",
+    "linear_top20": "same fitted model; LONG for the top ceil(0.2 * n_t) predictions among the n_t held-out rows at each decision timestamp, ties by symbol"
+  },
+  "reused_from_phase27c": {
+    "baselines": [
+      "always_hold",
+      "momentum_20",
+      "logistic"
+    ],
+    "source": "Phase 27C sealed predictions (atl-frozen-data/phase27c-v1-results/workers), reused unchanged; joined only if every dataset file is byte-identical and every fold's held-out rows match"
+  },
+  "ranking_gate": {
+    "fraction": 0.2,
+    "scope": "per decision timestamp (cross-sectional), never across a window"
+  },
+  "evidence_classification": {
+    "REUSED_HISTORICAL": "all 35 folds (2018Q1-2026Q3). Every outcome here was evaluated in Phase 27C, so none of it is sealed. Phase 27C's classes are reported as sub-groups only.",
+    "FUTURE_SEALED_CONFIRMATION": "starts with 2026Q4, incomplete at preregistration (2026-10-07). Not fetched, not inspected, not part of this phase."
+  },
+  "primary_classes": null,
+  "primary_question": "Does the same point-in-time state rank the continuous net forward return better than the Phase 27C LogisticGate ranks it, on identical held-out rows?",
+  "primary_metric": "Spearman correlation of predicted vs realised net forward return over all held-out rows, with a decision-date cluster-bootstrap 95% interval",
+  "economic_metric": "Q5 - Q1 realised mean net return, quintiles cut inside each test window on predictions only (Phase 27C's rule), membership fixed under the date bootstrap",
+  "secondary_metrics": [
+    "MAE",
+    "RMSE",
+    "R2 vs realised mean",
+    "out-of-sample R2 vs the train_mean predictor",
+    "prediction mean/std",
+    "realised mean/std",
+    "sign accuracy (prediction > 0)",
+    "gate coverage, fills, selected mean/median, positive fraction, ATL P&L, fees, turnover, drawdown, Sharpe (secondary; one share per trade weights P&L by price)"
+  ],
+  "comparison": "LinearOpportunityRegressor predicted net return vs LogisticGate P(TRADE), both against the realised net return on identical rows: Spearman, top/bottom quintile means, Q5 - Q1, and paired date-bootstrap differences",
+  "sensitivity": {
+    "leave_one_year_out": "Spearman with each calendar year of test windows removed (includes without 2020)",
+    "leave_one_quarter_out": "Spearman with each fold removed",
+    "leave_one_symbol_out": "Spearman with each symbol removed",
+    "costs": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "note": "diagnostics; nothing is refit for an omission"
+  },
+  "continuous_signal_rule": {
+    "checks": {
+      "rho_positive": "Spearman > 0",
+      "rho_ci_excludes_zero": "Spearman 95% CI lower bound > 0",
+      "spread_positive": "Q5 - Q1 > 0",
+      "spread_ci_excludes_zero": "Q5 - Q1 95% CI lower bound > 0",
+      "not_concentrated": "every leave-one-year-out, leave-one-quarter-out and leave-one-symbol-out Spearman > 0",
+      "beats_binary": "CONTINUOUS_BEATS_BINARY = YES"
+    },
+    "PROMISING": "all six checks",
+    "WEAK": "Spearman <= 0, or Q5 - Q1 <= 0, or both intervals exclude zero while not_concentrated fails",
+    "INCONCLUSIVE": "otherwise",
+    "implementation": "dashboard/backend/domain/research/phase27d_stats.py::continuous_signal"
+  },
+  "beats_binary_rule": "YES if paired Spearman difference (linear - logistic) > 0 with its 95% CI lower bound > 0 and the Q5 - Q1 difference > 0; NO if the Spearman difference <= 0; otherwise INCONCLUSIVE (phase27d_stats.py::beats_binary)",
+  "readiness_rule": "MODEL_TARGET_READY = YES only if PHASE_27D = PASS and CONTINUOUS_SIGNAL = PROMISING. SEALED_CONFIRMED = NO in this phase: no future sealed data exists. PHASE_28_READY = YES only if both are YES, so it is NO in this phase whatever the result.",
+  "phase27d_pass_rule": "Phase 27C reproduced (dataset byte-identical, 27/27B/27C tests green, legacy fingerprints unchanged); every fold executed through ATL with identical repeats and cash matching hidden outcomes; dataset rebuilt byte-identical to Phase 27C; held-out rows identical between the reused and new predictions",
+  "prohibited": [
+    "horizon search",
+    "feature search",
+    "target transformation search",
+    "outlier removal based on results",
+    "hyperparameter sweep",
+    "threshold tuning",
+    "tree models, neural networks",
+    "LLM training",
+    "QLoRA or any fine-tuning",
+    "inspecting 2026Q4 or later data"
+  ]
+}
