@@ -1,8 +1,11 @@
 """``AgentRunner`` - a high-level loop so contributors only write decision logic.
 
 A user implements an object with a ``decide(observation)`` method (and,
-optionally, ``on_execution_result`` / ``on_run_completed`` hooks). The runner
-handles the full lifecycle::
+optionally, ``on_step`` / ``on_execution_result`` / ``on_run_completed``
+hooks). ``on_step(step)`` fires just before ``decide`` with the whole step, so
+an agent that needs ``step.constraints`` or ``step.deadline_at`` (which the
+observation does not carry) can read them. The runner handles the full
+lifecycle::
 
     create run
       -> poll next step
@@ -25,7 +28,8 @@ Hook failures
 A decision is submitted to the backend *before* its hooks run. If
 ``on_execution_result`` or ``on_run_completed`` raises, that exception is
 surfaced to the caller; the runner never resubmits an already-accepted decision
-because a local hook failed.
+because a local hook failed. ``on_step`` runs before the decision exists, so
+an exception there surfaces without anything being submitted for that step.
 """
 
 from __future__ import annotations
@@ -178,6 +182,7 @@ class AgentRunner:
 
                 if status == "awaiting_decision":
                     waited = 0.0  # progress made; reset the idle timer
+                    self._fire("on_step", step)
                     decision = self.agent.decide(step.observation)
                     try:
                         result = self.client.submit_decision(run.id, step.id, decision)

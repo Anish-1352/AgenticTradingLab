@@ -378,3 +378,38 @@ def test_runner_attaches_run_id_to_backend_errors(fake_http):
     with pytest.raises(ATLAPIError) as ei:
         _run(AgentRunner(_client(), _HoldAgent()))
     assert ei.value.run_id == "run_1"
+
+
+def test_runner_hands_the_step_to_an_on_step_hook_before_decide(fake_http):
+    class StepAwareAgent:
+        def __init__(self):
+            self.events = []
+
+        def on_step(self, step):
+            self.events.append(("step", step.step_id, step.constraints, step.deadline_at))
+
+        def decide(self, observation):
+            self.events.append(("decide", observation.portfolio["cash"]))
+            return {"orders": []}
+
+    awaiting = dict(_AWAITING, deadline_at="2026-04-15T11:01:00-04:00",
+                    constraints={"allowed_symbols": ["AAPL"], "max_orders": 10})
+    backend = RunnerBackend([awaiting, _COMPLETED])
+    fake_http(backend)
+    agent = StepAwareAgent()
+    _run(AgentRunner(_client(), agent))
+    assert agent.events == [
+        ("step", "step_1", {"allowed_symbols": ["AAPL"], "max_orders": 10}, "2026-04-15T11:01:00-04:00"),
+        ("decide", 100),
+    ]
+
+
+def test_runner_on_step_is_optional(fake_http):
+    class PlainAgent:
+        def decide(self, observation):
+            return {"orders": []}
+
+    backend = RunnerBackend([_AWAITING, _COMPLETED])
+    fake_http(backend)
+    _run(AgentRunner(_client(), PlainAgent()))
+    assert len(backend.submitted) == 1
