@@ -19,6 +19,7 @@ Welcome to the **Agentic Trading** documentation.
    lab/marketplace
    lab/research_agents
    lab/external_agents
+   lab/vllm_agent
    lab/live_trading
    lab/architecture
    lab/agent_api

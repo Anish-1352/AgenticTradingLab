@@ -1,0 +1,16 @@
+# GPU-host environment for serve_vllm.sh (Linux, NVIDIA GPU, CUDA 12 driver,
+# Python 3.11-3.13). Not part of the ATL backend or SDK: neither imports vLLM,
+# and CI never installs this file.
+#
+#     python3 -m venv .venv-vllm && . .venv-vllm/bin/activate
+#     pip install -r requirements-vllm-server.txt
+#     pip freeze > vllm-server-freeze.txt   # the exact resolved lock; keep it with the run
+#
+# vllm 0.31.0 (2026-10-05) pins torch==2.13.0, transformers>=5.10.4,<5.18.0,
+# xgrammar==0.2.7 (JSON-schema structured output). PyPI sha256:
+#   manylinux_2_28_x86_64  39132b433967f0962d03d8a5f633b9bee6b32708f566c7d5637b79f8d0ef3433
+#   manylinux_2_28_aarch64 56edd19c798510b6da5ae4dd38b3bdf55ea7ae261b339a906df006dc3faf751d
+# The transitive set resolves per platform and CUDA build, so the lock that
+# counts is the `pip freeze` captured on the GPU host (vllm_inference_smoke.py
+# records it in its report).
+vllm==0.31.0
