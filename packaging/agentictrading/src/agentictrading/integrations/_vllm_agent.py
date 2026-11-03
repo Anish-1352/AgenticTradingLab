@@ -76,6 +76,10 @@ class DecisionRecord:
     response_model: Optional[str]
     response_sha256: Optional[str]
     error: Optional[str]
+    http_status: Optional[int] = None
+    error_response: Optional[Dict[str, Any]] = None
+    content_sha256: Optional[str] = None
+    request_sha256: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -202,6 +206,10 @@ class VLLMTradingAgent:
             response_model=result.model if result else None,
             response_sha256=result.response_sha256 if result else None,
             error=error,
+            http_status=failure.status if failure else (200 if result else None),
+            error_response=failure.error_response if failure else None,
+            content_sha256=result.content_sha256 if result else None,
+            request_sha256=sha256_text(json.dumps(self.client.request_body(messages), sort_keys=True)),
         )
         self.records.append(record)
         if self._sink is not None:

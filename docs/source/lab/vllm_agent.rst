@@ -194,3 +194,55 @@ from one vLLM process and select by name:
 
 Snapshot serializer, prompt, schema, parser, ATL interface and metrics stay
 identical between the two arms; ``config_hash`` differs only by the model id.
+
+Stage 1 long-context diagnostic
+------------------------------
+
+The original 4096-token L4 run is not a 12/12 pass: ``long_djia30`` failed
+3/3 times. Reconstruction of its original message hashes with the pinned
+Qwen tokenizer and chat template measures **5337 input tokens**, plus the
+requested **256 output tokens**, for **5593 total context tokens**. The three
+smaller scenarios measure 465, 479 and 510 input tokens; their counts match
+vLLM's recorded usage. A 4096 context cannot accept the long prompt even with
+no output allowance. Do not truncate the snapshot, shrink the universe, lower
+the 256-token allowance or loosen order validation to hide that failure.
+
+For a bounded rerun, keep the model/revision, FP16, vLLM 0.31.0, greedy sampling,
+seed 0 and structured-output schema fixed and set ``VLLM_MAX_MODEL_LEN=6144``.
+This fits the measured token budget; actual L4 startup and generation must still
+be verified. The serving kit's unchanged default of 8192 also fits the budget.
+``--context-limit`` counts the complete system/user messages with the model's
+pinned chat template and adds ``max_completion_tokens``. It is the operator's
+explicit server configuration, not an automatically verified server capability;
+confirm the actual ``max_model_len`` in the saved startup log.
+
+.. code-block:: bash
+
+   export VLLM_MAX_MODEL_LEN=6144
+   export VLLM_DTYPE=float16
+   export VLLM_GPU_MEMORY_UTILIZATION=0.8
+   export VLLM_SERVE_EXTRA_ARGS="--max-num-seqs 4 --enforce-eager"
+   PYTHONPATH=packaging/agentictrading/src python3 \
+     dashboard/examples/vllm_agent/vllm_inference_smoke.py \
+     --launch --repeats 3 --context-limit 6144 --record-freeze \
+     --out /content/atl-context6144-new-run
+
+Use a fresh output directory: the smoke tool refuses to overwrite previous
+reports or configurations. The 12 scenario decisions and the existing separate
+free-form parser probe remain distinct in the report. Any failed or invalid
+scenario decision makes the smoke process exit nonzero; an HTTP-400 HOLD is a
+failed inference, not a model HOLD.
+
+HTTP failures retain ``http_status`` and an allowlisted ``error_response`` JSON
+object. Credential patterns, the configured key and complete echoed messages
+are redacted; headers, non-JSON bodies and validation ``input`` fields are not
+persisted. Treat server text as diagnostic data. Historical logs that only say
+``HTTP 400`` cannot establish the exact missing response body retroactively.
+
+Scenarios are constructed once per run. Only deadlines refresh between repeats,
+so the complete model request remains byte-identical. Telemetry includes its
+SHA256. Raw response-envelope hashes remain available for provenance; model-text
+hashes are used for reply comparison because server IDs and creation timestamps
+can differ. A determinism comparison is eligible only with identical requests,
+the expected number of repeats and valid replies throughout. Failed requests
+have a null equality result, never ``true`` because all response hashes are null.

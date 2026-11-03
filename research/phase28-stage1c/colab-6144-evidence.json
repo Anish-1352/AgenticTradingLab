@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "evidence_id": "phase28-stage1-colab-l4-6144-20261103",
+  "execution_owner": "user-executed external Google Colab run",
+  "codex_role": "located downloaded originals, copied unchanged, checked bytes and reported facts; did not run or reproduce GPU inference",
+  "artifact_transfer": "PRESERVED_AND_HASH_VERIFIED",
+  "artifact_location": "outputs/phase28-stage1c-20261103/external-colab-6144/originals (outside repository)",
+  "raw_files": {
+    "inference-smoke.json": {
+      "sha256": "4d1c6c475d6b1dd560f38f10a84f0f21ec71a938ebab1e59425fd76c293f5bf2",
+      "bytes": 33038
+    },
+    "vllm-server.log": {
+      "sha256": "8a89ea46b829a95429d2fdba9969bfed2e344991c3b86e297eeca8815dbd780a",
+      "bytes": 18253
+    }
+  },
+  "started_at": "2026-11-03T11:00:53.318655+00:00",
+  "finished_at": "2026-11-03T11:03:03.142680+00:00",
+  "gpu": [
+    {
+      "driver_version": "580.82.07",
+      "index": "0",
+      "memory_total_mib": "23034",
+      "memory_used_mib": "3",
+      "name": "NVIDIA L4",
+      "utilization_pct": "0"
+    }
+  ],
+  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "model_revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+  "vllm_version": "0.31.0",
+  "server_configuration": {
+    "max_model_len": 6144,
+    "dtype": "float16",
+    "gpu_memory_utilization": 0.8,
+    "enforce_eager": true,
+    "max_num_seqs": 4
+  },
+  "inference_configuration": {
+    "max_output_tokens": 256,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "seed": 0,
+    "request_timeout": 30.0,
+    "max_retries": 1,
+    "parser_version": "vllm-orders-v1-strict.1",
+    "prompt_version": "atl-vllm-prompt.1"
+  },
+  "verified_result": {
+    "server_healthy": true,
+    "model_identity_ok": true,
+    "valid_decisions": 12,
+    "total_requests": 12,
+    "failed_inference": 0,
+    "invalid_responses": 0,
+    "timeouts": 0,
+    "long_djia30_successes": 3,
+    "long_djia30_input_tokens": 5337,
+    "buy_count": 12,
+    "sell_count": 0,
+    "genuine_hold_count": 0,
+    "latency_p50_seconds": 1.6594639729999017,
+    "latency_p95_seconds": 5.294208843999968,
+    "input_tokens": 20373,
+    "output_tokens": 642,
+    "peak_gpu_memory_mib": {
+      "0": 18258.0
+    },
+    "ttft_mean_seconds": 0.5017385482788086
+  },
+  "source_attribution": {
+    "colab_exact_commit": null,
+    "status": "EXACT_COLAB_COMMIT_NOT_RECORDED_IN_SUPPLIED_ARTIFACTS",
+    "compatible_earlier_code_commit": "cf13152b23b6390fae7f8f05f5d9fd740f5eb696",
+    "compatible_code_file_sha256": {
+      "dashboard/examples/vllm_agent/vllm_inference_smoke.py": "76ecca9016b89eedfc118c8dac91085c38679de313ede9fe272e809e946fed3c",
+      "dashboard/examples/vllm_agent/serve_vllm.sh": "f30bf35ecce0659e2f85eda78b930c0a3972445de3aeca46170682033dc4e3a4",
+      "packaging/agentictrading/src/agentictrading/runner.py": "51b65a84769a992885263d55df7cdad8e120c33b9edf2a9d809a300971f6513c",
+      "packaging/agentictrading/src/agentictrading/integrations/_vllm_parser.py": "fad56958cf00b4059607ea777c9ad954f553be1375eda96fa2b0ab0cb0284b23",
+      "packaging/agentictrading/src/agentictrading/integrations/_vllm_agent.py": "916f168a3ea39b0ece1f56fc8e0ad356ed88c55f9e6aa1ec03ef5753a60276f0",
+      "packaging/agentictrading/src/agentictrading/integrations/_vllm_prompt.py": "4595f53389de85359061b53df9799e7f350fcbe6c7b1a76c3823e782431b033b",
+      "packaging/agentictrading/src/agentictrading/integrations/_vllm_metrics.py": "66ca15d49a726bf83b4a76d7055a5607f1b82eab8ab3557da2d46142e23b72eb",
+      "packaging/agentictrading/src/agentictrading/integrations/_vllm_config.py": "92d1459daecbb78f95e33f591023e45998046bdf829ff707435784924f61de1f",
+      "packaging/agentictrading/src/agentictrading/integrations/_vllm_client.py": "96a97db43728756f0dcbfe09d4230ce4c99d82ffb1fc30a6522dd6b13175b0c5"
+    },
+    "uncommitted_diagnostics_tested_by_this_run": false,
+    "notes": "User identifies earlier smoke code. Original record schema and changed prompt hashes are consistent with earlier code. Compatible base commit is not proof of the exact source executed in Colab. Source timestamp/hash reconstruction recorded separately.",
+    "prompt_and_config_compatibility_verified": true,
+    "original_script_sha256": "76ecca9016b89eedfc118c8dac91085c38679de313ede9fe272e809e946fed3c",
+    "matched_original_prompts": [
+      {
+        "scenario": "short_neutral_hold",
+        "timestamp": "2026-11-03T11:02:34+00:00",
+        "prompt_sha256": "d450750c03490764d4655da4061f63193e575458288264e1b0ea51824b24798f",
+        "input_tokens": 465,
+        "action": "BUY"
+      },
+      {
+        "scenario": "oversold_buy",
+        "timestamp": "2026-11-03T11:02:34+00:00",
+        "prompt_sha256": "eba60d0cf0590aad08589b5c0e4bad8153f5dadd9e37e1dbb060a3ab1a7764e1",
+        "input_tokens": 479,
+        "action": "BUY"
+      },
+      {
+        "scenario": "overbought_sell",
+        "timestamp": "2026-11-03T11:02:34+00:00",
+        "prompt_sha256": "0d9bc84fb43001c45e3210238780fa942c2703fac7a7876341cf0dedd639248b",
+        "input_tokens": 510,
+        "action": "BUY"
+      },
+      {
+        "scenario": "long_djia30",
+        "timestamp": "2026-11-03T11:02:34+00:00",
+        "prompt_sha256": "a8c99f386b2b9c33d2df19ffb2f28cb242e6f17f29755fafbc7abd4b7ab801cc",
+        "input_tokens": 5337,
+        "action": "BUY"
+      },
+      {
+        "scenario": "short_neutral_hold",
+        "timestamp": "2026-11-03T11:02:45+00:00",
+        "prompt_sha256": "827d37a1f33e73e1ea07bdb17b346cb88f6635e8e50a4fddb89a5cd5f9f4feb3",
+        "input_tokens": 465,
+        "action": "BUY"
+      },
+      {
+        "scenario": "oversold_buy",
+        "timestamp": "2026-11-03T11:02:45+00:00",
+        "prompt_sha256": "edbed0a0695c8119450ad2a922574b2671c28a5624e316b2cf3c28784b5e8bec",
+        "input_tokens": 479,
+        "action": "BUY"
+      },
+      {
+        "scenario": "overbought_sell",
+        "timestamp": "2026-11-03T11:02:45+00:00",
+        "prompt_sha256": "882e2049910a559abbec5f58c59010f608dc7404836d64d62ad708b2a04aa35d",
+        "input_tokens": 510,
+        "action": "BUY"
+      },
+      {
+        "scenario": "long_djia30",
+        "timestamp": "2026-11-03T11:02:45+00:00",
+        "prompt_sha256": "1bd0a8240e3bab2cc6ff40d57cafb05791bbc07aa12431eabba74006e43bcd83",
+        "input_tokens": 5337,
+        "action": "BUY"
+      },
+      {
+        "scenario": "short_neutral_hold",
+        "timestamp": "2026-11-03T11:02:52+00:00",
+        "prompt_sha256": "66116c73c43e3f11cc373429a15507a455955c6a3b92e52022ce6d5765ea6bec",
+        "input_tokens": 465,
+        "action": "BUY"
+      },
+      {
+        "scenario": "oversold_buy",
+        "timestamp": "2026-11-03T11:02:52+00:00",
+        "prompt_sha256": "3ce0806a0f745c71d4f98544905e649bb510351cb342e6a89bdda98e386502a5",
+        "input_tokens": 479,
+        "action": "BUY"
+      },
+      {
+        "scenario": "overbought_sell",
+        "timestamp": "2026-11-03T11:02:52+00:00",
+        "prompt_sha256": "e3040308e553d5183ef4e1338bc94f5b9f22d6558c2c9eb5c7fd48b7161d2092",
+        "input_tokens": 510,
+        "action": "BUY"
+      },
+      {
+        "scenario": "long_djia30",
+        "timestamp": "2026-11-03T11:02:52+00:00",
+        "prompt_sha256": "5fc5f4524e352854d6765de9f61e32a7eabfed283faae67a9faf7e76c5a9b71c",
+        "input_tokens": 5337,
+        "action": "BUY"
+      }
+    ]
+  },
+  "verification_boundaries": {
+    "GPU_SMOKE_6144": "VERIFIED_PASS_EXTERNAL_USER_RUN",
+    "REPEATABILITY_GPU": "NOT_RUN_VALIDLY_ORIGINAL_PROMPTS_CHANGED",
+    "PATCHED_GPU_DIAGNOSTICS": "NOT_RUN",
+    "ATL_REAL_MODEL_BACKTEST": "NOT_RUN",
+    "predictive_skill_or_profitability": "NOT_ESTABLISHED"
+  }
+}

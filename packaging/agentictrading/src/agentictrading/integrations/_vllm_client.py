@@ -38,12 +38,14 @@ class ChatErrorKind:
 
 class ChatTransportError(Exception):
     def __init__(self, kind: str, message: str, *, status: Optional[int] = None,
-                 retryable: bool = False, latency_seconds: Optional[float] = None) -> None:
+                 retryable: bool = False, latency_seconds: Optional[float] = None,
+                 error_response: Optional[Dict[str, Any]] = None) -> None:
         super().__init__(sanitize_error_message(message))
         self.kind = kind
         self.status = status
         self.retryable = retryable
         self.latency_seconds = latency_seconds
+        self.error_response = error_response
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,7 @@ class ChatResult:
     completion_tokens: Optional[int]
     latency_seconds: float
     response_sha256: str
+    content_sha256: Optional[str] = None
 
 
 def urllib_transport(method: str, url: str, body: Optional[bytes],
@@ -100,7 +103,8 @@ class VLLMChatClient:
         latency = self.monotonic() - start
         if status != 200:
             raise ChatTransportError(ChatErrorKind.HTTP_STATUS, f"HTTP {status}", status=status,
-                                     retryable=status == 429 or status >= 500, latency_seconds=latency)
+                                     retryable=status == 429 or status >= 500, latency_seconds=latency,
+                                     error_response=_safe_error_response(raw, self.config.api_key, messages))
         return _read_completion(raw, latency)
 
     def list_models(self, *, timeout: float) -> List[str]:
@@ -158,7 +162,38 @@ def _read_completion(raw: bytes, latency: float) -> ChatResult:
         completion_tokens=_count(usage.get("completion_tokens")),
         latency_seconds=latency,
         response_sha256=sha256_text(raw.decode("utf-8", errors="replace")),
+        content_sha256=sha256_text(content) if content is not None else None,
     )
+
+
+def _safe_error_response(raw: bytes, api_key: Optional[str], messages) -> Optional[Dict[str, Any]]:
+    """Keep diagnostic JSON fields, never headers or request/validation input.
+
+    Non-JSON and oversized bodies are deliberately omitted. Explicitly remove
+    the configured key and echoed message contents before the shared credential
+    sanitizer. This is telemetry only; it cannot change retry/action behavior.
+    """
+    if len(raw) > 65536:
+        return None
+    try:
+        error = json.loads(raw).get("error")
+    except (ValueError, AttributeError):
+        return None
+    if not isinstance(error, dict):
+        return None
+    safe = {}
+    redactions = [api_key] if api_key else []
+    redactions.extend(m["content"] for m in messages if isinstance(m.get("content"), str) and m["content"])
+    for key in ("message", "type", "param", "code"):
+        value = error.get(key)
+        if isinstance(value, str):
+            for secret in sorted(redactions, key=len, reverse=True):
+                value = value.replace(secret, "[REDACTED]")
+            value = sanitize_error_message(value)
+        elif value is not None and type(value) is not int:
+            continue
+        safe[key] = value
+    return {"error": safe}
 
 
 def _count(value: Any) -> Optional[int]:
