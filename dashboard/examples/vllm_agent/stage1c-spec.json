@@ -1,0 +1,22 @@
+{
+  "version": "phase28-stage1c-v1",
+  "environment_id": "us-equity-hourly-v1",
+  "start_date": "2026-03-02",
+  "end_date": "2026-03-03",
+  "symbols": ["AAPL", "KO"],
+  "initial_cash": 1000,
+  "source_timeframe": "5m",
+  "decision_timeframe": "60m",
+  "execution": "ATL native completed-hour / next-source-open; final decision at regular-session close",
+  "reference_policy": "alternate one-share entries when flat and full exits on the following step; never enter at session close",
+  "costs": {"version": "stage1c-fixed-v1", "currency": "USD", "commission_rate": 0.0001, "minimum_commission": 0, "stamp_duty_sell_rate": 0, "transfer_fee_rate": 0, "buy_slippage_rate": 0.0005, "sell_slippage_rate": 0.0005, "price_tick": 0.01},
+  "risk_policy": "unchanged ATL environment: long only, max position weight 0.25, max orders 10, existing share/cash limits",
+  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "model_revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+  "context_limit": 6144,
+  "max_output_tokens": 256,
+  "temperature": 0,
+  "top_p": 1,
+  "seed": 0,
+  "notes": "Bounded integration validation only; no prompt or strategy tuning and no inference of predictive skill. Gross P&L is net P&L plus recorded fees and adverse slippage, including open-position marks."
+}

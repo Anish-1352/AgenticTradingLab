@@ -1033,8 +1033,7 @@ def submit_decision(run_id: str, step_id: str, decision: DecisionIn) -> Dict[str
                 )
 
         fills = session.fills_since(trades_before)
-        exec_ts = session.executed_step_timestamp()
-        portfolio_after = session.protocol_portfolio(exec_ts)
+        portfolio_after = session.protocol_execution_portfolio()
         decision_id = _new_decision_id()
         run_completed = session.status == "completed"
 

@@ -34,6 +34,7 @@ from dashboard.backend.infrastructure.llm.validator import (
     parse_actions_payload,
 )
 from dashboard.backend.domain.backtesting.bar_aggregation import ExecutionFill
+from dashboard.backend.domain.backtesting.valuation import EventTimeValuator
 from dashboard.backend.domain.backtesting.constants import (
     fractional_return,
     resolve_initial_capital,
@@ -316,7 +317,7 @@ class ExternalBacktestSession:
         # `market_data_store._dataset_key`. None until a dataset is adopted.
         self.provider_end: Optional[str] = None
         self.equity_metadata: Dict[str, Any] = {}
-        self._valuation_cursor = 0
+        self._valuator = None
 
         self.step_opened_at: Optional[datetime] = None
         # Stamped by sweep_terminal_sessions() the first time it sees this
@@ -414,7 +415,7 @@ class ExternalBacktestSession:
                 "aggregation": "none",
                 "fill_policy": "decision_bar_close",
             }
-        self._valuation_cursor = 0
+        self._valuator = None
 
         with self._step_lock:
             if self.status in TERMINAL_STATUSES:
@@ -459,19 +460,13 @@ class ExternalBacktestSession:
         return [ExecutionFill(timestamp, "close", timestamp) for timestamp in self.timestamps]
 
     def _value_through(self, target_timestamp=None) -> None:
-        """Mark the portfolio on each source bar through the given timestamp."""
-        source_timestamps = self._effective_source_timestamps()
-        source_price_cache = self._effective_source_price_cache()
-        while self._valuation_cursor < len(source_timestamps):
-            timestamp = source_timestamps[self._valuation_cursor]
-            if target_timestamp is not None and timestamp > target_timestamp:
-                break
-            self.manager.update_equity(
-                self._source_market_data_at(timestamp),
-                source_price_cache,
-                timestamp,
+        """Drain completed bars with the holdings valid before the next fill."""
+        if self._valuator is None:
+            self._valuator = EventTimeValuator(
+                self.manager, self._effective_source_timestamps(), self._source_market_data_at,
+                source_minutes=timeframe_minutes(self.source_timeframe) if self.intraday_mode else 0,
             )
-            self._valuation_cursor += 1
+        self._valuator.through(target_timestamp)
 
     def _open_current_step(self) -> None:
         self.step_opened_at = _utcnow()
@@ -869,6 +864,8 @@ class ExternalBacktestSession:
             if fill.price_field in row
         }
 
+        # Earlier marks must use pre-fill cash and holdings.
+        self._value_through(fill.filled_at)
         trades_before_execution = len(self.manager.trades)
         self.manager.execute_actions(
             executable,
@@ -890,7 +887,8 @@ class ExternalBacktestSession:
             }
             for trade in self.manager.trades[trades_before_execution:]
         ]
-        self._value_through(execution_timestamp)
+        self._valuator.after_fill(fill)
+        self._last_fill_market_data = self._valuator.market_data
 
         self.decision_log.append({
             "step_index": self.step_index,
@@ -1207,6 +1205,11 @@ class ExternalBacktestSession:
         if self.step_index > 0 and self.timestamps:
             return self.timestamps[self.step_index - 1]
         return None
+
+    def protocol_execution_portfolio(self):
+        """Keep the decision response at its fill event, before final tape drain."""
+        fill = self._effective_execution_fills()[self.step_index - 1]
+        return self.protocol_portfolio(fill.filled_at, market_data=self._last_fill_market_data)
 
     def trade_count(self) -> int:
         return len(self.manager.trades)

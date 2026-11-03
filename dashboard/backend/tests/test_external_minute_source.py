@@ -55,6 +55,7 @@ class _MinuteLoader:
 @pytest.fixture(autouse=True)
 def _isolate_store(monkeypatch):
     mds._reset_for_tests()
+    monkeypatch.setattr(ebs.baseline_worker, "submit", lambda job: None)
     monkeypatch.setattr(ebs, "AlpacaDataLoader", _MinuteLoader)
     monkeypatch.setattr(ebs, "DJIA_30", ["AAPL"])
     yield
@@ -188,10 +189,10 @@ def test_the_closing_decision_fills_at_the_last_regular_hours_close(monkeypatch)
     last_close = session.source_data["AAPL"].loc[last_regular, "close"]
     assert trade["price"] == pytest.approx(last_close)
     assert trade["price"] != pytest.approx(after_hours_open)
-    assert all(
-        pd.Timestamp(point["timestamp"]) != after_hours
-        for point in session.manager.equity_history
-    )
+    # The last regular bar's close is available at 16:00. This is not the
+    # after-hours bar's later close: mark the known closing fill at its event.
+    assert pd.Timestamp(session.manager.equity_history[-1]["timestamp"]) == after_hours
+    assert session.manager.equity_history[-1]["positions_value"] == pytest.approx(last_close)
 
 
 def test_an_unaggregated_run_fills_at_the_decision_bar_close(monkeypatch):

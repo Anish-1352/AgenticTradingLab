@@ -105,7 +105,12 @@ class VLLMChatClient:
             raise ChatTransportError(ChatErrorKind.HTTP_STATUS, f"HTTP {status}", status=status,
                                      retryable=status == 429 or status >= 500, latency_seconds=latency,
                                      error_response=_safe_error_response(raw, self.config.api_key, messages))
-        return _read_completion(raw, latency)
+        result = _read_completion(raw, latency)
+        if result.model != self.config.model_id:
+            raise ChatTransportError(ChatErrorKind.BAD_RESPONSE,
+                "response model does not match the configured model", status=200,
+                latency_seconds=latency)
+        return result
 
     def list_models(self, *, timeout: float) -> List[str]:
         status, raw = self._send("GET", self.config.base_url + "/models", None, timeout)

@@ -186,3 +186,27 @@ def test_smoke_cli_twelve_requests_and_honest_exit(monkeypatch,tmp_path,long_htt
     with pytest.raises(SystemExit) as caught:smoke.main()
     assert caught.value.code==2
     assert (tmp_path/'run/inference-smoke.json').read_bytes()==previous
+
+
+def test_wrong_response_model_is_not_a_valid_trading_decision():
+    raw=json.dumps(chat_body('{"orders":[{"symbol":"AAPL","side":"buy","quantity":1}],"confidence":1,"rationale":"buy"}',model='different-model')).encode()
+    clock=FakeClock();client=VLLMChatClient(VLLMConfig(),transport=lambda *a:(200,raw))
+    agent=VLLMTradingAgent(client,wall_clock=clock.wall)
+    step=make_step();agent.on_step(step);decision=agent.decide(step.observation)
+    assert decision.orders==[]
+    assert agent.records[-1].status=='failed'
+    assert agent.records[-1].reason=='bad_response'
+    assert agent.records[-1].attempts==1
+
+
+def test_next_gpu_smoke_refuses_to_run_without_source_identity(monkeypatch,tmp_path):
+    import sys
+    smoke=smoke_module()
+    monkeypatch.setattr(smoke,'capture_source_provenance',lambda *a:{'atl_source_commit':'UNKNOWN','source_snapshot':'NOT_CAPTURED'})
+    def forbidden(*a):pytest.fail('GPU server must not be contacted before source identity is captured')
+    monkeypatch.setattr(smoke,'wait_healthy',forbidden)
+    monkeypatch.setattr(sys,'argv',['smoke','--out',str(tmp_path/'no-source')])
+    assert smoke.main()==2
+    report=json.loads((tmp_path/'no-source/inference-smoke.json').read_text())
+    assert report['source_provenance']['atl_source_commit']=='UNKNOWN'
+    assert report['error']=='source provenance unavailable; run from the versioned ATL checkout'

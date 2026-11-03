@@ -40,6 +40,8 @@ from agentictrading.integrations.vllm import (
     summarize_records,
 )
 
+from agentictrading.integrations._vllm_provenance import capture_source_provenance, write_artifact_checksums
+
 # Fixed before any model output was seen; never changed because of results.
 SMOKE = {
     "environment_id": "us-equity-hourly-v1",
@@ -113,7 +115,8 @@ def main() -> int:
     vllm_agent = VLLMTradingAgent(VLLMChatClient(config, transport=transport), sink=sink)
     report: Dict[str, Any] = {"started_at": datetime.now(timezone.utc).isoformat(), "smoke": SMOKE,
                               "mode": "mock" if args.mock else "vllm", "atl_base_url": base,
-                              "config": config.public_dict()}
+                              "config": config.public_dict(),
+                              "source_provenance": capture_source_provenance(Path(__file__).resolve().parents[3])}
     try:
         report["hold"] = run(sdk, creds["agent_id"], "hold", "none", HoldAgent())
         report["vllm"] = run(sdk, creds["agent_id"], "vllm", config.model_id, vllm_agent,
@@ -134,7 +137,9 @@ def main() -> int:
                                                                    if r.status == "valid"),
     }
     report["checks"] = checks
+    report["source_provenance_at_finish"] = capture_source_provenance(Path(__file__).resolve().parents[3])
     (args.out / "backtest-smoke.json").write_text(json.dumps(report, indent=1, sort_keys=True, default=str))
+    write_artifact_checksums(args.out)
     print(json.dumps({"checks": checks, "vllm_summary": report["vllm_summary"]}, indent=1))
     return 0 if all(checks.values()) else 1
 

@@ -49,6 +49,8 @@ from agentictrading.integrations.vllm import (
     summarize_records,
 )
 
+from agentictrading.integrations._vllm_provenance import capture_source_provenance, write_artifact_checksums
+
 HERE = Path(__file__).resolve().parent
 DJIA_30 = ["AAPL", "AMGN", "AMZN", "AXP", "BA", "CAT", "CRM", "CSCO", "CVX", "DIS", "GS", "HD", "HON", "IBM",
            "JNJ", "JPM", "KO", "MCD", "MMM", "MRK", "MSFT", "NKE", "NVDA", "PG", "SHW", "TRV", "UNH", "V", "VZ", "WMT"]
@@ -251,6 +253,10 @@ def main() -> int:
     client = VLLMChatClient(config)
     report: Dict[str, Any] = {"started_at": datetime.now(timezone.utc).isoformat(), "config": config.public_dict(),
                               "host": {"platform": platform.platform(), "python": sys.version.split()[0]}}
+    report["source_provenance"] = capture_source_provenance(HERE.parents[2])
+    if report["source_provenance"]["atl_source_commit"] == "UNKNOWN":
+        report["error"] = "source provenance unavailable; run from the versioned ATL checkout"
+        return _finish(args.out, report, 2)
     gpu = GpuSampler()
     report["gpu_available"] = gpu.available
     proc = None
@@ -326,7 +332,9 @@ def main() -> int:
 
 def _finish(out: Path, report: Dict[str, Any], code: int) -> int:
     report["finished_at"] = datetime.now(timezone.utc).isoformat()
+    report["source_provenance_at_finish"] = capture_source_provenance(HERE.parents[2])
     (out / "inference-smoke.json").write_text(json.dumps(report, indent=1, sort_keys=True))
+    write_artifact_checksums(out)
     print(json.dumps({k: report.get(k) for k in ("server_healthy", "model_identity_ok", "startup_seconds",
                                                  "summary", "ttft_mean_seconds", "gpu_peak_memory_used_mib")},
                      indent=1, default=str))
